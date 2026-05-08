@@ -1,0 +1,352 @@
+---
+description: Growatt Vietnam After-Sales Management System — toàn bộ quy tắc, kiến trúc và convention của dự án
+globs: ["**/*.vue", "**/*.ts", "**/*.tsx", "**/*.js", "server/**/*"]
+alwaysApply: true
+---
+
+# Growatt Vietnam — Agent Skill
+
+## Tổng quan dự án
+
+Hệ thống quản lý bảo hành và hỗ trợ kỹ thuật sau bán hàng cho Growatt Vietnam.  
+Hai luồng người dùng tách biệt: **nội bộ (management)** và **khách hàng (customer portal)**.
+
+- **Frontend:** `e:\AI\Growatt_V1.02\` — Vue 3.5, Vite 6, TypeScript, Vue Router 4, vue-i18n, Tailwind 4
+- **Backend:** `e:\AI\Growatt_V1.02\server\` — Express 4, TypeScript, SQLite (better-sqlite3), JWT
+- **Dev ports:** Frontend `:5173`, Backend `:3000`
+- **Timezone:** `Asia/Ho_Chi_Minh`
+
+---
+
+## Kiến trúc Frontend
+
+### Cấu trúc thư mục `src/`
+
+```
+src/
+├── views/
+│   ├── Growatt/          # Giao diện nội bộ (admin, kỹ thuật, kho...)
+│   │   ├── Dashboard.vue
+│   │   ├── Tickets/      # TicketList, TicketDetail, NewTicket
+│   │   ├── Technicians/  # TechnicianList, TechnicianSchedule
+│   │   ├── Customers/    # CustomerList, CustomerDetail
+│   │   ├── Inverters/    # InverterList, InverterDetail, RegisterInverter, ModelList
+│   │   ├── Tasks/        # TaskDetail
+│   │   ├── Warehouse/    # WarehouseList, PartsManagement, RMAManagement
+│   │   ├── ServiceReports/
+│   │   ├── Reports/
+│   │   ├── Users/        # UserManagement
+│   │   └── Settings/     # AutoAssignSettings, SlaSettings
+│   └── Customer/         # Portal khách hàng
+│       ├── Dashboard.vue
+│       ├── Tickets/      # TicketList, TicketDetail, NewTicket
+│       ├── Inverters/
+│       ├── Profile.vue
+│       ├── Notifications.vue
+│       └── ServiceReports/
+├── composables/
+│   ├── useAuth.ts         # JWT, UserRole, Permission, hasPermission, canAccessRoute
+│   ├── useAutoRefresh.ts  # Polling interval (pauseWhenHidden)
+│   ├── useNotifications.ts
+│   ├── useSlaSettings.ts
+│   ├── useSidebar.ts
+│   └── useFlatpickr.ts
+├── services/
+│   ├── api.ts             # HTTP client (fetch wrapper)
+│   ├── ticketService.ts
+│   ├── authService.ts
+│   ├── userService.ts
+│   ├── inverterService.ts
+│   ├── scheduleService.ts
+│   ├── notificationService.ts
+│   ├── slaSettingsService.ts
+│   └── autoAssignService.ts
+├── router/
+│   ├── index.ts           # Management routes + beforeEach guard
+│   └── customerRoutes.ts  # /customer/* routes
+├── locales/
+│   ├── vi.ts              # Tiếng Việt (ngôn ngữ chính)
+│   └── en.ts              # Tiếng Anh
+├── utils/
+│   ├── apiUrl.ts
+│   ├── routeGuard.ts
+│   └── userGroups.ts
+└── components/
+    └── layout/            # AdminLayout, CustomerLayout, AppHeader, AppSidebar...
+```
+
+### Router & Navigation Guard
+
+- `beforeEach`: đợi `initAuth` → kiểm tra `requiresAuth` → `canAccessRoute` (userGroup) → `hasPermission`
+- Route meta: `requiresAuth`, `requiresPermission`, `userGroup: 'management' | 'customer'`, `allowedRoles`
+- Redirect sau login theo role: management → `/`, customer → `/customer/dashboard`
+
+### Auto-Refresh Pattern
+
+Dùng `useAutoRefresh` composable cho tất cả view cần cập nhật tự động:
+
+```ts
+import { useAutoRefresh } from '@/composables/useAutoRefresh'
+import { onUnmounted } from 'vue'
+
+const { stop: stopAutoRefresh } = useAutoRefresh({
+  interval: 30000, // 30s cho list, 15s cho detail
+  fetchFn: async () => {
+    if (!loading.value) await fetchData()
+  },
+  pauseWhenHidden: true, // tắt khi tab không active
+})
+
+onUnmounted(() => stopAutoRefresh())
+```
+
+**Hiện trạng polling:**
+- Growatt TicketDetail: 10s ✅
+- Growatt TicketList: 30s ✅
+- Customer TicketList: 30s ✅
+- Customer TicketDetail: 15s ✅
+
+### i18n
+
+- **Luôn dùng `t('key')` thay vì hardcode text**
+- Khi thêm key mới phải bổ sung **cả `vi.ts` và `en.ts`**
+- Cấu trúc key: `section.subsection.action` (vd: `tickets.detail.fields.responseWithin`)
+- Tiếng Việt là ngôn ngữ chính, tiếng Anh là fallback
+
+---
+
+## Kiến trúc Backend
+
+### Cấu trúc `server/src/`
+
+```
+server/src/
+├── index.ts              # Express app, middleware, mount routes
+├── routes/
+│   ├── auth.ts           # POST /login, /register, GET /me
+│   ├── tickets.ts        # CRUD + comments + attachments + SLA + auto-assign
+│   ├── users.ts
+│   ├── customers.ts
+│   ├── inverters.ts
+│   ├── schedules.ts      # Lịch kỹ thuật viên
+│   ├── technicians.ts
+│   ├── service-reports.ts
+│   ├── warehouse.ts      # parts + rma
+│   ├── dashboard.ts
+│   ├── notifications.ts
+│   ├── models.ts
+│   ├── distributors.ts
+│   ├── reports.ts
+│   ├── sla-settings.ts
+│   ├── auto-assign-settings.ts
+│   └── sync.ts
+├── middleware/
+│   └── auth.ts           # authenticateToken, requireRole
+├── database/
+│   ├── db.ts             # SQLite init, schema, tất cả CREATE TABLE
+│   ├── migrate.ts
+│   ├── seed.ts
+│   ├── sync.ts
+│   └── syncCounts.ts     # cached_active_tickets, cached_today_tasks
+├── services/
+│   └── notificationService.ts
+├── types/
+│   └── index.ts          # UserRole, UserStatus, DTOs, isAdminRole
+└── utils/
+    ├── dateTime.ts
+    └── systemUser.ts
+```
+
+### API Base URL
+
+- Dev: `http://localhost:3000/api`
+- Tất cả route đều có prefix `/api` (mount trong `index.ts`)
+
+---
+
+## Business Logic quan trọng
+
+### UserRole
+
+```ts
+enum UserRole {
+  ADMIN = 'admin',
+  DEV = 'dev',
+  SERVICE_CENTER = 'service_center',
+  TECHNICIAN = 'technician',
+  DISTRIBUTOR = 'distributor',
+  DEALER = 'dealer',
+  END_USER = 'end_user',
+  WAREHOUSE = 'warehouse',
+}
+```
+
+**Nhóm:**
+- **Management** (giao diện nội bộ): `admin`, `dev`, `service_center`, `technician`, `warehouse`, `dealer`
+- **Customer** (portal): `end_user`, `distributor`
+
+**Quyền:** `admin` và `dev` có full quyền (`isAdminRole`). Các role khác có tập quyền cố định trong `rolePermissions` của `useAuth.ts`.
+
+### Ticket Workflow
+
+**Status flow:**
+```
+initialized → assigned → in_progress → waiting_parts → pending → completed → closed
+```
+
+**Category → Function mapping (auto-assign):**
+| Category ticket | Function nhân sự |
+|----------------|-----------------|
+| `warranty` | `repair` |
+| `technicalsupport` | `technicalSupport` |
+| `productconsultation` | `sale` |
+| `other` | `management` |
+
+**Auto-assign chỉ áp dụng khi TẠO MỚI ticket** — không retroactive với ticket cũ.  
+Điều kiện: user phải `active` + role `technician`/`admin` + `function` khớp chính xác.
+
+**Priority & SLA (giờ):**
+| Priority | Default hours |
+|----------|--------------|
+| urgent | 24h |
+| high | 48h |
+| medium | 72h |
+| low | 96h |
+
+### Trạng thái Kỹ thuật viên (tự động)
+
+```ts
+let status = 'available'
+if (tech.active_tickets > 0) {
+  status = tech.active_tickets >= 5 ? 'busy' : tech.today_tasks > 0 ? 'onsite' : 'available'
+}
+if (tech.status !== 'active') status = 'offline'
+```
+
+Không có manual set — tính toán từ `active_tickets` và `today_tasks`.
+
+### Comment & Attachment
+
+- **Public comment** (`addComment`): text + upload ảnh qua `ticketService.uploadAttachment` với `comment_id` → lưu DB → hiển thị từ `comment.images`
+- **Internal comment** (`addInternalComment`): giống public, cũng phải upload attachment để ảnh persist sau reload (đã fix — không dùng sessionStorage)
+- **isInternal flag**: `is_internal = 1` trong DB, filter trong `internalActivities` computed
+
+---
+
+## Database Schema (bảng chính)
+
+```sql
+users (id, name, email, code, role, function, status, parent_distributor_id, cached_active_tickets, cached_today_tasks)
+customers (id, name, email, phone, address, user_id)
+distributors (id, name, user_id)
+inverters (id, serial_number, model_id, customer_id, user_id, warranty_expiry)
+tickets (id, ticket_number, title, description, priority, status, category, assigned_to, created_by, sla_deadline, resolved_at, closed_at)
+ticket_comments (id, ticket_id, user_id, comment, is_internal, created_at)
+ticket_attachments (id, ticket_id, comment_id, file_path, filename, mime_type)
+ticket_watchers (id, ticket_id, user_id)
+technician_schedules (id, technician_id, ticket_id, customer_id, title, scheduled_date, status)
+service_reports (id, ticket_id, technician_id, service_date, ...)
+warehouse_parts (id, name, sku, quantity, ...)
+notifications (id, user_id, title, message, type, read_at)
+settings (key, value, description, updated_at)  -- SLA hours, auto-assign user IDs
+```
+
+---
+
+## Coding Conventions
+
+### Vue / TypeScript
+
+- Dùng `<script setup lang="ts">` cho tất cả component
+- Reactive state: `ref()` cho primitives, `computed()` cho derived values
+- **Không dùng `any` trừ khi API response chưa có type**
+- Import composables từ `@/composables/`, services từ `@/services/`
+- Alias `@` = `src/`
+
+### API calls
+
+```ts
+// Luôn dùng apiClient từ @/services/api.ts
+import { apiClient } from '@/services/api.ts'
+
+const response = await apiClient.get('/tickets')
+if (response.error) throw new Error(response.error)
+const data = response.data
+```
+
+### Backend routes
+
+```ts
+// Pattern chuẩn cho route handler
+router.get('/', authenticateToken, (req, res) => {
+  try {
+    const result = db.prepare(`SELECT ...`).all(...)
+    res.json(result)
+  } catch (error) {
+    console.error('Error:', error)
+    res.status(500).json({ error: 'Internal server error' })
+  }
+})
+```
+
+### Thêm route mới
+
+1. Tạo file trong `server/src/routes/`
+2. Mount trong `server/src/index.ts`: `app.use('/api/route-name', routeModule)`
+3. Thêm route vào `src/router/index.ts` (frontend) với đúng `meta`
+4. Thêm service method trong `src/services/`
+
+### Thêm i18n key mới
+
+Luôn thêm **đồng thời** vào cả 2 file:
+- `src/locales/vi.ts` — văn bản tiếng Việt
+- `src/locales/en.ts` — văn bản tiếng Anh
+
+### Khi thêm polling vào view mới
+
+```ts
+import { onUnmounted } from 'vue'
+import { useAutoRefresh } from '@/composables/useAutoRefresh'
+
+const { stop } = useAutoRefresh({
+  interval: 30000,
+  fetchFn: async () => { if (!loading.value) await fetchData() },
+  pauseWhenHidden: true,
+})
+onUnmounted(() => stop())
+```
+
+---
+
+## Các lưu ý đặc biệt
+
+1. **Auto-assign chỉ áp dụng khi tạo ticket mới** — ticket cũ phải gán thủ công
+2. **Route `/technicians/schedule`** đã được đăng ký trong router
+3. **Internal comment images** phải upload qua `uploadAttachment` (không dùng sessionStorage)
+4. **`&&` không hoạt động trong PowerShell** — dùng `;` hoặc chạy lệnh riêng với `working_directory`
+5. **Không có Pinia/Vuex** — state quản lý qua `ref` local + composables
+6. **Không có WebSocket** — dùng polling qua `useAutoRefresh`
+7. **`isAdminRole`** trong backend: `admin` và `dev` đều có full quyền
+8. **SLA** đọc từ bảng `settings`, fallback hardcode nếu chưa cấu hình
+9. **Timestamp** tất cả response đều được format theo VN timezone qua middleware `formatTimestampsInResponse`
+10. **System user** bị filter khỏi danh sách assignable (check `isSystemEmail`)
+
+---
+
+## Scripts hữu ích
+
+```bash
+# Frontend
+npm run dev          # Vite dev server :5173 (host 0.0.0.0)
+
+# Backend
+npm run dev          # tsx watch :3000
+npm run db:migrate   # Chạy migrations
+npm run db:seed      # Seed dữ liệu mẫu
+npm run db:get:admin # Xem tài khoản admin
+npm run db:add:developer  # Reset tài khoản developer
+```
+
+**Tài khoản mặc định:**
+- Admin: `admin@growattvietnam.com` / `admin123`
+- Developer: `developer@growattvietnam.com` / `Growatt2025`
