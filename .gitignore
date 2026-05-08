@@ -92,3 +92,6 @@ server/reports/
 # SQLite runtime files
 *.db-wal
 *.db-shm
+
+# Legacy/generated backend artifacts
+server/logo_base64.txt
