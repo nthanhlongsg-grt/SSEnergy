@@ -22,19 +22,24 @@ import { formatTimestampsInResponse } from './utils/dateTime.js'
 import { maskSystemData } from './utils/systemUser.js'
 import './database/db.js' // Initialize database
 import { initCountColumns, syncAllUsersCounts } from './database/syncCounts.js'
+import db from './database/db.js'
 
+// Load .env file (must be before reading process.env values below)
 dotenv.config()
+
+// Ensure TZ is set correctly for date formatting throughout the app.
+// On Linux, set TZ=Asia/Ho_Chi_Minh in your environment or .env file
+// so it takes effect before Node.js starts. This line acts as a fallback.
+if (!process.env.TZ) {
+  process.env.TZ = 'Asia/Ho_Chi_Minh'
+}
 
 const app = express()
 const PORT = parseInt(process.env.PORT || '3000', 10)
 const CORS_ORIGIN = process.env.CORS_ORIGIN || 'http://localhost:5173'
-const TZ = process.env.TZ || 'Asia/Ho_Chi_Minh'
 const explicitCorsOrigins = CORS_ORIGIN.split(',')
   .map((origin) => origin.trim())
   .filter(Boolean)
-
-// Set timezone for the entire Node.js process to Vietnam timezone (UTC+7)
-process.env.TZ = TZ
 
 // Middleware
 // Allow CORS from localhost and LAN IPs
@@ -128,11 +133,13 @@ app.use((req, res) => {
 // Initialize count columns and sync counts before starting server
 initCountColumns()
 
-app.listen(PORT, '0.0.0.0', async () => {
+const server = app.listen(PORT, '0.0.0.0', async () => {
   console.log(`🚀 Server is running on http://localhost:${PORT}`)
-  console.log(`🌐 Server is accessible on LAN at http://<your-ip>:${PORT}`)
+  console.log(`🌐 Server is accessible on LAN at http://0.0.0.0:${PORT}`)
   console.log(`📡 CORS enabled for: ${CORS_ORIGIN}`)
-  
+  console.log(`⏰ Timezone: ${process.env.TZ}`)
+  console.log(`🌍 NODE_ENV: ${process.env.NODE_ENV || 'development'}`)
+
   // Sync all user counts on server start
   try {
     console.log('🔄 Syncing ticket and task counts...')
@@ -141,4 +148,38 @@ app.listen(PORT, '0.0.0.0', async () => {
   } catch (error) {
     console.error('⚠️  Error syncing counts on startup:', error)
   }
+})
+
+// ─── Graceful Shutdown ───────────────────────────────────────────────────────
+// Required on Linux (cPanel / PM2) so SQLite WAL is flushed and connections
+// are closed cleanly when the process receives SIGTERM or SIGINT.
+function gracefulShutdown(signal: string) {
+  console.log(`\n🛑 Received ${signal}. Shutting down gracefully...`)
+  server.close(() => {
+    try {
+      db.close()
+      console.log('✅ Database connection closed.')
+    } catch (err) {
+      console.error('⚠️  Error closing database:', err)
+    }
+    console.log('👋 Server stopped.')
+    process.exit(0)
+  })
+
+  // Force exit after 10 seconds if server hasn't closed
+  setTimeout(() => {
+    console.error('❌ Forced shutdown after timeout.')
+    process.exit(1)
+  }, 10_000).unref()
+}
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'))
+process.on('SIGINT',  () => gracefulShutdown('SIGINT'))
+
+// Log uncaught errors instead of crashing silently
+process.on('uncaughtException', (err) => {
+  console.error('❌ Uncaught Exception:', err)
+})
+process.on('unhandledRejection', (reason) => {
+  console.error('❌ Unhandled Rejection:', reason)
 })
