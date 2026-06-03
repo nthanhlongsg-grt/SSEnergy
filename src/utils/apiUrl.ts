@@ -16,9 +16,10 @@ export function getApiBaseUrl(): string {
     const protocol = window.location.protocol
     const port = '3000'
     
-    // Production domain - use same domain with /api path
+    // Production domain - return base URL without /api suffix
+    // (api.ts already appends /api to the base URL)
     if (hostname === 'growattvietnam.com' || hostname === 'www.growattvietnam.com') {
-      return `${protocol}//${hostname}/api`
+      return `${protocol}//${hostname}`
     }
     
     // If accessing via IP address (LAN), use same IP for backend

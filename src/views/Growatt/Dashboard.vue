@@ -790,6 +790,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, computed, watch, nextTick } from 'vue'
+import { useChangeDetection } from '@/composables/useChangeDetection'
 import { useI18n } from 'vue-i18n'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import {
@@ -1629,5 +1630,16 @@ watch(
 
 onMounted(() => {
   loadDashboardData()
+})
+
+// Auto-refresh when tickets or users change (polls /api/sync/changes every 5s)
+useChangeDetection({
+  onTicketChange: () => {
+    loadTickets()
+    loadDashboardData()
+  },
+  onUserChange: () => {
+    loadTechnicians()
+  },
 })
 </script>

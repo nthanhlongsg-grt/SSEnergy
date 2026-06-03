@@ -300,6 +300,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onActivated } from 'vue'
+import { useChangeDetection } from '@/composables/useChangeDetection'
 import { useI18n } from 'vue-i18n'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import {
@@ -505,5 +506,11 @@ onMounted(() => {
 
 onActivated(() => {
   loadTechnicians()
+})
+
+// Auto-refresh khi có ticket mới hoặc user thay đổi
+useChangeDetection({
+  onTicketChange: () => loadTechnicians(),  // cập nhật active_tickets count
+  onUserChange:   () => loadTechnicians(),  // user mới hoặc bị sửa
 })
 </script>

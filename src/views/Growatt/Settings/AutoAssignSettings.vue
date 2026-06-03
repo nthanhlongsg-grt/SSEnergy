@@ -148,12 +148,19 @@ const loadAll = async () => {
     form.management = settings.management
 
     const staffData = Array.isArray(staffRes.data) ? staffRes.data : []
-    allStaff.value = staffData.map((s: any) => ({
-      id: s.id,
-      name: s.name,
-      code: s.code || `KT${String(s.id).padStart(3, '0')}`,
-      function: s.function,
-    }))
+    const VALID_FUNCTIONS = ['repair', 'technicalSupport', 'sale', 'management']
+    allStaff.value = staffData.map((s: any) => {
+      // Apply same default as TechnicianList: technician → technicalSupport, others → management
+      const fn = VALID_FUNCTIONS.includes(s.function) ? s.function
+        : s.role === 'technician' ? 'technicalSupport'
+        : 'management'
+      return {
+        id: s.id,
+        name: s.name,
+        code: s.code || `KT${String(s.id).padStart(3, '0')}`,
+        function: fn,
+      }
+    })
   } catch (err) {
     errorMessage.value = err instanceof Error ? err.message : t('autoAssign.messages.loadError')
   } finally {
