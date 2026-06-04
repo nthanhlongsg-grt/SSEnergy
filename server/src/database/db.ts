@@ -166,6 +166,7 @@ db.exec(`
     ticket_id INTEGER NOT NULL,
     user_id INTEGER NOT NULL,
     comment TEXT NOT NULL,
+    is_internal INTEGER DEFAULT 0,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (ticket_id) REFERENCES tickets(id) ON DELETE CASCADE,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE

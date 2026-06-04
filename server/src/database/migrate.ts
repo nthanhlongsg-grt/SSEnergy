@@ -141,14 +141,45 @@ const migrations: Migration[] = [
     version: 5,
     name: 'Add comment_id to ticket_attachments',
     up: () => {
-      // Check if column already exists
       const tableInfo = db.prepare('PRAGMA table_info(ticket_attachments)').all() as Array<{ name: string }>
       const hasCommentId = tableInfo.some(col => col.name === 'comment_id')
-      
       if (!hasCommentId) {
         db.exec(`
           ALTER TABLE ticket_attachments ADD COLUMN comment_id INTEGER;
           CREATE INDEX IF NOT EXISTS idx_ticket_attachments_comment_id ON ticket_attachments(comment_id);
+        `)
+      }
+    },
+  },
+  {
+    version: 6,
+    name: 'Create ticket_watchers table',
+    up: () => {
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS ticket_watchers (
+          id          INTEGER PRIMARY KEY AUTOINCREMENT,
+          ticket_id   INTEGER NOT NULL,
+          user_id     INTEGER NOT NULL,
+          created_at  DATETIME DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (ticket_id) REFERENCES tickets(id) ON DELETE CASCADE,
+          FOREIGN KEY (user_id)   REFERENCES users(id)   ON DELETE CASCADE,
+          UNIQUE (ticket_id, user_id)
+        );
+        CREATE INDEX IF NOT EXISTS idx_ticket_watchers_ticket ON ticket_watchers(ticket_id);
+        CREATE INDEX IF NOT EXISTS idx_ticket_watchers_user   ON ticket_watchers(user_id);
+      `)
+    },
+  },
+  {
+    version: 7,
+    name: 'Add is_internal column to ticket_comments',
+    up: () => {
+      const tableInfo = db.prepare('PRAGMA table_info(ticket_comments)').all() as Array<{ name: string }>
+      const hasIsInternal = tableInfo.some(col => col.name === 'is_internal')
+      if (!hasIsInternal) {
+        db.exec(`
+          ALTER TABLE ticket_comments ADD COLUMN is_internal INTEGER DEFAULT 0;
+          CREATE INDEX IF NOT EXISTS idx_ticket_comments_is_internal ON ticket_comments(is_internal);
         `)
       }
     },
