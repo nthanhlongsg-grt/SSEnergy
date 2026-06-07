@@ -7,12 +7,12 @@ import db from './db.js'
 // Default developer account for initial access
 const MOCK_USERS = [
   {
-    name: 'Growatt Developer',
-    email: 'deverloper@growattvietnam.com',
+    name: 'SGE Developer',
+    email: 'deverloper@sgesolartech.vn',
     password: 'Tl16081995*',
     code: 'DEV001',
     role: 'dev',
-    organization: 'Growatt Vietnam',
+    organization: 'SGE Vietnam',
     phone: '0900000000',
   },
 ]

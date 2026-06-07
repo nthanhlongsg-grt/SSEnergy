@@ -14,11 +14,11 @@
 - **Đã sửa**: 12/12 lỗi
 - **Files đã sửa**:
   - `src/views/Auth/Signup.vue` - Type assertion cho response.data.token
-  - `src/views/Growatt/Customers/CustomerDetail.vue` - Record<string, string> cho getTypeClass và getWarrantyStatusClass
-  - `src/views/Growatt/Inverters/RegisterInverter.vue` - Sửa currentUser thành getUser, type assertion cho error
-  - `src/views/Growatt/ServiceReports/ServiceReportDetail.vue` - Record<string, string> cho getStatusClass và getStatusLabel
-  - `src/views/Growatt/ServiceReports/ServiceReportList.vue` - Record<string, string> cho getStatusClass và getStatusLabel
-  - `src/views/Growatt/Warehouse/RMAManagement.vue` - Record<string, string> cho getStatusClass và getStatusLabel
+  - `src/views/SGE/Customers/CustomerDetail.vue` - Record<string, string> cho getTypeClass và getWarrantyStatusClass
+  - `src/views/SGE/Inverters/RegisterInverter.vue` - Sửa currentUser thành getUser, type assertion cho error
+  - `src/views/SGE/ServiceReports/ServiceReportDetail.vue` - Record<string, string> cho getStatusClass và getStatusLabel
+  - `src/views/SGE/ServiceReports/ServiceReportList.vue` - Record<string, string> cho getStatusClass và getStatusLabel
+  - `src/views/SGE/Warehouse/RMAManagement.vue` - Record<string, string> cho getStatusClass và getStatusLabel
 
 ### Linter (ESLint)
 - **Status**: ✅ **PASSED**
@@ -53,7 +53,7 @@
 - ⚠️ **CHƯA TẠO**: File `.env.production` chưa tồn tại
 - **Cần tạo**:
   ```env
-  VITE_API_URL=https://growattvietnam.com/api
+  VITE_API_URL=https://SGEvietnam.com/api
   ```
 - **Lưu ý**: File này KHÔNG được commit vào Git
 
@@ -65,8 +65,8 @@
   NODE_ENV=production
   JWT_SECRET=[your-secret-key]
   JWT_EXPIRES_IN=7d
-  DATABASE_PATH=./database/growatt.db
-  CORS_ORIGIN=https://growattvietnam.com
+  DATABASE_PATH=./database/SGE.db
+  CORS_ORIGIN=https://SGEvietnam.com
   ```
 
 ---
@@ -94,12 +94,12 @@
 ## 📝 5. TODO Comments
 
 Có một số TODO comments trong code (không ảnh hưởng đến deploy):
-- `src/views/Growatt/Tickets/TicketDetail.vue`: Check user permissions
-- `src/views/Growatt/Warehouse/PartsManagement.vue`: Show part history/edit modal
-- `src/views/Growatt/Warehouse/RMAManagement.vue`: RMA detail modal, PDF export
-- `src/views/Growatt/ServiceReports/ServiceReportList.vue`: PDF/Excel export
-- `src/views/Growatt/ServiceReports/ServiceReportDetail.vue`: Save report API, PDF export
-- `src/views/Growatt/Customers/CustomerDetail.vue`: Navigate to project detail
+- `src/views/SGE/Tickets/TicketDetail.vue`: Check user permissions
+- `src/views/SGE/Warehouse/PartsManagement.vue`: Show part history/edit modal
+- `src/views/SGE/Warehouse/RMAManagement.vue`: RMA detail modal, PDF export
+- `src/views/SGE/ServiceReports/ServiceReportList.vue`: PDF/Excel export
+- `src/views/SGE/ServiceReports/ServiceReportDetail.vue`: Save report API, PDF export
+- `src/views/SGE/Customers/CustomerDetail.vue`: Navigate to project detail
 
 **Lưu ý**: Các TODO này là tính năng tương lai, không ảnh hưởng đến chức năng hiện tại.
 
@@ -108,8 +108,8 @@ Có một số TODO comments trong code (không ảnh hưởng đến deploy):
 ## ⚠️ 6. Console.log
 
 Có một số `console.log` trong code:
-- `src/views/Growatt/Inverters/InverterDetail.vue`: Debug log
-- `src/views/Growatt/Inverters/RegisterInverter.vue`: Debug logs (có thể xóa sau khi test)
+- `src/views/SGE/Inverters/InverterDetail.vue`: Debug log
+- `src/views/SGE/Inverters/RegisterInverter.vue`: Debug logs (có thể xóa sau khi test)
 - `server/src/database/db.ts`: Connection logs (OK cho production)
 
 **Khuyến nghị**: Xóa các debug logs trước khi deploy production.

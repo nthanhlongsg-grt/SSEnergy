@@ -57,7 +57,7 @@ function getLocalIP() {
 // Display results
 function displayLANInfo() {
   console.log('\n' + '='.repeat(60));
-  console.log('🌐 Growatt LAN Access Information'.padEnd(60));
+  console.log('🌐 SGE LAN Access Information'.padEnd(60));
   console.log('='.repeat(60) + '\n');
   
   const primaryIP = getLocalIP();

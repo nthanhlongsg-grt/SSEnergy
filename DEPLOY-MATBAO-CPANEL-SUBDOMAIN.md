@@ -2,8 +2,8 @@
 
 Tài liệu này chuẩn hóa deploy cho mô hình:
 
-- Frontend: `https://growattvietnam.com`
-- Backend API: `https://api.growattvietnam.com`
+- Frontend: `https://SGEvietnam.com`
+- Backend API: `https://api.SGEvietnam.com`
 
 ## 1) Kiến trúc deploy
 
@@ -12,13 +12,13 @@ Tài liệu này chuẩn hóa deploy cho mô hình:
 - Frontend gọi API qua biến môi trường:
 
 ```env
-VITE_API_URL=https://api.growattvietnam.com/api
+VITE_API_URL=https://api.SGEvietnam.com/api
 ```
 
 ## 2) Pre-deploy checklist
 
 - cPanel có Node.js App (Node 18+).
-- Đã tạo subdomain `api.growattvietnam.com`.
+- Đã tạo subdomain `api.SGEvietnam.com`.
 - SSL đã bật cho cả domain chính và subdomain API.
 - Có SSH hoặc File Manager để upload.
 
@@ -61,8 +61,8 @@ Thiết lập trong Node.js App (không commit file `.env` thật):
 NODE_ENV=production
 JWT_SECRET=<strong-random-secret>
 JWT_EXPIRES_IN=7d
-DATABASE_PATH=./database/growatt.db
-CORS_ORIGIN=https://growattvietnam.com,https://www.growattvietnam.com
+DATABASE_PATH=./database/SGE.db
+CORS_ORIGIN=https://SGEvietnam.com,https://www.SGEvietnam.com
 TZ=Asia/Ho_Chi_Minh
 ```
 
@@ -76,20 +76,20 @@ Lưu ý:
 Tại root project trước khi build frontend:
 
 ```env
-VITE_API_URL=https://api.growattvietnam.com/api
+VITE_API_URL=https://api.SGEvietnam.com/api
 ```
 
 ## 7) Health check và smoke test
 
 Sau khi restart backend:
 
-1. `https://api.growattvietnam.com/health`
-2. `https://api.growattvietnam.com/api/health`
+1. `https://api.SGEvietnam.com/health`
+2. `https://api.SGEvietnam.com/api/health`
 
 Cả 2 endpoint đều phải trả:
 
 ```json
-{"status":"ok","message":"Growatt API is running"}
+{"status":"ok","message":"SGE API is running"}
 ```
 
 ## 8) Go-live checklist
@@ -106,7 +106,7 @@ Cả 2 endpoint đều phải trả:
 
 Backup hằng ngày:
 
-- `database/growatt.db` (+ `growatt.db-wal` nếu có)
+- `database/SGE.db` (+ `SGE.db-wal` nếu có)
 - thư mục `reports/`
 
 Rollback nhanh:

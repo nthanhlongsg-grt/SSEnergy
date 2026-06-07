@@ -1,4 +1,4 @@
-# Quy Tắc và Quyền Hạn của User trong Hệ Thống Growatt
+# Quy Tắc và Quyền Hạn của User trong Hệ Thống SGE
 
 ## 1. Các User Role
 
@@ -235,7 +235,7 @@ Hệ thống có **9 loại user role**:
 - Có thể edit ticket data trực tiếp
 
 ### 8.2. System User Masking
-- Users có email `system@growatt.vn` hoặc name chứa "System" sẽ bị mask thông tin
+- Users có email `system@SGE.vn` hoặc name chứa "System" sẽ bị mask thông tin
 - Customer information (customer_name, customer_email) KHÔNG bị mask
 
 ### 8.3. Watchers

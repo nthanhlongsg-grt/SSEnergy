@@ -1,6 +1,6 @@
-# Growatt After-Sales Management System
+# SGE After-Sales Management System
 
-Hệ thống quản lý hậu mãi cho sản phẩm Growatt - Quản lý tickets, kỹ thuật viên, lịch trình, kho hàng và báo cáo dịch vụ.
+Hệ thống quản lý hậu mãi cho sản phẩm SGE - Quản lý tickets, kỹ thuật viên, lịch trình, kho hàng và báo cáo dịch vụ.
 
 ## 🚀 Tính năng chính
 
@@ -73,8 +73,8 @@ stop-dev.bat
 
 Sau khi chạy migration, tài khoản developer sẽ được tạo:
 
-- **Email**: `developer@growattvietnam.com`
-- **Password**: `Growatt2025` (script `npm run db:add:developer` cũng in lại trên console)
+- **Email**: `developer@SGEvietnam.com`
+- **Password**: `SGE2025` (script `npm run db:add:developer` cũng in lại trên console)
 
 ## 📁 Cấu trúc dự án
 
@@ -157,7 +157,7 @@ MIT License
 
 ## 👨‍💻 Tác giả
 
-Growatt Development Team
+SGE Development Team
 
 ---
 

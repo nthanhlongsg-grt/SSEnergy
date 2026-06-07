@@ -18,6 +18,8 @@ import distributorRoutes from './routes/distributors.js'
 import reportRoutes from './routes/reports.js'
 import slaSettingsRoutes from './routes/sla-settings.js'
 import autoAssignSettingsRoutes from './routes/auto-assign-settings.js'
+import contractRoutes from './routes/contracts.js'
+import quotationRoutes from './routes/quotation.js'
 import { formatTimestampsInResponse } from './utils/dateTime.js'
 import { maskSystemData } from './utils/systemUser.js'
 import './database/db.js' // Initialize database
@@ -27,40 +29,59 @@ dotenv.config()
 
 const app = express()
 const PORT = parseInt(process.env.PORT || '3000', 10)
+const NODE_ENV = process.env.NODE_ENV || 'development'
+const IS_PRODUCTION = NODE_ENV === 'production'
 const CORS_ORIGIN = process.env.CORS_ORIGIN || 'http://localhost:5173'
 const TZ = process.env.TZ || 'Asia/Ho_Chi_Minh'
 const explicitCorsOrigins = CORS_ORIGIN.split(',')
   .map((origin) => origin.trim())
   .filter(Boolean)
 
+const PRODUCTION_ORIGIN_PATTERNS = [
+  /^https:\/\/([a-z0-9-]+\.)*sgesolartech\.vn$/,
+]
+
 // Set timezone for the entire Node.js process to Vietnam timezone (UTC+7)
 process.env.TZ = TZ
 
+if (IS_PRODUCTION) {
+  app.set('trust proxy', 1)
+}
+
 // Middleware
-// Allow CORS from localhost and LAN IPs
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff')
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN')
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin')
+  next()
+})
+
+// Allow CORS from localhost, LAN, and configured production origins
 app.use(cors({
   origin: function (origin, callback) {
-    // Allow requests with no origin (mobile apps, Postman, etc.)
+    // Allow requests with no origin (mobile apps, Postman, server-to-server)
     if (!origin) return callback(null, true)
-    
-    // Allow localhost and LAN IPs (192.168.x.x, 10.x.x.x, 172.16-31.x.x)
-    const allowedOrigins = [
+
+    const allowedOrigins: Array<string | RegExp> = [
       'http://localhost:5173',
       'http://127.0.0.1:5173',
       /^http:\/\/192\.168\.\d+\.\d+:5173$/,
       /^http:\/\/10\.\d+\.\d+\.\d+:5173$/,
       /^http:\/\/172\.(1[6-9]|2[0-9]|3[0-1])\.\d+\.\d+:5173$/,
       ...explicitCorsOrigins,
+      ...PRODUCTION_ORIGIN_PATTERNS,
     ]
-    
-    const isAllowed = allowedOrigins.some(allowed => {
+
+    const isAllowed = allowedOrigins.some((allowed) => {
       if (typeof allowed === 'string') {
         return origin === allowed
       }
       return allowed.test(origin)
     })
-    
+
     if (isAllowed) {
+      callback(null, true)
+    } else if (!IS_PRODUCTION) {
       callback(null, true)
     } else {
       callback(new Error('Not allowed by CORS'))
@@ -89,10 +110,10 @@ app.use((req, res, next) => {
 
 // Health check
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', message: 'Growatt API is running' })
+  res.json({ status: 'ok', message: 'SGE API is running' })
 })
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', message: 'Growatt API is running' })
+  res.json({ status: 'ok', message: 'SGE API is running' })
 })
 
 // Routes
@@ -113,6 +134,8 @@ app.use('/api/distributors', distributorRoutes)
 app.use('/api/reports', reportRoutes)
 app.use('/api/sla-settings', slaSettingsRoutes)
 app.use('/api/auto-assign-settings', autoAssignSettingsRoutes)
+app.use('/api/contracts', contractRoutes)
+app.use('/api/quotation', quotationRoutes)
 
 // Error handling middleware
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
@@ -129,9 +152,11 @@ app.use((req, res) => {
 initCountColumns()
 
 app.listen(PORT, '0.0.0.0', async () => {
-  console.log(`🚀 Server is running on http://localhost:${PORT}`)
-  console.log(`🌐 Server is accessible on LAN at http://<your-ip>:${PORT}`)
-  console.log(`📡 CORS enabled for: ${CORS_ORIGIN}`)
+  console.log(`🚀 Server is running (${NODE_ENV}) on port ${PORT}`)
+  if (!IS_PRODUCTION) {
+    console.log(`🌐 LAN: http://<your-ip>:${PORT}`)
+  }
+  console.log(`📡 CORS: ${CORS_ORIGIN}`)
   
   // Sync all user counts on server start
   try {

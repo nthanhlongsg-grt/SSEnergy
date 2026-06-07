@@ -4,7 +4,7 @@
 
 - [ ] Backend build thành công (`cd server && npm run build`)
 - [ ] Frontend build thành công (`npm run build`)
-- [ ] Tạo file `.env.production` với `VITE_API_URL=https://growattvietnam.com/api`
+- [ ] Tạo file `.env.production` với `VITE_API_URL=https://SGEvietnam.com/api`
 - [ ] Rebuild frontend với production environment
 - [ ] Kiểm tra không có lỗi TypeScript
 - [ ] Kiểm tra không có lỗi CSS
@@ -53,8 +53,8 @@
 
 ## ✅ Testing
 
-- [ ] Backend health check: `https://growattvietnam.com/api/health`
-- [ ] Frontend load: `https://growattvietnam.com`
+- [ ] Backend health check: `https://SGEvietnam.com/api/health`
+- [ ] Frontend load: `https://SGEvietnam.com`
 - [ ] Login/Register hoạt động
 - [ ] API calls thành công (check Network tab)
 - [ ] Routing hoạt động (thử refresh trang)

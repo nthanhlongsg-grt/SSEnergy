@@ -22,6 +22,7 @@ export interface Inverter {
   customer_name?: string
   customer_email?: string
   distributor_name?: string
+  contract_numbers?: string
 }
 
 export interface CreateInverterDto {

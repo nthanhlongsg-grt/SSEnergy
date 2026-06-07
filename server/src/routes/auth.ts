@@ -5,6 +5,7 @@ import db from '../database/db.js'
 import { LoginDto, AuthResponse } from '../types/index.js'
 import { authenticateToken, AuthRequest } from '../middleware/auth.js'
 import { maskSystemUser } from '../utils/systemUser.js'
+import { getJwtSecret } from '../config/env.js'
 
 const router = Router()
 
@@ -33,7 +34,7 @@ router.post('/login', async (req, res) => {
       return res.status(403).json({ error: 'Account is not active' })
     }
 
-    const jwtSecret: string = process.env.JWT_SECRET || 'your-secret-key'
+    const jwtSecret: string = getJwtSecret()
     const expiresIn = process.env.JWT_EXPIRES_IN || '7d'
     const token = jwt.sign(
       { id: user.id, email: user.email, role: user.role },
@@ -144,7 +145,7 @@ router.post('/register', async (req, res) => {
     `).get(userId) as any
 
     // Generate JWT token for auto-login after registration
-    const jwtSecret: string = process.env.JWT_SECRET || 'your-secret-key'
+    const jwtSecret: string = getJwtSecret()
     const expiresIn = process.env.JWT_EXPIRES_IN || '7d'
     const token = jwt.sign(
       { id: newUser.id, email: newUser.email, role: newUser.role },

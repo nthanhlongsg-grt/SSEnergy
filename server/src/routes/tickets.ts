@@ -10,6 +10,8 @@ import path from 'path'
 import { fileURLToPath } from 'url'
 import { generateReportHTML } from '../templates/report-template.js'
 import { AUTO_ASSIGN_KEYS } from './auto-assign-settings.js'
+import { resolveStaffFunction, AUTO_ASSIGN_STAFF_ROLES } from '../utils/staffFunction.js'
+import { generateLegacyTicketNumber, generateTicketNumber } from '../utils/ticketNumber.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -43,6 +45,23 @@ const getSlaHoursByPriority = (priority?: string): number => {
   }
 
   return DEFAULT_SLA_HOURS_BY_PRIORITY[normalizedPriority]
+}
+
+/** Khách hàng từ hợp đồng liên kết (ưu tiên) hoặc customer_id trực tiếp trên máy */
+const getCustomerIdForInverter = (inverterId: number): number | null => {
+  const row = db.prepare(`
+    SELECT COALESCE(
+      (SELECT cu.id
+       FROM contract_inverters ci
+       JOIN contracts ct ON ct.id = ci.contract_id
+       JOIN customers cu ON cu.id = ct.customer_id
+       WHERE ci.inverter_id = ?
+       ORDER BY ct.updated_at DESC, ci.contract_id DESC
+       LIMIT 1),
+      (SELECT customer_id FROM inverters WHERE id = ?)
+    ) AS customer_id
+  `).get(inverterId, inverterId) as { customer_id: number | null } | undefined
+  return row?.customer_id ?? null
 }
 
 // Get ticket statistics
@@ -416,8 +435,27 @@ router.get('/:id', authenticateToken, (req, res) => {
              c.email as customer_email,
              c.phone as customer_phone,
              c.user_id as customer_user_id,
+             (SELECT ct.id
+              FROM contract_inverters ci
+              JOIN contracts ct ON ct.id = ci.contract_id
+              WHERE ci.inverter_id = t.inverter_id
+              ORDER BY ct.updated_at DESC, ci.contract_id DESC
+              LIMIT 1) AS contract_id,
+             (SELECT ct.contract_number
+              FROM contract_inverters ci
+              JOIN contracts ct ON ct.id = ci.contract_id
+              WHERE ci.inverter_id = t.inverter_id
+              ORDER BY ct.updated_at DESC, ci.contract_id DESC
+              LIMIT 1) AS contract_number,
+             (SELECT ct.title
+              FROM contract_inverters ci
+              JOIN contracts ct ON ct.id = ci.contract_id
+              WHERE ci.inverter_id = t.inverter_id
+              ORDER BY ct.updated_at DESC, ci.contract_id DESC
+              LIMIT 1) AS contract_title,
              i.serial_number as inverter_serial,
              i.model as inverter_model,
+             COALESCE(NULLIF(TRIM(i.manufacturer), ''), m.manufacturer, '') AS inverter_manufacturer,
              i.user_id as inverter_user_id,
              i.warranty_end_date as inverter_warranty_end_date,
              u1.name as assigned_to_name,
@@ -431,6 +469,7 @@ router.get('/:id', authenticateToken, (req, res) => {
       FROM tickets t
       LEFT JOIN customers c ON t.customer_id = c.id
       LEFT JOIN inverters i ON t.inverter_id = i.id
+      LEFT JOIN models m ON m.name = i.model
       LEFT JOIN users u1 ON t.assigned_to = u1.id
       LEFT JOIN users u2 ON t.created_by = u2.id
       WHERE t.id = ?
@@ -564,12 +603,12 @@ router.get('/:id', authenticateToken, (req, res) => {
       ORDER BY tw.created_at ASC
     `).all(ticketId) as any[]
 
-    // Get attachments
+    // Get attachments (exclude images/files linked to comments)
     const attachments = db.prepare(`
       SELECT ta.*, u.name as uploaded_by_name
       FROM ticket_attachments ta
       LEFT JOIN users u ON ta.uploaded_by = u.id
-      WHERE ta.ticket_id = ?
+      WHERE ta.ticket_id = ? AND ta.comment_id IS NULL
       ORDER BY ta.created_at DESC
     `).all(ticketId)
 
@@ -652,21 +691,28 @@ router.post('/', authenticateToken, (req: AuthRequest, res) => {
         finalCustomerId = customerResult.lastInsertRowid as number
       }
     } else {
-      // For ADMIN/TECHNICIAN: customer_id must be provided
-      // If not provided, try to get from inverter
+      // For ADMIN/TECHNICIAN: customer_id from body, or from hợp đồng/thiết bị
       if (!finalCustomerId && inverter_id) {
-        const inverter = db.prepare('SELECT customer_id FROM inverters WHERE id = ?').get(inverter_id) as { customer_id: number | null } | undefined
-        if (inverter?.customer_id) {
-          finalCustomerId = inverter.customer_id
-        }
+        finalCustomerId = getCustomerIdForInverter(Number(inverter_id)) ?? undefined
       }
     }
 
+    finalCustomerId = finalCustomerId ? Number(finalCustomerId) : undefined
+
     if (!finalCustomerId) {
-      return res.status(400).json({ error: 'Customer ID is required. Please select a customer or ensure the inverter has an assigned customer.' })
+      return res.status(400).json({ error: 'Không xác định được khách hàng. Thiết bị cần thuộc hợp đồng có khách hàng.' })
     }
 
-    const ticketNumber = `TKT-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`
+    let ticketNumber: string
+    if (inverter_id) {
+      try {
+        ticketNumber = generateTicketNumber(Number(inverter_id))
+      } catch (err: any) {
+        return res.status(400).json({ error: err.message || 'Không tạo được mã ticket' })
+      }
+    } else {
+      ticketNumber = generateLegacyTicketNumber()
+    }
 
     // Calculate SLA deadline from settings (fallback to defaults if not configured)
     const slaHours = getSlaHoursByPriority(priority)
@@ -679,10 +725,13 @@ router.post('/', authenticateToken, (req: AuthRequest, res) => {
       let targetFunction: string | null = null
       
       // Normalize category (support both camelCase and snake_case)
-      const normalizedCategory = category.replace(/_/g, '')
+      const normalizedCategory = String(category).replace(/_/g, '')
       
       // Map ticket category to technician function
       switch (normalizedCategory.toLowerCase()) {
+        case 'repair':
+          targetFunction = 'repair' // Sửa chữa
+          break
         case 'warranty':
           targetFunction = 'repair' // Bảo hành → Sửa chữa
           break
@@ -706,13 +755,13 @@ router.post('/', authenticateToken, (req: AuthRequest, res) => {
           const configuredUserId = setting?.value ? Number(setting.value) : null
 
           if (configuredUserId && Number.isInteger(configuredUserId)) {
-            // Verify the configured user is still active and has the matching function
+            const rolePlaceholders = AUTO_ASSIGN_STAFF_ROLES.map(() => '?').join(', ')
             const configuredUser = db.prepare(`
-              SELECT id FROM users
-              WHERE id = ? AND role IN (?, ?, ?) AND status = 'active' AND function = ?
-            `).get(configuredUserId, UserRole.TECHNICIAN, UserRole.ADMIN, UserRole.DEV, targetFunction) as { id: number } | undefined
+              SELECT id, role, function FROM users
+              WHERE id = ? AND role IN (${rolePlaceholders}) AND status = 'active'
+            `).get(configuredUserId, ...AUTO_ASSIGN_STAFF_ROLES) as { id: number; role: string; function: string | null } | undefined
 
-            if (configuredUser) {
+            if (configuredUser && resolveStaffFunction(configuredUser.role, configuredUser.function) === targetFunction) {
               assignedTechnicianId = configuredUser.id
               console.log(`✅ [POST /tickets] Auto-assigned to configured staff ID ${assignedTechnicianId} (function: ${targetFunction})`)
             } else {
@@ -751,13 +800,14 @@ router.post('/', authenticateToken, (req: AuthRequest, res) => {
       slaDeadline.toISOString()
     )
 
-    const ticketId = result.lastInsertRowid as number
+    const ticketId = Number(result.lastInsertRowid)
     
     // Sync ticket data (populate denormalized fields)
     syncTicketData(ticketId)
 
     const newTicket = db.prepare('SELECT * FROM tickets WHERE id = ?').get(ticketId) as any
 
+    try {
     // Notify admins and service center
     notifyUsersByRoles(
       [UserRole.ADMIN, UserRole.DEV, UserRole.SERVICE_CENTER],
@@ -786,7 +836,6 @@ router.post('/', authenticateToken, (req: AuthRequest, res) => {
     
     // Gửi notification cho customer (user_id của customer)
     if (customerUserId && customerUserId !== fullUser.id) {
-      // Ticket được tạo cho customer khác (ví dụ: dev tạo cho customer)
       createNotification(customerUserId, {
         type: 'ticket_created',
         title: `Ticket ${newTicket.ticket_number} đã được tạo`,
@@ -799,21 +848,24 @@ router.post('/', authenticateToken, (req: AuthRequest, res) => {
           category,
         },
       })
-    } else if (authUser.role === UserRole.END_USER || authUser.role === UserRole.DISTRIBUTOR) {
-      // Ticket được tạo bởi chính customer (END_USER hoặc DISTRIBUTOR tự tạo)
-      createNotification(fullUser.id, {
-        type: 'ticket_created',
-        title: `Ticket ${newTicket.ticket_number} đã được tạo`,
-        message: `Ticket "${title}" của bạn đã được tạo thành công${assignedTechnicianId ? ' và đã được phân công cho kỹ thuật viên' : ''}`,
-        entityType: 'ticket',
-        entityId: ticketId,
-        data: {
-          ticket_number: newTicket.ticket_number,
-          priority,
-          category,
-        },
-      })
     }
+
+    const isEndUserOrDistributor =
+      authUser.role === UserRole.END_USER || authUser.role === UserRole.DISTRIBUTOR
+    createNotification(fullUser.id, {
+      type: 'ticket_created',
+      title: `Ticket ${newTicket.ticket_number} đã được tạo`,
+      message: isEndUserOrDistributor
+        ? `Ticket "${title}" của bạn đã được tạo thành công${assignedTechnicianId ? ' và đã được phân công cho kỹ thuật viên' : ''}`
+        : `Bạn đã tạo ticket "${title}" (${newTicket.ticket_number}) thành công`,
+      entityType: 'ticket',
+      entityId: ticketId,
+      data: {
+        ticket_number: newTicket.ticket_number,
+        priority,
+        category,
+      },
+    })
 
     // Notify assigned technician if ticket was auto-assigned
     if (assignedTechnicianId) {
@@ -851,11 +903,15 @@ router.post('/', authenticateToken, (req: AuthRequest, res) => {
     if (assignedTechnicianId) {
       syncTicketRelatedCounts(ticketId, undefined, assignedTechnicianId)
     }
+    } catch (notifyErr) {
+      console.error('Ticket notification error (ticket still created):', notifyErr)
+    }
 
     res.status(201).json(newTicket)
   } catch (error) {
     console.error('Create ticket error:', error)
-    res.status(500).json({ error: 'Internal server error' })
+    const message = error instanceof Error ? error.message : 'Internal server error'
+    res.status(500).json({ error: message })
   }
 })
 
@@ -898,9 +954,31 @@ router.put('/:id', authenticateToken, (req, res) => {
       return res.status(403).json({ error: 'Access denied' })
     }
 
-    // Only DEV can update customer_id, inverter_id, and created_at
-    if ((customer_id !== undefined || inverter_id !== undefined || created_at !== undefined) && !isDev) {
-      return res.status(403).json({ error: 'Only developers can update customer, device, or created date' })
+    // Snapshot fields (ticket / customer / device) are fixed after creation
+    if (customer_id !== undefined && Number(customer_id) !== ticket.customer_id) {
+      return res.status(403).json({ error: 'Không thể thay đổi khách hàng của ticket' })
+    }
+    if (inverter_id !== undefined) {
+      const requestedInverterId =
+        inverter_id === null || inverter_id === '' ? null : Number(inverter_id)
+      if (requestedInverterId !== ticket.inverter_id) {
+        return res.status(403).json({ error: 'Không thể thay đổi thiết bị của ticket' })
+      }
+    }
+    if (created_at !== undefined && created_at !== null && created_at !== '') {
+      return res.status(403).json({ error: 'Không thể thay đổi ngày tạo ticket' })
+    }
+    if (category !== undefined && category !== ticket.category) {
+      return res.status(403).json({ error: 'Không thể thay đổi loại ticket' })
+    }
+    if (priority !== undefined && priority !== ticket.priority) {
+      return res.status(403).json({ error: 'Không thể thay đổi mức ưu tiên ticket' })
+    }
+    if (title !== undefined && title !== ticket.title) {
+      return res.status(403).json({ error: 'Không thể thay đổi tiêu đề ticket' })
+    }
+    if (description !== undefined && description !== ticket.description) {
+      return res.status(403).json({ error: 'Không thể thay đổi mô tả ticket' })
     }
 
     // TECHNICIAN and ADMIN can always change assigned_to (except for closed/completed tickets)
@@ -1751,9 +1829,16 @@ router.post('/import', authenticateToken, async (req, res) => {
           }
         }
 
-        const timestamp = Date.now()
-        const random = Math.floor(Math.random() * 1000)
-        const ticketNumber = `TKT-${new Date().getFullYear()}-${String(timestamp).slice(-6)}-${String(random).padStart(3, '0')}`
+        let ticketNumber: string
+        if (inverterId) {
+          try {
+            ticketNumber = generateTicketNumber(Number(inverterId))
+          } catch {
+            ticketNumber = generateLegacyTicketNumber()
+          }
+        } else {
+          ticketNumber = generateLegacyTicketNumber()
+        }
         const priority = ticketData.priority || 'medium'
         
         // Calculate SLA deadline from settings (fallback to defaults if not configured)
@@ -1966,17 +2051,17 @@ router.post('/:id/generate-report', authenticateToken, (req: AuthRequest, res) =
       const projectRoot = path.join(reportsDir, '../..')
       
       // Try new logo first, then fallback to old logo
-      let logoSourcePath = path.join(projectRoot, 'public/images/logo/growatt-logo.png')
+      let logoSourcePath = path.join(projectRoot, 'public/images/logo/SGE-logo.png')
       if (!fs.existsSync(logoSourcePath)) {
         logoSourcePath = path.join(projectRoot, 'public/images/logo/logo.png')
       }
       if (fs.existsSync(logoSourcePath)) {
         // Copy logo to reports directory
-        const logoFileName = 'growatt-logo.png'
+        const logoFileName = 'SGE-logo.png'
         const logoDestPath = path.join(reportsDir, logoFileName)
         fs.copyFileSync(logoSourcePath, logoDestPath)
         // Use full URL path for logo in HTML
-        logoUrl = '/api/tickets/reports/growatt-logo.png'
+        logoUrl = '/api/tickets/reports/SGE-logo.png'
         console.log('Logo copied successfully from', logoSourcePath, 'to', logoDestPath)
       } else {
         console.warn('Logo file not found. Tried:', logoSourcePath)
@@ -2092,10 +2177,10 @@ router.post('/:id/attachments', authenticateToken, async (req, res) => {
 })
 
 // Serve logo file from reports directory
-router.get('/reports/growatt-logo.png', (req, res) => {
+router.get('/reports/SGE-logo.png', (req, res) => {
   try {
     const reportsDir = path.join(__dirname, '../../reports')
-    const logoPath = path.join(reportsDir, 'growatt-logo.png')
+    const logoPath = path.join(reportsDir, 'SGE-logo.png')
     
     if (!fs.existsSync(logoPath)) {
       return res.status(404).send('Logo not found')

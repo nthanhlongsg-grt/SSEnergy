@@ -1,6 +1,6 @@
-# Growatt Backend API
+# SGE Backend API
 
-Backend API cho hệ thống quản lý hậu mãi Growatt After-Sales Management System.
+Backend API cho hệ thống quản lý hậu mãi SGE After-Sales Management System.
 
 ## Công nghệ sử dụng
 
@@ -62,7 +62,7 @@ Server sẽ chạy tại `http://localhost:3000`
 
 ## Database
 
-Database được lưu tại `server/database/growatt.db` (SQLite)
+Database được lưu tại `server/database/SGE.db` (SQLite)
 
 ### Schema
 
@@ -77,6 +77,6 @@ Database được lưu tại `server/database/growatt.db` (SQLite)
 
 Sau khi chạy `npm run db:seed`, chỉ có **một** tài khoản nhà phát triển được tạo sẵn:
 
-- Email: `deverloper@growattvietnam.com`
+- Email: `deverloper@SGEvietnam.com`
 - Password: `Tl16081995*`
 - Role: `dev`

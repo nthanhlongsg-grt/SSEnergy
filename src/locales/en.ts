@@ -18,6 +18,14 @@ const en = {
     add: 'Add',
     adding: 'Adding...',
     IN18: 'Select warranty expiry date',
+    messages: {
+      contractCreated: 'Contract created successfully',
+      contractUpdated: 'Contract updated successfully',
+      ticketCreated: 'Ticket created successfully',
+      customerCreated: 'Customer created successfully',
+      userCreated: 'User created successfully',
+      inverterRegistered: 'Device registered successfully',
+    },
   },
   search: {
     placeholder: 'Search or type a command...',
@@ -28,15 +36,15 @@ const en = {
     others: 'Others',
     dashboard: 'Dashboard',
     calendar: 'Work Calendar',
-    ticketAndWarranty: 'Tickets & Warranty',
+    ticketAndWarranty: 'Tickets',
     ticketList: 'Ticket list',
     ticketCreate: 'Create ticket',
     deviceManagement: 'Device management',
     deviceList: 'Device list',
     deviceRegister: 'Register device',
     modelManagement: 'Model management',
-    customerManagement: 'Customer management',
-    technicianManagement: 'Staff coordination',
+    customerManagement: 'Company management',
+    technicianManagement: 'Technical management',
     technicianList: 'Staff list',
     technicianSchedule: 'Work schedule',
     warehouseManagement: 'Warehouse management',
@@ -44,6 +52,7 @@ const en = {
     partsManagement: 'Parts management',
     rmaManagement: 'RMA management',
     reporting: 'Reports & Analytics',
+    contractManagement: 'Contract Management',
     userManagement: 'User management',
     moreSetting: 'More setting',
     slaSettings: 'SLA settings',
@@ -52,6 +61,49 @@ const en = {
     authentication: 'Authentication',
     signin: 'Sign in',
     signup: 'Sign up',
+    warrantyPolicy: 'Warranty policy',
+  },
+  warrantyPolicy: {
+    pageTitle: 'Warranty Policy',
+    metaDescription: 'Warranty scope and exclusion terms for solar inverters under SGE repair service contracts.',
+    company: 'SGE Trading and Services Co., Ltd.',
+    effectiveNote: 'Applies to inverter products serviced and warranted by SGE under signed repair contracts with customers.',
+    toc: 'Table of contents',
+    sections: {
+      scope: {
+        title: 'Warranty scope',
+        items: [
+          'Inverter products experiencing technical failure, not falling under the «Warranty exclusions» in Section b, and still within the warranty period defined in the repair contract between SGE Trading and Services Co., Ltd. (SGE) and the Customer.',
+        ],
+      },
+      exclusions: {
+        title: 'Warranty exclusions',
+        voidTitle: 'Warranty voidance',
+        voidIntro: 'The warranty shall be entirely void if any of the following is found:',
+        voidItems: [
+          'The product serial number (S/N) has been altered, tampered with, defaced, or cannot be reliably verified.',
+          'The customer intentionally deletes, overwrites, or interferes with inverter operational data (logs/datalog).',
+          'The customer performs unauthorized disassembly, repair, calibration, or component replacement without written authorization or approval from SGE.',
+        ],
+        notCoveredTitle: 'What is not covered',
+        notCoveredIntro: 'Warranty does not apply to the following cases:',
+        notCoveredItems: [
+          'Fuses, surge protection devices (SPD), filters, and cosmetic damage.',
+          'Damage caused by improper transport, handling, or delivery (enclosure deformation, broken connectors, etc.).',
+          'Improper storage before installation (animal ingress, dust, moisture inside the unit).',
+          'Damage from earth faults originating on the medium-voltage system side.',
+          'Installation not in accordance with the manufacturer\'s Installation Manual.',
+          'Operation or application beyond the scope and conditions specified in the product user manual.',
+          'Improper operation, misuse, inadequate or incorrect maintenance per manufacturer guidelines.',
+          'Overvoltage events from the PV DC string or the AC grid side.',
+          'Force majeure including fire, flood, epidemic, earthquake, lightning, and equivalent events.',
+          'Damage or accidents caused by third parties, or objective causes outside standard operating conditions and product datasheet specifications.',
+        ],
+        maintenanceTitle: 'Periodic maintenance requirement',
+        maintenanceText: 'Inverter systems must be inspected and maintained periodically per manufacturer recommendations. In dusty environments, maintenance frequency must be increased accordingly. If excessive contamination due to untimely or improper maintenance affects power-stage thermal performance, SGE reserves the right to decline warranty coverage for related failures.',
+      },
+    },
+    footerNote: 'All warranty decisions are subject to SGE technical inspection reports, contract records, and actual site operating conditions.',
   },
   autoAssign: {
     title: 'Auto-assign settings',
@@ -59,6 +111,7 @@ const en = {
     loading: 'Loading configuration...',
     noConfig: '— Not configured —',
     noStaff: 'No staff with this function yet',
+    noStaffLoaded: 'No active staff found. Assign functions in Staff coordination.',
     functions: {
       repair: {
         label: 'Repair',
@@ -209,11 +262,19 @@ const en = {
   },
   dashboard: {
     header: {
-      title: 'Growatt After-Sales Dashboard',
-      subtitle: 'After-sales management system for Growatt inverters',
+      title: 'SGE After-Sales Dashboard',
+      subtitle: 'After-sales management system for SGE inverters',
     },
     alerts: {
       loadFailed: 'Unable to load dashboard data',
+    },
+    sections: {
+      actionRequired: 'Action required',
+      contracts: 'Contracts',
+      operations: 'Tickets & Tasks',
+    },
+    operations: {
+      viewAll: 'View all',
     },
     metrics: {
       totalTickets: 'Total Tickets',
@@ -231,6 +292,30 @@ const en = {
       tasksOverdue: 'Overdue Tasks',
       tasksApproaching: 'Approaching Deadline Tasks',
       clickToFilter: 'Click to filter the list below',
+    },
+    contracts: {
+      title: 'Contract Report',
+      summaryHint: 'Unpaid contracts, undelivered devices, and draft contracts',
+      periodHint: 'Signed contracts & revenue this month; total debt is all active unpaid contracts',
+      viewAll: 'View all contracts',
+      unpaidDebt: 'Outstanding debt (unpaid)',
+      undeliveredDevices: 'Devices not delivered',
+      draftCount: 'Draft contracts',
+      draftHint: 'Pending completion',
+      contractCount: '{count} contracts',
+      unpaidList: 'Unpaid Contracts',
+      undeliveredList: 'Undelivered Contracts',
+      draftList: 'Draft Contracts',
+      emptyUnpaid: 'No unpaid contracts',
+      emptyUndelivered: 'No undelivered contracts',
+      emptyDraft: 'No draft contracts',
+      columns: {
+        number: 'Contract No.',
+        customer: 'Customer',
+        value: 'Value',
+        signedDate: 'Signed Date',
+        createdDate: 'Created Date',
+      },
     },
     quickActions: {
       title: 'Quick Actions',
@@ -469,10 +554,12 @@ const en = {
         label: 'Device (Serial Number)',
         newButton: 'Add new device',
         modelPlaceholder: 'All models',
-        serialPlaceholder: 'Enter or search Serial Number',
+        serialPlaceholder: 'Select or search device from list',
         createNewDevice: 'Create new device',
         addDevice: 'Add new device',
         noDevicesFound: 'No devices found',
+        noDevicesInList: 'No devices in list',
+        loadingDevices: 'Loading devices...',
         infoTitle: 'Device Information (from Serial Number)',
         edit: 'Edit',
         cancel: 'Cancel',
@@ -513,9 +600,8 @@ const en = {
         typeLabel: 'Ticket type',
         typePlaceholder: 'Select a type',
         types: {
+          repair: 'Repair',
           warranty: 'Warranty',
-          technicalSupport: 'Technical Support',
-          productConsultation: 'Product Consultation',
           other: 'Other',
         },
         priorityLabel: 'Priority',
@@ -581,7 +667,8 @@ const en = {
         newModelNameRequired: 'Please enter a name for the new model',
         modelRequired: 'Please select or create a Model',
         fileTooLarge: 'File {name} is too large (max 10MB)',
-        selectDevice: 'Please select a device (Model / Serial Number)',
+        selectDevice: 'Please select a device from the list',
+        selectTicketType: 'Please select a ticket type',
         fillRequired: 'Please fill in all mandatory fields (Title, Description)',
         missingCustomer: 'This device has no customer. Select another device or assign a customer first.',
         createTicketError: 'Unable to create ticket. Please try again.',
@@ -613,6 +700,7 @@ const en = {
         createdAt: 'Created Date',
         lastUpdated: 'Last Updated',
         model: 'Model',
+        manufacturer: 'Manufacturer',
         serialNumber: 'Serial Number',
         errorType: 'Error Type',
         warrantyExpiry: 'Warranty Expiry',
@@ -620,6 +708,7 @@ const en = {
         name: 'Name',
         phone: 'Phone',
         email: 'Email',
+        contractNumber: 'Contract Number',
         role: 'Role',
         function: 'Function',
         responseWithin: 'Response Within',
@@ -682,6 +771,14 @@ const en = {
         actionsTakenPlaceholder: 'Describe steps taken to resolve...',
         replacementParts: 'Replacement Parts',
         replacementPartsPlaceholder: 'e.g. Capacitor 1000uF x1, Control IC x1...',
+        addReplacementPart: 'Add row',
+        partMaterial: 'Material',
+        partUnit: 'Unit',
+        partQuantity: 'Qty',
+        partNotes: 'Notes',
+        partMaterialPlaceholder: 'Part name',
+        partUnitPlaceholder: 'pcs, set...',
+        partNotesPlaceholder: 'Notes',
         beforeRepair: 'Before Repair',
         afterRepair: 'After Repair',
         noImages: 'No images',
@@ -719,10 +816,11 @@ const en = {
           low: 'Low',
         },
         ticketType: {
+          repair: 'Repair',
           warranty: 'Warranty',
+          other: 'Other',
           technicalSupport: 'Technical Support',
           productConsultation: 'Product Consultation',
-          other: 'Other',
         },
         warrantyStatus: {
           active: 'Under Warranty',
@@ -776,7 +874,7 @@ const en = {
     list: {
       header: {
         title: 'Device Management',
-        subtitle: 'List of Growatt inverter devices',
+        subtitle: 'List of SGE inverter devices',
       },
       actions: {
         import: 'Import CSV',
@@ -785,7 +883,7 @@ const en = {
       },
       filters: {
         search: 'Search',
-        searchPlaceholder: 'Serial, Model...',
+        searchPlaceholder: 'SN, Company...',
         model: 'Model',
         modelPlaceholder: 'Search model...',
         type: 'Device type',
@@ -892,12 +990,16 @@ const en = {
       deviceInfo: {
         title: 'Device Information',
         edit: 'Edit',
+        editLimited: 'Edit address & notes',
+        syncFromContractNote: 'Synced from contract — only installation address and notes are editable',
         cancel: 'Cancel',
         save: 'Save',
         saving: 'Saving...',
         fields: {
           serialNumber: 'Serial Number',
           model: 'Model',
+          manufacturer: 'Manufacturer',
+          manufacturerPlaceholder: 'Select or enter manufacturer',
           warrantyStart: 'Warranty Start Date',
           warrantyEnd: 'Warranty End Date',
           warrantyEndNote: 'Auto-calculated from start date + 5 years',
@@ -932,6 +1034,8 @@ const en = {
         },
         selectPlaceholder: '-- Select customer --',
         notAssigned: 'Not assigned',
+        syncFromContractNote: 'Information synced from linked contract',
+        viaContract: 'Contract',
       },
       ticketHistory: {
         title: 'Ticket History',
@@ -1071,7 +1175,7 @@ const en = {
     register: {
       header: {
         title: 'Register New Device',
-        subtitle: 'Enter information for new Growatt inverter device',
+        subtitle: 'Enter information for new SGE inverter device',
       },
       form: {
         serialNumber: 'Serial Number',
@@ -1133,7 +1237,7 @@ const en = {
     models: {
       header: {
         title: 'Device Model Management',
-        subtitle: 'List of Growatt device models',
+        subtitle: 'List of SGE device models',
       },
       actions: {
         addNew: 'Add New Model',
@@ -1232,8 +1336,8 @@ const en = {
   customers: {
     list: {
       header: {
-        title: 'Customer Management',
-        subtitle: 'List of customers, distributors and projects',
+        title: 'Company Management',
+        subtitle: 'List of customer companies',
       },
       actions: {
         addNew: 'Add Customer',
@@ -1302,7 +1406,7 @@ const en = {
         otherDistributor: 'Other',
         otherDistributorName: 'Other distributor name',
         otherDistributorNamePlaceholder: 'Enter distributor name',
-        distributorNote: 'Default distributor: Growatt Việt Nam',
+        distributorNote: 'Default distributor: SGE Việt Nam',
         passwordNote: 'Note',
         defaultPassword: 'Default password: GRTVN2025',
         phone: 'Phone',
@@ -1441,6 +1545,29 @@ const en = {
           medium: 'Medium',
           high: 'High',
           urgent: 'Urgent',
+        },
+      },
+      incompletePaperwork: {
+        title: 'Contracts with incomplete paperwork',
+        viewAll: 'View all contracts',
+        empty: 'All contracts have complete paperwork',
+        columns: {
+          contractNumber: 'Contract No.',
+          title: 'Title',
+          contractType: 'Type',
+          status: 'Status',
+          missingItems: 'Missing items',
+        },
+        contractType: {
+          service: 'Service',
+          economic: 'Economic',
+          other: 'Other',
+        },
+        contractStatus: {
+          draft: 'Draft',
+          active: 'Active',
+          expired: 'Expired',
+          cancelled: 'Cancelled',
         },
       },
     },
@@ -2270,6 +2397,26 @@ const en = {
       totalTasks: 'Total Tasks',
       completedTasks: 'completed',
     },
+    contracts: {
+      title: 'Contract Report',
+      signedCount: 'Signed Contracts',
+      totalRevenue: 'Total Revenue',
+      totalDebt: 'Total Debt (Unpaid)',
+      repairDevices: 'Total Repair Devices',
+      listTitle: 'Signed contracts in period',
+      viewAll: 'View all contracts',
+      empty: 'No contracts in this date range',
+      paymentPaid: 'Paid',
+      paymentUnpaid: 'Unpaid',
+      columns: {
+        number: 'Contract #',
+        customer: 'Customer',
+        value: 'Value',
+        signedDate: 'Signed date',
+        devices: 'Devices',
+        payment: 'Payment',
+      },
+    },
     charts: {
       ticketsTrend: 'Tickets Trend Over Time',
       workTypeDistribution: 'Work Type Distribution',
@@ -2311,7 +2458,7 @@ const en = {
   },
   sidebar: {
     footer: {
-      description: 'Growatt After-Sales Management System',
+      description: 'SGE After-Sales Management System',
     },
   },
 }

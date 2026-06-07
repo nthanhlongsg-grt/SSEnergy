@@ -319,7 +319,9 @@ export const syncDistributorToUser = (distributorId: number) => {
  * Main function to call when user is created/updated
  */
 export const syncUserData = (userId: number) => {
-  syncUserToCustomers(userId)
+  // Note: users are NOT auto-synced into the customers (company) table anymore.
+  // Companies are managed as separate entities; a user can be the contact person
+  // of multiple companies, so creating a company per user would be incorrect.
   syncUserToDistributors(userId)
 }
 

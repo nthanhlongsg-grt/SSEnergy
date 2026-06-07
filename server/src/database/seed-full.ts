@@ -3,12 +3,12 @@ import db from './db.js'
 
 const MOCK_USERS = [
   {
-    name: 'Growatt Developer',
-    email: 'deverloper@growattvietnam.com',
+    name: 'SGE Developer',
+    email: 'deverloper@sgesolartech.vn',
     password: 'Tl16081995*',
     code: 'DEV001',
     role: 'dev',
-    organization: 'Growatt Vietnam',
+    organization: 'SGE Vietnam',
     phone: '0900000000',
   },
 ]
@@ -155,11 +155,11 @@ const seedWarehouseParts = () => {
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `)
 
-    stmt.run('PN-MPPT-001', 'MPPT Controller', 'Electronics', 'MPPT Charge Controller 60A', 'Growatt', 25, 10, 2500000, 'Growatt Vietnam')
-    stmt.run('PN-FAN-001', 'Cooling Fan', 'Mechanical', 'DC Cooling Fan 12V', 'Growatt', 50, 20, 350000, 'Growatt Vietnam')
-    stmt.run('PN-LCD-001', 'LCD Display Module', 'Display', 'LCD Display Screen for Inverter', 'Growatt', 15, 5, 1200000, 'Growatt Vietnam')
-    stmt.run('PN-PCB-001', 'Main PCB Board', 'Electronics', 'Main Printed Circuit Board', 'Growatt', 10, 5, 5000000, 'Growatt Vietnam')
-    stmt.run('PN-CABLE-001', 'DC Cable Set', 'Cables', 'DC Cable Set 4mm²', 'Growatt', 100, 30, 450000, 'Growatt Vietnam')
+    stmt.run('PN-MPPT-001', 'MPPT Controller', 'Electronics', 'MPPT Charge Controller 60A', 'SGE', 25, 10, 2500000, 'SGE Vietnam')
+    stmt.run('PN-FAN-001', 'Cooling Fan', 'Mechanical', 'DC Cooling Fan 12V', 'SGE', 50, 20, 350000, 'SGE Vietnam')
+    stmt.run('PN-LCD-001', 'LCD Display Module', 'Display', 'LCD Display Screen for Inverter', 'SGE', 15, 5, 1200000, 'SGE Vietnam')
+    stmt.run('PN-PCB-001', 'Main PCB Board', 'Electronics', 'Main Printed Circuit Board', 'SGE', 10, 5, 5000000, 'SGE Vietnam')
+    stmt.run('PN-CABLE-001', 'DC Cable Set', 'Cables', 'DC Cable Set 4mm²', 'SGE', 100, 30, 450000, 'SGE Vietnam')
 
     console.log('✅ Seeded warehouse parts successfully!')
   } else {
@@ -174,8 +174,8 @@ const seedTickets = () => {
     // Get IDs
     const inverter1 = db.prepare('SELECT id FROM inverters WHERE serial_number = ?').get('INV-2024-001') as { id: number }
     const customer1 = db.prepare('SELECT id FROM customers WHERE email = ?').get('contact@abcsolar.vn') as { id: number }
-    const technician = db.prepare('SELECT id FROM users WHERE email = ?').get('technician@growatt.vn') as { id: number }
-    const creator = db.prepare('SELECT id FROM users WHERE email = ?').get('service@growatt.vn') as { id: number }
+    const technician = db.prepare('SELECT id FROM users WHERE email = ?').get('technician@SGE.vn') as { id: number }
+    const creator = db.prepare('SELECT id FROM users WHERE email = ?').get('service@SGE.vn') as { id: number }
 
     if (inverter1 && customer1 && technician && creator) {
       const stmt = db.prepare(`
@@ -215,10 +215,10 @@ const seedSettings = () => {
     stmt.run('sla_response_time_hours', '24', 'SLA: Thời gian phản hồi ticket (giờ)')
     stmt.run('sla_resolution_time_hours', '72', 'SLA: Thời gian giải quyết ticket (giờ)')
     stmt.run('warranty_period_years', '10', 'Thời gian bảo hành mặc định (năm)')
-    stmt.run('company_name', 'Growatt Vietnam', 'Tên công ty')
+    stmt.run('company_name', 'SGE Vietnam', 'Tên công ty')
     stmt.run('company_address', '123 Đường ABC, Quận 1, TP.HCM', 'Địa chỉ công ty')
     stmt.run('company_phone', '0281234567', 'Số điện thoại công ty')
-    stmt.run('company_email', 'info@growatt.vn', 'Email công ty')
+    stmt.run('company_email', 'info@SGE.vn', 'Email công ty')
 
     console.log('✅ Seeded settings successfully!')
   } else {

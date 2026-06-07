@@ -9,28 +9,28 @@ console.log('🌱 Seeding models data...\n')
 
 const models = [
   // On-Grid Inverters
-  { name: 'MIN 2500TL-X', manufacturer: 'Growatt', type: 'On-Grid', description: 'Single Phase On-Grid Inverter 2.5kW' },
-  { name: 'MIN 3000TL-X', manufacturer: 'Growatt', type: 'On-Grid', description: 'Single Phase On-Grid Inverter 3kW' },
-  { name: 'MIN 3600TL-X', manufacturer: 'Growatt', type: 'On-Grid', description: 'Single Phase On-Grid Inverter 3.6kW' },
-  { name: 'MIN 4200TL-X', manufacturer: 'Growatt', type: 'On-Grid', description: 'Single Phase On-Grid Inverter 4.2kW' },
-  { name: 'MIN 5000TL-X', manufacturer: 'Growatt', type: 'On-Grid', description: 'Single Phase On-Grid Inverter 5kW' },
-  { name: 'MIN 6000TL-X', manufacturer: 'Growatt', type: 'On-Grid', description: 'Single Phase On-Grid Inverter 6kW' },
-  { name: 'MID 15KTL3-X', manufacturer: 'Growatt', type: 'On-Grid', description: 'Three Phase On-Grid Inverter 15kW' },
-  { name: 'MID 20KTL3-X', manufacturer: 'Growatt', type: 'On-Grid', description: 'Three Phase On-Grid Inverter 20kW' },
-  { name: 'MID 25KTL3-X', manufacturer: 'Growatt', type: 'On-Grid', description: 'Three Phase On-Grid Inverter 25kW' },
-  { name: 'MID 30KTL3-X', manufacturer: 'Growatt', type: 'On-Grid', description: 'Three Phase On-Grid Inverter 30kW' },
+  { name: 'MIN 2500TL-X', manufacturer: 'SGE', type: 'On-Grid', description: 'Single Phase On-Grid Inverter 2.5kW' },
+  { name: 'MIN 3000TL-X', manufacturer: 'SGE', type: 'On-Grid', description: 'Single Phase On-Grid Inverter 3kW' },
+  { name: 'MIN 3600TL-X', manufacturer: 'SGE', type: 'On-Grid', description: 'Single Phase On-Grid Inverter 3.6kW' },
+  { name: 'MIN 4200TL-X', manufacturer: 'SGE', type: 'On-Grid', description: 'Single Phase On-Grid Inverter 4.2kW' },
+  { name: 'MIN 5000TL-X', manufacturer: 'SGE', type: 'On-Grid', description: 'Single Phase On-Grid Inverter 5kW' },
+  { name: 'MIN 6000TL-X', manufacturer: 'SGE', type: 'On-Grid', description: 'Single Phase On-Grid Inverter 6kW' },
+  { name: 'MID 15KTL3-X', manufacturer: 'SGE', type: 'On-Grid', description: 'Three Phase On-Grid Inverter 15kW' },
+  { name: 'MID 20KTL3-X', manufacturer: 'SGE', type: 'On-Grid', description: 'Three Phase On-Grid Inverter 20kW' },
+  { name: 'MID 25KTL3-X', manufacturer: 'SGE', type: 'On-Grid', description: 'Three Phase On-Grid Inverter 25kW' },
+  { name: 'MID 30KTL3-X', manufacturer: 'SGE', type: 'On-Grid', description: 'Three Phase On-Grid Inverter 30kW' },
   
   // Hybrid Inverters
-  { name: 'SPH 3000', manufacturer: 'Growatt', type: 'Hybrid', description: 'Hybrid Inverter 3kW with Battery Storage' },
-  { name: 'SPH 4000', manufacturer: 'Growatt', type: 'Hybrid', description: 'Hybrid Inverter 4kW with Battery Storage' },
-  { name: 'SPH 5000', manufacturer: 'Growatt', type: 'Hybrid', description: 'Hybrid Inverter 5kW with Battery Storage' },
-  { name: 'SPH 6000', manufacturer: 'Growatt', type: 'Hybrid', description: 'Hybrid Inverter 6kW with Battery Storage' },
-  { name: 'SPH 8000', manufacturer: 'Growatt', type: 'Hybrid', description: 'Hybrid Inverter 8kW with Battery Storage' },
-  { name: 'SPH 10000', manufacturer: 'Growatt', type: 'Hybrid', description: 'Hybrid Inverter 10kW with Battery Storage' },
+  { name: 'SPH 3000', manufacturer: 'SGE', type: 'Hybrid', description: 'Hybrid Inverter 3kW with Battery Storage' },
+  { name: 'SPH 4000', manufacturer: 'SGE', type: 'Hybrid', description: 'Hybrid Inverter 4kW with Battery Storage' },
+  { name: 'SPH 5000', manufacturer: 'SGE', type: 'Hybrid', description: 'Hybrid Inverter 5kW with Battery Storage' },
+  { name: 'SPH 6000', manufacturer: 'SGE', type: 'Hybrid', description: 'Hybrid Inverter 6kW with Battery Storage' },
+  { name: 'SPH 8000', manufacturer: 'SGE', type: 'Hybrid', description: 'Hybrid Inverter 8kW with Battery Storage' },
+  { name: 'SPH 10000', manufacturer: 'SGE', type: 'Hybrid', description: 'Hybrid Inverter 10kW with Battery Storage' },
   
   // Off-Grid Inverters
-  { name: 'SPF 3000T', manufacturer: 'Growatt', type: 'Off-Grid', description: 'Off-Grid Inverter 3kW' },
-  { name: 'SPF 5000T', manufacturer: 'Growatt', type: 'Off-Grid', description: 'Off-Grid Inverter 5kW' },
+  { name: 'SPF 3000T', manufacturer: 'SGE', type: 'Off-Grid', description: 'Off-Grid Inverter 3kW' },
+  { name: 'SPF 5000T', manufacturer: 'SGE', type: 'Off-Grid', description: 'Off-Grid Inverter 5kW' },
   
   // Other Manufacturers (examples)
   { name: 'SUN2000-3KTL-L1', manufacturer: 'Huawei', type: 'On-Grid', description: 'Huawei Smart String Inverter 3kW' },

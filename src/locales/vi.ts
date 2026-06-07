@@ -18,6 +18,14 @@ const vi = {
     add: 'Thêm',
     adding: 'Đang thêm...',
     IN18: 'Chọn ngày hết hạn bảo hành',
+    messages: {
+      contractCreated: 'Đã tạo hợp đồng thành công',
+      contractUpdated: 'Đã cập nhật hợp đồng thành công',
+      ticketCreated: 'Đã tạo ticket thành công',
+      customerCreated: 'Đã tạo khách hàng thành công',
+      userCreated: 'Đã tạo người dùng thành công',
+      inverterRegistered: 'Đã đăng ký thiết bị thành công',
+    },
   },
   search: {
     placeholder: 'Tìm kiếm hoặc nhập lệnh...',
@@ -28,15 +36,15 @@ const vi = {
     others: 'Khác',
     dashboard: 'Dashboard',
     calendar: 'Lịch làm việc',
-    ticketAndWarranty: 'Ticket & Bảo hành',
+    ticketAndWarranty: 'Ticket',
     ticketList: 'Danh sách Ticket',
     ticketCreate: 'Tạo Ticket mới',
     deviceManagement: 'Quản lý Thiết bị',
     deviceList: 'Danh sách Thiết bị',
     deviceRegister: 'Đăng ký Thiết bị',
     modelManagement: 'Quản lý Model',
-    customerManagement: 'Quản lý Khách hàng',
-    technicianManagement: 'Điều phối Kỹ thuật',
+    customerManagement: 'Quản lý Công ty',
+    technicianManagement: 'Quản lý Kỹ thuật',
     technicianList: 'Danh sách Kỹ thuật',
     technicianSchedule: 'Lịch công việc',
     warehouseManagement: 'Quản lý Kho',
@@ -44,6 +52,7 @@ const vi = {
     partsManagement: 'Quản lý Linh kiện',
     rmaManagement: 'Quản lý RMA',
     reporting: 'Báo cáo & Thống kê',
+    contractManagement: 'Quản lý Hợp đồng',
     userManagement: 'Quản lý Người dùng',
     moreSetting: 'More setting',
     slaSettings: 'Thiết lập SLA',
@@ -52,6 +61,49 @@ const vi = {
     authentication: 'Đăng nhập',
     signin: 'Đăng nhập',
     signup: 'Đăng ký',
+    warrantyPolicy: 'Chính sách bảo hành',
+  },
+  warrantyPolicy: {
+    pageTitle: 'Chính sách bảo hành',
+    metaDescription: 'Quy định phạm vi bảo hành và điều khoản loại trừ đối với biến tần năng lượng mặt trời theo hợp đồng sửa chữa của SGE.',
+    company: 'Công ty TNHH Thương mại và Dịch vụ SGE',
+    effectiveNote: 'Áp dụng cho sản phẩm biến tần (inverter) được SGE cung cấp dịch vụ sửa chữa, bảo hành theo hợp đồng ký kết với khách hàng.',
+    toc: 'Mục lục',
+    sections: {
+      scope: {
+        title: 'Phạm vi bảo hành',
+        items: [
+          'Sản phẩm biến tần (inverter) gặp sự cố kỹ thuật, không thuộc phạm vi «Điều khoản loại trừ bảo hành» quy định tại Mục b, và còn trong thời hạn bảo hành theo Hợp đồng sửa chữa giữa Công ty TNHH Thương mại và Dịch vụ SGE (SGE) và Khách hàng.',
+        ],
+      },
+      exclusions: {
+        title: 'Điều khoản loại trừ bảo hành',
+        voidTitle: 'Bảo hành bị hủy bỏ',
+        voidIntro: 'Chế độ bảo hành sẽ bị hủy bỏ toàn bộ nếu phát hiện một trong các trường hợp sau:',
+        voidItems: [
+          'Số serial (S/N) của sản phẩm bị thay đổi, chỉnh sửa, làm mờ hoặc không thể xác minh chính xác.',
+          'Khách hàng tự ý xóa, ghi đè hoặc can thiệp dữ liệu vận hành (log/datalog) của biến tần.',
+          'Khách hàng tự ý tháo lắp, sửa chữa, hiệu chỉnh hoặc thay thế linh kiện khi chưa có sự ủy quyền hoặc chấp thuận bằng văn bản của SGE.',
+        ],
+        notCoveredTitle: 'Phạm vi không được bảo hành',
+        notCoveredIntro: 'Bảo hành không áp dụng đối với các trường hợp sau:',
+        notCoveredItems: [
+          'Cầu chì, thiết bị chống sét lan truyền (SPD), bộ lọc và các hư hỏng liên quan đến thẩm mỹ (cosmetic damage).',
+          'Hư hỏng do vận chuyển, bốc xếp hoặc giao nhận không đúng quy cách (biến dạng vỏ thiết bị, gãy cổng kết nối, v.v.).',
+          'Lưu kho không đúng điều kiện trước khi lắp đặt (động vật, bụi bẩn, ẩm ướt xâm nhập vào bên trong thiết bị).',
+          'Hư hỏng do sự cố nối đất (earth fault) phát sinh từ phía hệ thống trung thế.',
+          'Lắp đặt không tuân thủ Hướng dẫn lắp đặt (Installation Manual) của nhà sản xuất.',
+          'Vận hành và ứng dụng vượt quá phạm vi, điều kiện sử dụng quy định trong tài liệu hướng dẫn sản phẩm.',
+          'Bảo trì, vận hành sai quy trình, thiếu bảo trì định kỳ hoặc bảo dưỡng không đúng cách theo hướng dẫn nhà sản xuất.',
+          'Sự cố do quá áp (overvoltage) phát sinh từ chuỗi PV DC hoặc từ phía lưới điện AC.',
+          'Tác động của thiên tai: hỏa hoạn, lũ lụt, bệnh dịch, động đất, sét đánh và các sự kiện bất khả kháng tương đương.',
+          'Hư hỏng hoặc tai nạn do hành động của bên thứ ba, hoặc nguyên nhân khách quan ngoài điều kiện vận hành tiêu chuẩn và thông số kỹ thuật (datasheet) của sản phẩm.',
+        ],
+        maintenanceTitle: 'Yêu cầu bảo trì định kỳ',
+        maintenanceText: 'Hệ thống biến tần cần được kiểm tra và bảo trì định kỳ theo khuyến nghị của nhà sản xuất. Khi thiết bị vận hành trong môi trường bụi bẩn, tần suất bảo trì — bảo dưỡng phải được tăng tương ứng. Trường hợp biến tần quá bẩn do không được kiểm tra, bảo trì kịp thời và đúng cách, gây ảnh hưởng đến khả năng tản nhiệt khối công suất (power stage), SGE có quyền xem xét từ chối bảo hành đối với các hư hỏng liên quan.',
+      },
+    },
+    footerNote: 'Mọi quyết định liên quan đến bảo hành được SGE xem xét dựa trên biên bản kiểm tra kỹ thuật, hồ sơ hợp đồng và điều kiện vận hành thực tế tại hiện trường.',
   },
   autoAssign: {
     title: 'Phân công tự động',
@@ -59,6 +111,7 @@ const vi = {
     loading: 'Đang tải cấu hình...',
     noConfig: '— Không cấu hình —',
     noStaff: 'Chưa có nhân viên với chức năng này',
+    noStaffLoaded: 'Không có nhân viên active. Gán chức năng tại Quản lý Kỹ thuật.',
     functions: {
       repair: {
         label: 'Sửa chữa',
@@ -199,11 +252,19 @@ const vi = {
   },
   dashboard: {
     header: {
-      title: 'Growatt After-Sales Dashboard',
-      subtitle: 'Hệ thống quản lý hậu mãi thiết bị biến tần Growatt',
+      title: 'SGE After-Sales Dashboard',
+      subtitle: 'Hệ thống quản lý hậu mãi thiết bị biến tần SGE',
     },
     alerts: {
       loadFailed: 'Không thể tải dữ liệu dashboard',
+    },
+    sections: {
+      actionRequired: 'Cần xử lý',
+      contracts: 'Hợp đồng',
+      operations: 'Ticket & Công việc',
+    },
+    operations: {
+      viewAll: 'Xem tất cả',
     },
     metrics: {
       totalTickets: 'Tổng Ticket',
@@ -221,6 +282,30 @@ const vi = {
       tasksOverdue: 'Tasks quá hạn',
       tasksApproaching: 'Tasks sắp hết hạn',
       clickToFilter: 'Nhấn để lọc danh sách bên dưới',
+    },
+    contracts: {
+      title: 'Báo cáo Hợp đồng',
+      summaryHint: 'Hợp đồng đang nợ, máy chưa giao và hợp đồng nháp',
+      periodHint: 'HĐ đã ký & doanh thu theo tháng; tổng nợ là toàn bộ HĐ hiệu lực chưa thanh toán',
+      viewAll: 'Xem tất cả hợp đồng',
+      unpaidDebt: 'Đang nợ (chưa thanh toán)',
+      undeliveredDevices: 'Máy chưa giao',
+      draftCount: 'Hợp đồng nháp',
+      draftHint: 'Chờ hoàn thiện',
+      contractCount: '{count} hợp đồng',
+      unpaidList: 'Hợp đồng chưa thanh toán',
+      undeliveredList: 'Hợp đồng chưa giao máy',
+      draftList: 'Hợp đồng nháp',
+      emptyUnpaid: 'Không có hợp đồng chưa thanh toán',
+      emptyUndelivered: 'Không có hợp đồng chưa giao máy',
+      emptyDraft: 'Không có hợp đồng nháp',
+      columns: {
+        number: 'Số HĐ',
+        customer: 'Khách hàng',
+        value: 'Giá trị',
+        signedDate: 'Ngày ký',
+        createdDate: 'Ngày tạo',
+      },
     },
     quickActions: {
       title: 'Hành động nhanh',
@@ -455,10 +540,12 @@ const vi = {
         label: 'Thiết bị (Serial Number)',
         newButton: 'Nhập thiết bị mới',
         modelPlaceholder: 'Tất cả Model',
-        serialPlaceholder: 'Nhập hoặc tìm kiếm Serial Number',
+        serialPlaceholder: 'Chọn hoặc tìm kiếm thiết bị từ danh sách',
         createNewDevice: 'Tạo thiết bị mới',
         addDevice: 'Thêm thiết bị mới',
         noDevicesFound: 'Không tìm thấy thiết bị',
+        noDevicesInList: 'Chưa có thiết bị trong danh sách',
+        loadingDevices: 'Đang tải danh sách thiết bị...',
         infoTitle: 'Thông tin Thiết bị (từ Serial Number)',
         edit: 'Sửa',
         cancel: 'Hủy',
@@ -499,9 +586,8 @@ const vi = {
         typeLabel: 'Loại Ticket',
         typePlaceholder: 'Chọn loại',
         types: {
+          repair: 'Sửa chữa',
           warranty: 'Bảo hành',
-          technicalSupport: 'Hỗ trợ kỹ thuật',
-          productConsultation: 'Tư vấn sản phẩm',
           other: 'Khác',
         },
         priorityLabel: 'Độ ưu tiên',
@@ -570,7 +656,8 @@ const vi = {
         onlyImagesAllowed: 'Chỉ chấp nhận file ảnh (JPG, PNG).',
         maxImagesReached: 'Đã đạt tối đa {max} ảnh. Vui lòng xóa ảnh cũ trước khi thêm ảnh mới.',
         compressError: 'Lỗi khi nén ảnh. Vui lòng thử lại.',
-        selectDevice: 'Vui lòng chọn thiết bị (Model / Serial Number)',
+        selectDevice: 'Vui lòng chọn thiết bị từ danh sách',
+        selectTicketType: 'Vui lòng chọn loại ticket',
         fillRequired: 'Vui lòng điền đầy đủ thông tin bắt buộc (Tiêu đề, Mô tả)',
         missingCustomer: 'Thiết bị chưa được gán cho khách hàng. Vui lòng chọn thiết bị khác hoặc gán khách hàng trước.',
         createTicketError: 'Có lỗi xảy ra khi tạo ticket. Vui lòng thử lại.',
@@ -602,6 +689,7 @@ const vi = {
         createdAt: 'Ngày tạo',
         lastUpdated: 'Cập nhật lần cuối',
         model: 'Model',
+        manufacturer: 'Hãng',
         serialNumber: 'Serial Number',
         errorType: 'Loại lỗi',
         warrantyExpiry: 'Hạn bảo hành',
@@ -609,6 +697,7 @@ const vi = {
         name: 'Tên',
         phone: 'Điện thoại',
         email: 'Email',
+        contractNumber: 'Số hợp đồng',
         role: 'Vai trò',
         function: 'Chức năng',
         responseWithin: 'Phản hồi trong',
@@ -687,6 +776,14 @@ const vi = {
         actionsTakenPlaceholder: 'Mô tả các bước đã thực hiện để xử lý...',
         replacementParts: 'Linh kiện thay thế',
         replacementPartsPlaceholder: 'Ví dụ: Tụ điện 1000uF x1, IC điều khiển x1...',
+        addReplacementPart: 'Thêm dòng',
+        partMaterial: 'Vật tư',
+        partUnit: 'ĐVT',
+        partQuantity: 'Số lượng',
+        partNotes: 'Ghi chú',
+        partMaterialPlaceholder: 'Tên linh kiện',
+        partUnitPlaceholder: 'Cái, bộ...',
+        partNotesPlaceholder: 'Ghi chú',
         beforeRepair: 'Trước khi sửa',
         afterRepair: 'Sau khi sửa',
         noImages: 'Chưa có ảnh',
@@ -712,10 +809,11 @@ const vi = {
           low: 'Thấp',
         },
         ticketType: {
+          repair: 'Sửa chữa',
           warranty: 'Bảo hành',
+          other: 'Khác',
           technicalSupport: 'Hỗ trợ kỹ thuật',
           productConsultation: 'Tư vấn sản phẩm',
-          other: 'Khác',
         },
         warrantyStatus: {
           active: 'Đang bảo hành',
@@ -769,7 +867,7 @@ const vi = {
     list: {
       header: {
         title: 'Quản lý Thiết bị',
-        subtitle: 'Danh sách thiết bị biến tần Growatt',
+        subtitle: 'Danh sách thiết bị biến tần SGE',
       },
       actions: {
         import: 'Import CSV',
@@ -778,7 +876,7 @@ const vi = {
       },
       filters: {
         search: 'Tìm kiếm',
-        searchPlaceholder: 'Serial, Model...',
+        searchPlaceholder: 'SN, Công ty...',
         model: 'Model',
         modelPlaceholder: 'Tìm kiếm model...',
         type: 'Loại thiết bị',
@@ -885,12 +983,16 @@ const vi = {
       deviceInfo: {
         title: 'Thông tin Thiết bị',
         edit: 'Sửa',
+        editLimited: 'Sửa địa chỉ & ghi chú',
+        syncFromContractNote: 'Đồng bộ từ hợp đồng — chỉ sửa địa chỉ lắp đặt và ghi chú',
         cancel: 'Hủy',
         save: 'Lưu',
         saving: 'Đang lưu...',
         fields: {
           serialNumber: 'Serial Number',
           model: 'Model',
+          manufacturer: 'Hãng sản xuất',
+          manufacturerPlaceholder: 'Chọn hoặc nhập hãng',
           warrantyStart: 'Ngày bắt đầu bảo hành',
           warrantyEnd: 'Ngày kết thúc bảo hành',
           warrantyEndNote: 'Tự động tính từ ngày bắt đầu + 5 năm',
@@ -925,6 +1027,8 @@ const vi = {
         },
         selectPlaceholder: '-- Chọn khách hàng --',
         notAssigned: 'Chưa gắn',
+        syncFromContractNote: 'Thông tin đồng bộ từ hợp đồng liên kết',
+        viaContract: 'Theo hợp đồng',
       },
       ticketHistory: {
         title: 'Lịch sử Ticket',
@@ -1064,7 +1168,7 @@ const vi = {
     register: {
       header: {
         title: 'Đăng ký Thiết bị mới',
-        subtitle: 'Nhập thông tin thiết bị biến tần Growatt mới',
+        subtitle: 'Nhập thông tin thiết bị biến tần SGE mới',
       },
       form: {
         serialNumber: 'Serial Number',
@@ -1126,7 +1230,7 @@ const vi = {
     models: {
       header: {
         title: 'Quản lý Model Thiết bị',
-        subtitle: 'Danh sách model thiết bị Growatt',
+        subtitle: 'Danh sách model thiết bị SGE',
       },
       actions: {
         addNew: 'Thêm Model mới',
@@ -1225,8 +1329,8 @@ const vi = {
   customers: {
     list: {
       header: {
-        title: 'Quản lý Khách hàng',
-        subtitle: 'Danh sách khách hàng, đại lý và công trình',
+        title: 'Quản lý Công ty',
+        subtitle: 'Danh sách công ty khách hàng',
       },
       actions: {
         addNew: 'Thêm Khách hàng',
@@ -1295,7 +1399,7 @@ const vi = {
         otherDistributor: 'Khác',
         otherDistributorName: 'Tên nhà phân phối khác',
         otherDistributorNamePlaceholder: 'Nhập tên nhà phân phối',
-        distributorNote: 'Nhà phân phối mặc định: Growatt Việt Nam',
+        distributorNote: 'Nhà phân phối mặc định: SGE Việt Nam',
         passwordNote: 'Lưu ý',
         defaultPassword: 'Mật khẩu mặc định: GRTVN2025',
         phone: 'Số điện thoại',
@@ -1434,6 +1538,29 @@ const vi = {
           medium: 'Trung bình',
           high: 'Cao',
           urgent: 'Khẩn cấp',
+        },
+      },
+      incompletePaperwork: {
+        title: 'Hợp đồng chưa hoàn tất giấy tờ',
+        viewAll: 'Xem tất cả hợp đồng',
+        empty: 'Tất cả hợp đồng đã hoàn tất giấy tờ',
+        columns: {
+          contractNumber: 'Số HĐ',
+          title: 'Tiêu đề',
+          contractType: 'Loại',
+          status: 'Trạng thái',
+          missingItems: 'Thiếu giấy tờ',
+        },
+        contractType: {
+          service: 'Dịch vụ',
+          economic: 'Kinh tế',
+          other: 'Khác',
+        },
+        contractStatus: {
+          draft: 'Nháp',
+          active: 'Hiệu lực',
+          expired: 'Hết hạn',
+          cancelled: 'Đã hủy',
         },
       },
     },
@@ -2261,6 +2388,26 @@ const vi = {
       totalTasks: 'Tổng Công việc',
       completedTasks: 'đã hoàn thành',
     },
+    contracts: {
+      title: 'Báo cáo Hợp đồng',
+      signedCount: 'Hợp đồng đã ký',
+      totalRevenue: 'Tổng doanh thu',
+      totalDebt: 'Tổng nợ (chưa thanh toán)',
+      repairDevices: 'Tổng thiết bị sửa',
+      listTitle: 'Danh sách hợp đồng đã ký',
+      viewAll: 'Xem tất cả hợp đồng',
+      empty: 'Không có hợp đồng trong khoảng thời gian này',
+      paymentPaid: 'Đã thanh toán',
+      paymentUnpaid: 'Chưa thanh toán',
+      columns: {
+        number: 'Số HĐ',
+        customer: 'Khách hàng',
+        value: 'Giá trị',
+        signedDate: 'Ngày ký',
+        devices: 'Thiết bị',
+        payment: 'Thanh toán',
+      },
+    },
     charts: {
       ticketsTrend: 'Xu hướng Tickets theo thời gian',
       workTypeDistribution: 'Phân bổ theo Loại Công việc',
@@ -2302,7 +2449,7 @@ const vi = {
   },
   sidebar: {
     footer: {
-      description: 'Hệ thống quản lý hậu mãi Growatt',
+      description: 'Hệ thống quản lý hậu mãi SGE',
     },
   },
 }

@@ -38,6 +38,8 @@ export interface CreateUserDto {
   function?: string
   organization?: string
   status?: UserStatus
+  phone?: string
+  address?: string
   parent_distributor_id?: number
 }
 

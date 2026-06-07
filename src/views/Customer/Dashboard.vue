@@ -13,31 +13,199 @@
       <div class="text-sm sm:text-base text-gray-500 dark:text-gray-400">{{ t('customers.dashboard.loading') }}</div>
     </div>
 
-    <!-- Quick Actions -->
-    <div v-if="!loading" class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4 sm:mt-6 md:mt-8">
-      <router-link
-        to="/customer/inverters/register"
-        class="rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-3 sm:p-4 hover:border-blue-500 dark:hover:border-blue-500 transition-colors"
+    <!-- Metrics Cards -->
+    <div v-if="!loading" class="grid grid-cols-1 gap-3 sm:gap-4 md:grid-cols-2 lg:grid-cols-4 mt-4 sm:mt-6 md:mt-8">
+      <!-- Tổng Thiết bị -->
+      <div
+        class="rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-3 sm:p-4 shadow-sm"
       >
-        <div class="flex items-center gap-2 sm:gap-3">
-          <div class="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900 flex-shrink-0">
-            <PlusIcon class="h-4 w-4 sm:h-5 sm:w-5 text-blue-600 dark:text-blue-400" />
+        <div class="flex items-center justify-between">
+          <div class="flex-1 min-w-0">
+            <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 truncate">{{ t('customers.dashboard.metrics.totalInverters') }}</p>
+            <p class="mt-1 sm:mt-2 text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
+              {{ metrics.totalInverters }}
+            </p>
           </div>
-          <h3 class="text-xs sm:text-sm font-semibold text-gray-900 dark:text-white">{{ t('customers.dashboard.quickActions.registerDevice.title') }}</h3>
+          <div
+            class="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-green-100 dark:bg-green-900 flex-shrink-0 ml-2"
+          >
+            <BoxCubeIcon class="h-5 w-5 sm:h-6 sm:w-6 text-green-600 dark:text-green-400" />
+          </div>
         </div>
-      </router-link>
+      </div>
 
-      <router-link
-        to="/customer/tickets/new"
-        class="rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-3 sm:p-4 hover:border-green-500 dark:hover:border-green-500 transition-colors"
+      <!-- Tổng Ticket -->
+      <div
+        class="rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-3 sm:p-4 shadow-sm"
       >
-        <div class="flex items-center gap-2 sm:gap-3">
-          <div class="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-full bg-green-100 dark:bg-green-900 flex-shrink-0">
-            <ChatIcon class="h-4 w-4 sm:h-5 sm:w-5 text-green-600 dark:text-green-400" />
+        <div class="flex items-center justify-between">
+          <div class="flex-1 min-w-0">
+            <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 truncate">{{ t('customers.dashboard.metrics.totalTickets') }}</p>
+            <p class="mt-1 sm:mt-2 text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
+              {{ metrics.totalTickets }}
+            </p>
           </div>
-          <h3 class="text-xs sm:text-sm font-semibold text-gray-900 dark:text-white">{{ t('customers.dashboard.quickActions.createTicket.title') }}</h3>
+          <div
+            class="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900 flex-shrink-0 ml-2"
+          >
+            <ChatIcon class="h-5 w-5 sm:h-6 sm:w-6 text-blue-600 dark:text-blue-400" />
+          </div>
         </div>
-      </router-link>
+        <div class="mt-3 sm:mt-4 flex items-center text-xs sm:text-sm">
+          <span class="text-green-600 dark:text-green-400">
+            {{ metrics.activeTickets }} {{ t('customers.dashboard.metrics.activeTickets') }}
+          </span>
+        </div>
+      </div>
+
+      <!-- Ticket Chờ xử lý -->
+      <div
+        class="rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-3 sm:p-4 shadow-sm"
+      >
+        <div class="flex items-center justify-between">
+          <div class="flex-1 min-w-0">
+            <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 truncate">{{ t('customers.dashboard.metrics.pendingTickets') }}</p>
+            <p class="mt-1 sm:mt-2 text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
+              {{ metrics.pendingTickets }}
+            </p>
+          </div>
+          <div
+            class="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-yellow-100 dark:bg-yellow-900 flex-shrink-0 ml-2"
+          >
+            <WarningIcon class="h-5 w-5 sm:h-6 sm:w-6 text-yellow-600 dark:text-yellow-400" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Ticket Đã hoàn thành -->
+      <div
+        class="rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-3 sm:p-4 shadow-sm"
+      >
+        <div class="flex items-center justify-between">
+          <div class="flex-1 min-w-0">
+            <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 truncate">{{ t('customers.dashboard.metrics.completedTickets') }}</p>
+            <p class="mt-1 sm:mt-2 text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
+              {{ metrics.completedTickets }}
+            </p>
+          </div>
+          <div
+            class="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-purple-100 dark:bg-purple-900 flex-shrink-0 ml-2"
+          >
+            <CheckIcon class="h-5 w-5 sm:h-6 sm:w-6 text-purple-600 dark:text-purple-400" />
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Incomplete Paperwork Contracts -->
+    <div v-if="!loading" class="rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden mt-4 sm:mt-6 md:mt-8">
+      <div class="p-3 sm:p-4 border-b border-gray-200 dark:border-gray-700">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-0">
+          <h3 class="text-sm sm:text-base font-semibold text-gray-900 dark:text-white">
+            {{ t('customers.dashboard.incompletePaperwork.title') }}
+          </h3>
+          <router-link
+            to="/customer/contracts"
+            class="text-xs sm:text-sm text-blue-600 dark:text-blue-400 hover:underline"
+          >
+            {{ t('customers.dashboard.incompletePaperwork.viewAll') }}
+          </router-link>
+        </div>
+      </div>
+
+      <!-- Desktop Table -->
+      <div class="hidden md:block overflow-x-auto">
+        <table class="w-full">
+          <thead class="bg-gray-50 dark:bg-gray-700">
+            <tr>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
+                {{ t('customers.dashboard.incompletePaperwork.columns.contractNumber') }}
+              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
+                {{ t('customers.dashboard.incompletePaperwork.columns.title') }}
+              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
+                {{ t('customers.dashboard.incompletePaperwork.columns.contractType') }}
+              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
+                {{ t('customers.dashboard.incompletePaperwork.columns.status') }}
+              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
+                {{ t('customers.dashboard.incompletePaperwork.columns.missingItems') }}
+              </th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+            <tr v-if="incompletePaperworkContracts.length === 0">
+              <td colspan="5" class="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
+                {{ t('customers.dashboard.incompletePaperwork.empty') }}
+              </td>
+            </tr>
+            <tr
+              v-for="contract in incompletePaperworkContracts"
+              :key="contract.id"
+              class="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
+              @click="router.push(`/customer/contracts/${contract.id}`)"
+            >
+              <td class="px-6 py-4 whitespace-nowrap">
+                <span class="font-mono font-medium text-blue-600 dark:text-blue-400">
+                  {{ contract.contract_number }}
+                </span>
+              </td>
+              <td class="px-6 py-4">
+                <span class="text-gray-900 dark:text-white">{{ contract.title || '—' }}</span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <span :class="contractTypeClass(contract.contract_type)" class="px-2 py-0.5 rounded-full text-xs font-medium">
+                  {{ contractTypeLabel(contract.contract_type) }}
+                </span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <span :class="contractStatusClass(contract.status)" class="px-2 py-0.5 rounded-full text-xs font-medium">
+                  {{ contractStatusLabel(contract.status) }}
+                </span>
+              </td>
+              <td class="px-6 py-4">
+                <span class="text-sm text-amber-700 dark:text-amber-300">
+                  {{ getMissingPaperworkLabels(contract).join(', ') }}
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Mobile Cards -->
+      <div class="md:hidden">
+        <div v-if="incompletePaperworkContracts.length === 0" class="p-6 text-center text-gray-500 dark:text-gray-400 text-sm">
+          {{ t('customers.dashboard.incompletePaperwork.empty') }}
+        </div>
+        <div
+          v-for="contract in incompletePaperworkContracts"
+          :key="contract.id"
+          class="p-4 border-b border-gray-200 dark:border-gray-700 last:border-b-0 active:bg-gray-50 dark:active:bg-gray-700 cursor-pointer"
+          @click="router.push(`/customer/contracts/${contract.id}`)"
+        >
+          <div class="flex items-start justify-between gap-2 mb-2">
+            <div class="min-w-0 flex-1">
+              <p class="font-mono text-sm font-semibold text-blue-600 dark:text-blue-400">{{ contract.contract_number }}</p>
+              <p class="text-sm text-gray-900 dark:text-white mt-0.5 truncate">{{ contract.title || '—' }}</p>
+            </div>
+            <span :class="contractStatusClass(contract.status)" class="px-2 py-0.5 rounded-full text-xs font-medium flex-shrink-0">
+              {{ contractStatusLabel(contract.status) }}
+            </span>
+          </div>
+          <div class="flex flex-wrap items-center gap-2 mb-2">
+            <span :class="contractTypeClass(contract.contract_type)" class="px-2 py-0.5 rounded-full text-xs font-medium">
+              {{ contractTypeLabel(contract.contract_type) }}
+            </span>
+          </div>
+          <p class="text-xs text-amber-700 dark:text-amber-300 leading-relaxed">
+            <span class="font-medium text-gray-500 dark:text-gray-400">{{ t('customers.dashboard.incompletePaperwork.columns.missingItems') }}:</span>
+            {{ getMissingPaperworkLabels(contract).join(', ') }}
+          </p>
+        </div>
+      </div>
     </div>
 
     <!-- Recent Tickets -->
@@ -54,6 +222,16 @@
             {{ t('customers.dashboard.recentTickets.viewAll') }}
           </router-link>
         </div>
+      </div>
+
+      <div class="px-3 sm:px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+        <router-link
+          to="/customer/tickets/new"
+          class="inline-flex items-center gap-2 px-3 sm:px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+        >
+          <PlusIcon class="h-4 w-4 sm:h-5 sm:w-5" />
+          <span>{{ t('customers.dashboard.quickActions.createTicket.title') }}</span>
+        </router-link>
       </div>
       
       <!-- Desktop Table View -->
@@ -196,90 +374,6 @@
         </div>
       </div>
     </div>
-
-    <!-- Metrics Cards -->
-    <div v-if="!loading" class="grid grid-cols-1 gap-3 sm:gap-4 md:grid-cols-2 lg:grid-cols-4 mt-4 sm:mt-6 md:mt-8">
-      <!-- Tổng Thiết bị -->
-      <div
-        class="rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-3 sm:p-4 shadow-sm"
-      >
-        <div class="flex items-center justify-between">
-          <div class="flex-1 min-w-0">
-            <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 truncate">{{ t('customers.dashboard.metrics.totalInverters') }}</p>
-            <p class="mt-1 sm:mt-2 text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
-              {{ metrics.totalInverters }}
-            </p>
-          </div>
-          <div
-            class="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-green-100 dark:bg-green-900 flex-shrink-0 ml-2"
-          >
-            <BoxCubeIcon class="h-5 w-5 sm:h-6 sm:w-6 text-green-600 dark:text-green-400" />
-          </div>
-        </div>
-      </div>
-
-      <!-- Tổng Ticket -->
-      <div
-        class="rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-3 sm:p-4 shadow-sm"
-      >
-        <div class="flex items-center justify-between">
-          <div class="flex-1 min-w-0">
-            <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 truncate">{{ t('customers.dashboard.metrics.totalTickets') }}</p>
-            <p class="mt-1 sm:mt-2 text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
-              {{ metrics.totalTickets }}
-            </p>
-          </div>
-          <div
-            class="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900 flex-shrink-0 ml-2"
-          >
-            <ChatIcon class="h-5 w-5 sm:h-6 sm:w-6 text-blue-600 dark:text-blue-400" />
-          </div>
-        </div>
-        <div class="mt-3 sm:mt-4 flex items-center text-xs sm:text-sm">
-          <span class="text-green-600 dark:text-green-400">
-            {{ metrics.activeTickets }} {{ t('customers.dashboard.metrics.activeTickets') }}
-          </span>
-        </div>
-      </div>
-
-      <!-- Ticket Chờ xử lý -->
-      <div
-        class="rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-3 sm:p-4 shadow-sm"
-      >
-        <div class="flex items-center justify-between">
-          <div class="flex-1 min-w-0">
-            <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 truncate">{{ t('customers.dashboard.metrics.pendingTickets') }}</p>
-            <p class="mt-1 sm:mt-2 text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
-              {{ metrics.pendingTickets }}
-            </p>
-          </div>
-          <div
-            class="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-yellow-100 dark:bg-yellow-900 flex-shrink-0 ml-2"
-          >
-            <WarningIcon class="h-5 w-5 sm:h-6 sm:w-6 text-yellow-600 dark:text-yellow-400" />
-          </div>
-        </div>
-      </div>
-
-      <!-- Ticket Đã hoàn thành -->
-      <div
-        class="rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-3 sm:p-4 shadow-sm"
-      >
-        <div class="flex items-center justify-between">
-          <div class="flex-1 min-w-0">
-            <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 truncate">{{ t('customers.dashboard.metrics.completedTickets') }}</p>
-            <p class="mt-1 sm:mt-2 text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
-              {{ metrics.completedTickets }}
-            </p>
-          </div>
-          <div
-            class="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-purple-100 dark:bg-purple-900 flex-shrink-0 ml-2"
-          >
-            <CheckIcon class="h-5 w-5 sm:h-6 sm:w-6 text-purple-600 dark:text-purple-400" />
-          </div>
-        </div>
-      </div>
-    </div>
   </admin-layout>
 </template>
 
@@ -295,6 +389,8 @@ import CheckIcon from '@/icons/CheckIcon.vue'
 import PlusIcon from '@/icons/PlusIcon.vue'
 import { ticketService } from '@/services/ticketService'
 import { inverterService } from '@/services/inverterService'
+import { contractService, type Contract } from '@/services/contractService'
+import { isPaperworkComplete, getMissingPaperworkLabels } from '@/utils/contractPaperwork'
 
 const { t } = useI18n()
 
@@ -310,6 +406,7 @@ const metrics = ref({
   completedTickets: 0,
 })
 const recentTickets = ref<any[]>([])
+const incompletePaperworkContracts = ref<Contract[]>([])
 
 const loadDashboardData = async () => {
   try {
@@ -338,6 +435,12 @@ const loadDashboardData = async () => {
     // Recent tickets (last 5, excluding closed tickets)
     const openTickets = tickets.filter((t: any) => t.status !== 'closed')
     recentTickets.value = openTickets.slice(0, 5)
+
+    // Contracts chưa hoàn tất giấy tờ
+    const contractsResponse = await contractService.list({ limit: 100, page: 1 })
+    incompletePaperworkContracts.value = (contractsResponse.contracts || []).filter(
+      (c) => c.status !== 'cancelled' && !isPaperworkComplete(c)
+    )
   } catch (err: any) {
     console.error('Error loading dashboard:', err)
     error.value = err.message || t('customers.dashboard.error')
@@ -390,6 +493,31 @@ const formatDate = (dateString: string) => {
   if (!dateString) return '-'
   const date = new Date(dateString)
   return date.toLocaleDateString('vi-VN')
+}
+
+const contractStatusLabel = (status: string) =>
+  t(`customers.dashboard.incompletePaperwork.contractStatus.${status}`) || status
+
+const contractStatusClass = (status: string) => {
+  const map: Record<string, string> = {
+    draft: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300',
+    active: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300',
+    expired: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
+    cancelled: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300',
+  }
+  return map[status] ?? 'bg-gray-100 text-gray-600'
+}
+
+const contractTypeLabel = (type: string) =>
+  t(`customers.dashboard.incompletePaperwork.contractType.${type}`) || type
+
+const contractTypeClass = (type: string) => {
+  const map: Record<string, string> = {
+    service: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
+    economic: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300',
+    other: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300',
+  }
+  return map[type] ?? 'bg-gray-100 text-gray-600'
 }
 
 onMounted(() => {

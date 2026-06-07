@@ -89,7 +89,7 @@ npm run lan
 
 1. **Kiểm tra Firewall:**
    ```powershell
-   Get-NetFirewallRule -DisplayName "Growatt*" | Select-Object DisplayName, Enabled
+   Get-NetFirewallRule -DisplayName "SGE*" | Select-Object DisplayName, Enabled
    ```
 
 2. **Kiểm tra servers đang chạy:**

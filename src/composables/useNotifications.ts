@@ -66,6 +66,8 @@ const init = () => {
   startPolling()
 }
 
+export const refreshNotifications = fetchNotifications
+
 export const useNotifications = () => {
   onMounted(() => {
     init()

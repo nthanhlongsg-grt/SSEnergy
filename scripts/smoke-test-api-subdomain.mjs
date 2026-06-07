@@ -1,4 +1,4 @@
-const baseUrl = process.argv[2] || 'https://api.growattvietnam.com'
+const baseUrl = process.argv[2] || 'https://baohanh.sgesolartech.vn'
 
 const checks = ['/health', '/api/health']
 

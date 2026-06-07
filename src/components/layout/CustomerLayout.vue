@@ -4,11 +4,13 @@
     <div class="customer-layout-content">
       <RouterView />
     </div>
+    <AppToast />
   </div>
 </template>
 
 <script setup lang="ts">
 import CustomerHeader from './CustomerHeader.vue'
+import AppToast from '@/components/common/AppToast.vue'
 </script>
 
 <style scoped>

@@ -1,8 +1,8 @@
-# Database Schema - Growatt After-Sales Management System
+# Database Schema - SGE After-Sales Management System
 
 ## Tổng quan
 
-Database sử dụng SQLite để lưu trữ dữ liệu cho hệ thống quản lý hậu mãi Growatt.
+Database sử dụng SQLite để lưu trữ dữ liệu cho hệ thống quản lý hậu mãi SGE.
 
 ## Các bảng chính
 
@@ -18,7 +18,7 @@ Thông tin khách hàng
 
 ### 3. distributors
 Thông tin đại lý/nhà phân phối
-- Quản lý các đại lý phân phối sản phẩm Growatt
+- Quản lý các đại lý phân phối sản phẩm SGE
 
 ### 4. inverters
 Thông tin thiết bị inverter
@@ -107,7 +107,7 @@ npm run db:seed
 
 ## Database Location
 
-Database file: `server/database/growatt.db`
+Database file: `server/database/SGE.db`
 
 File này sẽ tự động được tạo khi chạy server lần đầu.
 
@@ -115,13 +115,13 @@ File này sẽ tự động được tạo khi chạy server lần đầu.
 
 ```bash
 # Copy database file
-cp server/database/growatt.db server/database/growatt.db.backup
+cp server/database/SGE.db server/database/SGE.db.backup
 ```
 
 ## Reset Database
 
 ```bash
 # Xóa database và tạo lại
-rm server/database/growatt.db
+rm server/database/SGE.db
 npm run db:seed:full
 ```

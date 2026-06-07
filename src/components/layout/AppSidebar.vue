@@ -23,13 +23,13 @@
         <img
           v-if="isExpanded || isHovered || isMobileOpen"
           src="/images/logo/logo.png"
-          alt="Growatt VietNam"
+          alt="SGE VietNam"
           class="object-contain h-16 w-auto max-w-[200px]"
         />
         <img
           v-else
           src="/images/logo/logo.png"
-          alt="Growatt"
+          alt="SGE"
           class="object-contain h-12 w-auto"
         />
       </router-link>
@@ -208,6 +208,7 @@ import { useRoute } from "vue-router";
 import { useI18n } from "vue-i18n";
 
 import {
+  DocsIcon,
   GridIcon,
   CalenderIcon,
   UserCircleIcon,
@@ -215,10 +216,9 @@ import {
   PieChartIcon,
   ChevronDownIcon,
   HorizontalDots,
-  TaskIcon,
   BoxIcon,
-  UserGroupIcon,
   SettingsIcon,
+  PageIcon,
 } from "../../icons";
 import SidebarWidget from "./SidebarWidget.vue";
 import BoxCubeIcon from "@/icons/BoxCubeIcon.vue";
@@ -283,6 +283,24 @@ const MENU_GROUPS: MenuGroupDefinition[] = [
     titleKey: "menu.management",
     items: [
       {
+        icon: UserCircleIcon,
+        nameKey: "menu.customerManagement",
+        path: "/customers",
+        requiresPermission: "view_customers",
+      },
+      {
+        icon: PageIcon,
+        nameKey: "menu.contractManagement",
+        path: "/contracts",
+        requiresPermission: "view_contracts",
+      },
+      {
+        icon: BoxCubeIcon,
+        nameKey: "menu.deviceList",
+        path: "/inverters",
+        requiresPermission: "view_inverters",
+      },
+      {
         icon: ChatIcon,
         nameKey: "menu.ticketAndWarranty",
         subItems: [
@@ -301,49 +319,24 @@ const MENU_GROUPS: MenuGroupDefinition[] = [
         ],
       },
       {
-        icon: BoxCubeIcon,
-        nameKey: "menu.deviceManagement",
-        requiresPermission: "view_inverters",
-        subItems: [
-          { nameKey: "menu.deviceList", path: "/inverters", pro: false },
-          { nameKey: "menu.deviceRegister", path: "/inverters/register", pro: false },
-          { nameKey: "menu.modelManagement", path: "/inverters/models", pro: false, requiresPermission: "manage_models" },
-        ],
-      },
-      {
-        icon: UserCircleIcon,
-        nameKey: "menu.customerManagement",
-        path: "/customers",
-        requiresPermission: "view_customers",
-      },
-      {
-        icon: TaskIcon,
-        nameKey: "menu.technicianManagement",
-        path: "/technicians",
-        requiresPermission: "view_technicians",
-      },
-      // Warehouse menu hidden
-      // {
-      //   icon: BoxIcon,
-      //   nameKey: "menu.warehouseManagement",
-      //   requiresPermission: "view_warehouse",
-      //   subItems: [
-      //     { nameKey: "menu.warehouse", path: "/warehouse", pro: false },
-      //     { nameKey: "menu.partsManagement", path: "/warehouse/parts", pro: false },
-      //     { nameKey: "menu.rmaManagement", path: "/warehouse/rma", pro: false },
-      //   ],
-      // },
-      {
-        icon: UserGroupIcon,
-        nameKey: "menu.userManagement",
-        path: "/users",
-        requiresPermission: "view_users",
+        icon: DocsIcon,
+        nameKey: "menu.warrantyPolicy",
+        path: "/warranty-policy",
       },
       {
         icon: SettingsIcon,
         nameKey: "menu.moreSetting",
-        requiresPermission: "manage_roles",
         subItems: [
+          {
+            nameKey: "menu.technicianManagement",
+            path: "/technicians",
+            requiresPermission: "view_technicians",
+          },
+          {
+            nameKey: "menu.userManagement",
+            path: "/users",
+            requiresPermission: "view_users",
+          },
           {
             nameKey: "menu.slaSettings",
             path: "/settings/sla",
@@ -377,13 +370,12 @@ const transformPath = (path?: string): string | undefined => {
   
   // For customer roles (END_USER, DISTRIBUTOR), transform certain paths
   if (userRole === UserRole.END_USER || userRole === UserRole.DISTRIBUTOR) {
-    // Transform device register path
-    if (path === '/inverters/register') {
-      return '/customer/inverters/register';
-    }
     // Transform device list path
     if (path === '/inverters') {
       return '/customer/inverters';
+    }
+    if (path === '/contracts') {
+      return '/customer/contracts';
     }
     // Transform ticket paths
     if (path === '/tickets') {
@@ -399,6 +391,9 @@ const transformPath = (path?: string): string | undefined => {
     // Transform profile path
     if (path === '/profile') {
       return '/customer/profile';
+    }
+    if (path === '/warranty-policy') {
+      return '/customer/warranty-policy';
     }
   }
   

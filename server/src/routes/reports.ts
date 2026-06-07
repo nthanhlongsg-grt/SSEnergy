@@ -485,5 +485,169 @@ router.get('/', authenticateToken, (req: AuthRequest, res) => {
   }
 })
 
+const UNPAID_PAYMENT_SQL = `(
+  c.paperwork IS NULL
+  OR TRIM(c.paperwork) = ''
+  OR TRIM(c.paperwork) = '{}'
+  OR NULLIF(TRIM(json_extract(c.paperwork, '$.payment_received_date')), '') IS NULL
+)`
+
+const ACTIVE_UNPAID_SQL = `c.status = 'active' AND ${UNPAID_PAYMENT_SQL}`
+
+const DEVICE_NOT_DELIVERED_SQL = `(
+  c.paperwork IS NULL
+  OR TRIM(c.paperwork) = ''
+  OR TRIM(c.paperwork) = '{}'
+  OR NULLIF(TRIM(json_extract(c.paperwork, '$.device_delivery_date')), '') IS NULL
+)`
+
+const ACTIVE_UNDELIVERED_SQL = `c.status = 'active' AND ${DEVICE_NOT_DELIVERED_SQL}`
+
+const vietnamDateString = (date = new Date()): string =>
+  new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Ho_Chi_Minh',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(date)
+
+const vietnamMonthRange = (): { from: string; to: string } => {
+  const now = new Date()
+  const to = vietnamDateString(now)
+  const parts = to.split('-')
+  return { from: `${parts[0]}-${parts[1]}-01`, to }
+}
+
+const isStaffRole = (role: UserRole): boolean =>
+  role !== UserRole.END_USER && role !== UserRole.DISTRIBUTOR
+
+// GET /api/reports/contracts — contract summary for reports page
+router.get('/contracts', authenticateToken, (req: AuthRequest, res) => {
+  try {
+    const user = req.user!
+    if (!isStaffRole(user.role)) {
+      return res.status(403).json({ error: 'Không có quyền xem báo cáo hợp đồng' })
+    }
+
+    const { from, to } = req.query
+    let dateFrom: string
+    let dateTo: string
+
+    if (from && to) {
+      dateFrom = from as string
+      dateTo = to as string
+    } else {
+      const range = vietnamMonthRange()
+      dateFrom = range.from
+      dateTo = range.to
+    }
+
+    const signedFilter = `
+      c.signed_date IS NOT NULL
+      AND DATE(c.signed_date) >= DATE(?)
+      AND DATE(c.signed_date) <= DATE(?)
+      AND c.status != 'cancelled'
+    `
+
+    const summary = db.prepare(`
+      SELECT
+        COUNT(*) as signed_count,
+        COALESCE(SUM(CASE WHEN NOT ${UNPAID_PAYMENT_SQL} THEN c.value ELSE 0 END), 0) as total_revenue,
+        COALESCE(SUM(CASE WHEN ${UNPAID_PAYMENT_SQL} THEN c.value ELSE 0 END), 0) as total_debt
+      FROM contracts c
+      WHERE ${signedFilter}
+    `).get(dateFrom, dateTo) as {
+      signed_count: number
+      total_revenue: number
+      total_debt: number
+    }
+
+    const devices = db.prepare(`
+      SELECT COUNT(DISTINCT ci.inverter_id) as repair_devices
+      FROM contract_inverters ci
+      JOIN contracts c ON c.id = ci.contract_id
+      WHERE ${signedFilter}
+    `).get(dateFrom, dateTo) as { repair_devices: number }
+
+    const allUnpaid = db.prepare(`
+      SELECT
+        COUNT(*) as unpaid_count,
+        COALESCE(SUM(c.value), 0) as total_unpaid_debt
+      FROM contracts c
+      WHERE ${ACTIVE_UNPAID_SQL}
+    `).get() as { unpaid_count: number; total_unpaid_debt: number }
+
+    const draftStats = db.prepare(`
+      SELECT COUNT(*) as draft_count FROM contracts WHERE status = 'draft'
+    `).get() as { draft_count: number }
+
+    const undeliveredContracts = db.prepare(`
+      SELECT COUNT(*) as undelivered_contract_count
+      FROM contracts c
+      WHERE ${ACTIVE_UNDELIVERED_SQL}
+    `).get() as { undelivered_contract_count: number }
+
+    const undeliveredDevices = db.prepare(`
+      SELECT COUNT(DISTINCT ci.inverter_id) as undelivered_device_count
+      FROM contract_inverters ci
+      JOIN contracts c ON c.id = ci.contract_id
+      WHERE ${ACTIVE_UNDELIVERED_SQL}
+    `).get() as { undelivered_device_count: number }
+
+    const contractRows = db.prepare(`
+      SELECT
+        c.id,
+        c.contract_number,
+        cu.name AS customer_name,
+        c.value,
+        c.signed_date,
+        c.status,
+        (SELECT COUNT(*) FROM contract_inverters ci WHERE ci.contract_id = c.id) AS device_count,
+        CASE WHEN ${UNPAID_PAYMENT_SQL} THEN 1 ELSE 0 END AS is_unpaid
+      FROM contracts c
+      LEFT JOIN customers cu ON cu.id = c.customer_id
+      WHERE ${signedFilter}
+      ORDER BY DATE(c.signed_date) DESC, c.id DESC
+      LIMIT 200
+    `).all(dateFrom, dateTo) as Array<{
+      id: number
+      contract_number: string
+      customer_name: string | null
+      value: number
+      signed_date: string | null
+      status: string
+      device_count: number
+      is_unpaid: number
+    }>
+
+    res.json({
+      signed_count: summary.signed_count,
+      total_revenue: summary.total_revenue,
+      total_debt: summary.total_debt,
+      total_unpaid_debt: allUnpaid.total_unpaid_debt,
+      unpaid_count: allUnpaid.unpaid_count,
+      draft_count: draftStats.draft_count,
+      undelivered_contract_count: undeliveredContracts.undelivered_contract_count,
+      undelivered_device_count: undeliveredDevices.undelivered_device_count,
+      repair_devices: devices.repair_devices,
+      contracts: contractRows.map((row) => ({
+        id: row.id,
+        contract_number: row.contract_number,
+        customer_name: row.customer_name,
+        value: row.value,
+        signed_date: row.signed_date,
+        status: row.status,
+        device_count: row.device_count,
+        is_unpaid: row.is_unpaid === 1,
+      })),
+      from: dateFrom,
+      to: dateTo,
+    })
+  } catch (error) {
+    console.error('Get contract reports error:', error)
+    res.status(500).json({ error: 'Internal server error' })
+  }
+})
+
 export default router
 

@@ -7,8 +7,10 @@
         <div class="flex flex-col flex-1 w-full lg:w-1/2">
           <div class="w-full max-w-md pt-10 mx-auto">
             <div class="flex items-center justify-between">
-              <router-link
-                to="/"
+              <a
+                :href="SGE_HOME_URL"
+                target="_blank"
+                rel="noopener noreferrer"
                 class="inline-flex items-center text-sm text-gray-500 transition-colors hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
               >
                 <svg
@@ -28,7 +30,7 @@
                   />
                 </svg>
                 {{ t('auth.signup.backToHome') }}
-              </router-link>
+              </a>
               <LanguageSwitcher />
             </div>
           </div>
@@ -382,7 +384,7 @@
           <div class="relative flex items-center justify-center z-1 w-full h-full">
             <div class="flex flex-col items-center max-w-md">
               <router-link to="/" class="block mb-4">
-                <img width="350" height="73" src="/images/logo/logo.png" alt="Growatt VietNam" class="object-contain" />
+                <img width="350" height="73" src="/images/logo/logo.png" alt="SGE VietNam" class="object-contain" />
               </router-link>
               <p class="text-center text-gray-100 dark:text-white/90">
                 {{ t('auth.signup.tagline') }}
@@ -403,6 +405,7 @@ import FullScreenLayout from '@/components/layout/FullScreenLayout.vue'
 import LanguageSwitcher from '@/components/common/LanguageSwitcher.vue'
 import { apiClient } from '@/services/api'
 import { useAuth } from '@/composables/useAuth'
+import { SGE_HOME_URL } from '@/constants/site'
 
 const router = useRouter()
 const { t } = useI18n()

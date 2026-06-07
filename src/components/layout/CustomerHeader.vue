@@ -5,7 +5,7 @@
         <!-- Logo -->
         <router-link to="/customer/dashboard" class="flex items-center gap-3">
           <div class="text-xl font-bold text-gray-900 dark:text-white">
-            Growatt
+            SGE
           </div>
         </router-link>
 
@@ -31,6 +31,13 @@
             active-class="text-blue-600 dark:text-blue-400 font-medium"
           >
             Yêu cầu Hỗ trợ
+          </router-link>
+          <router-link
+            to="/customer/warranty-policy"
+            class="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+            active-class="text-blue-600 dark:text-blue-400 font-medium"
+          >
+            {{ t('menu.warrantyPolicy') }}
           </router-link>
           <router-link
             to="/customer/profile"
@@ -82,6 +89,13 @@
           Yêu cầu Hỗ trợ
         </router-link>
         <router-link
+          to="/customer/warranty-policy"
+          @click="mobileMenuOpen = false"
+          class="block px-3 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"
+        >
+          Chính sách bảo hành
+        </router-link>
+        <router-link
           to="/customer/profile"
           @click="mobileMenuOpen = false"
           class="block px-3 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"
@@ -95,10 +109,12 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import NotificationMenu from './header/NotificationMenu.vue'
 import UserMenu from './header/UserMenu.vue'
 import MenuIcon from '@/icons/MenuIcon.vue'
 
+const { t } = useI18n()
 const mobileMenuOpen = ref(false)
 </script>
 

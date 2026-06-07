@@ -1,4 +1,4 @@
-# 🚀 Build Production cho https://growattvietnam.com
+# 🚀 Build Production cho https://SGEvietnam.com
 
 ## ✅ Kiểm tra trước khi build
 
@@ -19,12 +19,12 @@
 Tạo file `.env.production` trong thư mục root:
 
 ```env
-VITE_API_URL=https://growattvietnam.com/api
+VITE_API_URL=https://SGEvietnam.com/api
 ```
 
 **Lưu ý**: 
-- Nếu backend chạy trên subdomain riêng: `VITE_API_URL=https://api.growattvietnam.com`
-- Nếu backend chạy cùng domain: `VITE_API_URL=https://growattvietnam.com/api`
+- Nếu backend chạy trên subdomain riêng: `VITE_API_URL=https://api.SGEvietnam.com`
+- Nếu backend chạy cùng domain: `VITE_API_URL=https://SGEvietnam.com/api`
 
 ### Bước 2: Build với production environment
 
@@ -55,7 +55,7 @@ ls -la dist/assets/
    - **Output Directory**: `dist`
    - **Install Command**: `npm install`
 3. Environment Variables:
-   - `VITE_API_URL`: `https://growattvietnam.com/api`
+   - `VITE_API_URL`: `https://SGEvietnam.com/api`
 
 ### Option 2: Netlify
 
@@ -64,7 +64,7 @@ ls -la dist/assets/
    - **Build command**: `npm run build`
    - **Publish directory**: `dist`
 3. Environment Variables:
-   - `VITE_API_URL`: `https://growattvietnam.com/api`
+   - `VITE_API_URL`: `https://SGEvietnam.com/api`
 
 ### Option 3: Server (Nginx)
 
@@ -73,7 +73,7 @@ ls -la dist/assets/
 
 ## 🔍 Kiểm tra sau khi deploy
 
-1. ✅ Trang load thành công: https://growattvietnam.com
+1. ✅ Trang load thành công: https://SGEvietnam.com
 2. ✅ Login/Register hoạt động
 3. ✅ API calls thành công (mở DevTools > Network)
 4. ✅ Routing hoạt động (thử navigate giữa các trang)

@@ -2,6 +2,7 @@ import { Router } from 'express'
 import db from '../database/db.js'
 import { authenticateToken, AuthRequest } from '../middleware/auth.js'
 import { UserRole } from '../types/index.js'
+import { AUTO_ASSIGN_STAFF_ROLES } from '../utils/staffFunction.js'
 
 const router = Router()
 
@@ -10,8 +11,8 @@ router.get('/', authenticateToken, (req, res) => {
   try {
     const includeAdmins = req.query.includeAdmins === 'true'
     const roles = includeAdmins
-      ? [UserRole.TECHNICIAN, UserRole.ADMIN, UserRole.DEV]
-      : [UserRole.TECHNICIAN]
+      ? [...AUTO_ASSIGN_STAFF_ROLES]
+      : [UserRole.TECHNICIAN, UserRole.SERVICE_CENTER]
     const rolePlaceholders = roles.map(() => '?').join(', ')
 
     const technicians = db.prepare(`
@@ -45,8 +46,8 @@ router.get('/stats', authenticateToken, (req, res) => {
   try {
     const includeAdmins = req.query.includeAdmins === 'true'
     const roles = includeAdmins
-      ? [UserRole.TECHNICIAN, UserRole.ADMIN, UserRole.DEV]
-      : [UserRole.TECHNICIAN]
+      ? [...AUTO_ASSIGN_STAFF_ROLES]
+      : [UserRole.TECHNICIAN, UserRole.SERVICE_CENTER]
     const rolePlaceholders = roles.map(() => '?').join(', ')
 
     const totalTechnicians = db.prepare(`

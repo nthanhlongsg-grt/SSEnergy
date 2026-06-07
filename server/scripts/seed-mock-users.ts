@@ -3,12 +3,12 @@ import db from '../src/database/db.js'
 
 const MOCK_USERS = [
   {
-    name: 'Growatt Developer',
-    email: 'deverloper@growattvietnam.com',
+    name: 'SGE Developer',
+    email: 'deverloper@SGEvietnam.com',
     password: 'Tl16081995*',
     code: 'DEV001',
     role: 'dev',
-    organization: 'Growatt Vietnam',
+    organization: 'SGE Vietnam',
     phone: '0900000000',
   },
 ]

@@ -4,11 +4,11 @@ import db from '../src/database/db.js'
 // Developer account information (aligned with scripts/add-developer-account.ts)
 const DEVELOPER_ACCOUNT = {
   name: 'developer',
-  email: 'developer@growattvietnam.com',
-  password: 'Growatt2025',
+  email: 'developer@SGEvietnam.com',
+  password: 'SGE2025',
   code: 'DEV001',
   role: 'dev',
-  organization: 'Growatt Development',
+  organization: 'SGE Development',
   phone: '0900000000',
 }
 

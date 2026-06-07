@@ -102,7 +102,7 @@ const migrations: Migration[] = [
       db.exec(`
         UPDATE users
         SET role = 'dev'
-        WHERE email = 'developer@growatt.vn' OR name = 'developer'
+        WHERE email = 'developer@SGE.vn' OR name = 'developer'
       `)
     },
   },

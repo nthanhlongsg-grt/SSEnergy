@@ -22,9 +22,9 @@ const router = createRouter({
     {
       path: '/',
       name: 'Dashboard',
-      component: () => import('../views/Growatt/Dashboard.vue'),
+      component: () => import('../views/SGE/Dashboard.vue'),
       meta: {
-        title: 'Growatt After-Sales Dashboard',
+        title: 'SGE After-Sales Dashboard',
         requiresAuth: true,
         userGroup: 'management',
       },
@@ -33,9 +33,9 @@ const router = createRouter({
     {
       path: '/inverters',
       name: 'Inverters',
-      component: () => import('../views/Growatt/Inverters/InverterList.vue'),
+      component: () => import('../views/SGE/Inverters/InverterList.vue'),
       meta: {
-        title: 'Quản lý Thiết bị',
+        title: 'Danh sách Biến tần',
         requiresAuth: true,
         requiresPermission: 'view_inverters',
       },
@@ -43,38 +43,18 @@ const router = createRouter({
     {
       path: '/inverters/:id',
       name: 'InverterDetail',
-      component: () => import('../views/Growatt/Inverters/InverterDetail.vue'),
+      component: () => import('../views/SGE/Inverters/InverterDetail.vue'),
       meta: {
         title: 'Chi tiết Thiết bị',
         requiresAuth: true,
         requiresPermission: 'view_inverters',
       },
     },
-    {
-      path: '/inverters/register',
-      name: 'RegisterInverter',
-      component: () => import('../views/Growatt/Inverters/RegisterInverter.vue'),
-      meta: {
-        title: 'Đăng ký Thiết bị mới',
-        requiresAuth: true,
-        requiresPermission: 'view_inverters',
-      },
-    },
-    {
-      path: '/inverters/models',
-      name: 'ModelList',
-      component: () => import('../views/Growatt/Inverters/ModelList.vue'),
-      meta: {
-        title: 'Quản lý Model Thiết bị',
-        requiresAuth: true,
-        requiresPermission: 'manage_models',
-      },
-    },
     // Quản lý Khách hàng
     {
       path: '/customers',
       name: 'Customers',
-      component: () => import('../views/Growatt/Customers/CustomerList.vue'),
+      component: () => import('../views/SGE/Customers/CustomerList.vue'),
       meta: {
         title: 'Quản lý Khách hàng',
         requiresAuth: true,
@@ -85,7 +65,7 @@ const router = createRouter({
     {
       path: '/customers/:id',
       name: 'CustomerDetail',
-      component: () => import('../views/Growatt/Customers/CustomerDetail.vue'),
+      component: () => import('../views/SGE/Customers/CustomerDetail.vue'),
       meta: {
         title: 'Chi tiết Khách hàng',
         requiresAuth: true,
@@ -97,7 +77,7 @@ const router = createRouter({
     {
       path: '/tickets',
       name: 'Tickets',
-      component: () => import('../views/Growatt/Tickets/TicketList.vue'),
+      component: () => import('../views/SGE/Tickets/TicketList.vue'),
       meta: {
         title: 'Quản lý Ticket',
         requiresAuth: true,
@@ -108,7 +88,7 @@ const router = createRouter({
     {
       path: '/tickets/new',
       name: 'NewTicket',
-      component: () => import('../views/Growatt/Tickets/NewTicket.vue'),
+      component: () => import('../views/SGE/Tickets/NewTicket.vue'),
       meta: {
         title: 'Tạo Ticket mới',
         requiresAuth: true,
@@ -119,7 +99,7 @@ const router = createRouter({
     {
       path: '/tickets/:id',
       name: 'TicketDetail',
-      component: () => import('../views/Growatt/Tickets/TicketDetail.vue'),
+      component: () => import('../views/SGE/Tickets/TicketDetail.vue'),
       meta: {
         title: 'Chi tiết Ticket',
         requiresAuth: true,
@@ -131,7 +111,7 @@ const router = createRouter({
     {
       path: '/notifications',
       name: 'Notifications',
-      component: () => import('../views/Growatt/Notifications.vue'),
+      component: () => import('../views/SGE/Notifications.vue'),
       meta: {
         title: 'Thông báo',
         requiresAuth: true,
@@ -142,7 +122,7 @@ const router = createRouter({
     {
       path: '/technicians',
       name: 'Technicians',
-      component: () => import('../views/Growatt/Technicians/TechnicianList.vue'),
+      component: () => import('../views/SGE/Technicians/TechnicianList.vue'),
       meta: {
         title: 'Quản lý Kỹ thuật',
         requiresAuth: true,
@@ -153,7 +133,7 @@ const router = createRouter({
     {
       path: '/technicians/schedule',
       name: 'TechnicianSchedule',
-      component: () => import('../views/Growatt/Technicians/TechnicianSchedule.vue'),
+      component: () => import('../views/SGE/Technicians/TechnicianSchedule.vue'),
       meta: {
         title: 'Lịch Kỹ thuật viên',
         requiresAuth: true,
@@ -164,7 +144,7 @@ const router = createRouter({
     {
       path: '/tasks/:id',
       name: 'TaskDetail',
-      component: () => import('../views/Growatt/Tasks/TaskDetail.vue'),
+      component: () => import('../views/SGE/Tasks/TaskDetail.vue'),
       meta: {
         title: 'Chi tiết Công việc',
         requiresAuth: true,
@@ -176,7 +156,7 @@ const router = createRouter({
     {
       path: '/warehouse',
       name: 'Warehouse',
-      component: () => import('../views/Growatt/Warehouse/WarehouseList.vue'),
+      component: () => import('../views/SGE/Warehouse/WarehouseList.vue'),
       meta: {
         title: 'Quản lý Kho',
         requiresAuth: true,
@@ -187,7 +167,7 @@ const router = createRouter({
     {
       path: '/warehouse/parts',
       name: 'PartsManagement',
-      component: () => import('../views/Growatt/Warehouse/PartsManagement.vue'),
+      component: () => import('../views/SGE/Warehouse/PartsManagement.vue'),
       meta: {
         title: 'Quản lý Linh kiện',
         requiresAuth: true,
@@ -198,7 +178,7 @@ const router = createRouter({
     {
       path: '/warehouse/rma',
       name: 'RMAManagement',
-      component: () => import('../views/Growatt/Warehouse/RMAManagement.vue'),
+      component: () => import('../views/SGE/Warehouse/RMAManagement.vue'),
       meta: {
         title: 'Quản lý RMA',
         requiresAuth: true,
@@ -210,7 +190,7 @@ const router = createRouter({
     {
       path: '/service-reports',
       name: 'ServiceReports',
-      component: () => import('../views/Growatt/ServiceReports/ServiceReportList.vue'),
+      component: () => import('../views/SGE/ServiceReports/ServiceReportList.vue'),
       meta: {
         title: 'Biên bản Dịch vụ',
         requiresAuth: true,
@@ -221,7 +201,7 @@ const router = createRouter({
     {
       path: '/service-reports/:id',
       name: 'ServiceReportDetail',
-      component: () => import('../views/Growatt/ServiceReports/ServiceReportDetail.vue'),
+      component: () => import('../views/SGE/ServiceReports/ServiceReportDetail.vue'),
       meta: {
         title: 'Chi tiết Biên bản',
         requiresAuth: true,
@@ -233,7 +213,7 @@ const router = createRouter({
     {
       path: '/reports',
       name: 'Reports',
-      component: () => import('../views/Growatt/Reports/Reports.vue'),
+      component: () => import('../views/SGE/Reports/Reports.vue'),
       meta: {
         title: 'Báo cáo & Thống kê',
         requiresAuth: true,
@@ -241,11 +221,34 @@ const router = createRouter({
         userGroup: 'management',
       },
     },
+    // Quản lý Hợp đồng
+    {
+      path: '/contracts',
+      name: 'Contracts',
+      component: () => import('../views/SGE/Contracts/ContractList.vue'),
+      meta: {
+        title: 'Quản lý Hợp đồng',
+        requiresAuth: true,
+        requiresPermission: 'view_contracts',
+        userGroup: 'management',
+      },
+    },
+    {
+      path: '/contracts/:id',
+      name: 'ContractDetail',
+      component: () => import('../views/SGE/Contracts/ContractDetail.vue'),
+      meta: {
+        title: 'Chi tiết Hợp đồng',
+        requiresAuth: true,
+        requiresPermission: 'view_contracts',
+        userGroup: 'management',
+      },
+    },
     // Quản lý Người dùng & Phân quyền
     {
       path: '/users',
       name: 'UserManagement',
-      component: () => import('../views/Growatt/Users/UserManagement.vue'),
+      component: () => import('../views/SGE/Users/UserManagement.vue'),
       meta: {
         title: 'Quản lý Người dùng',
         requiresAuth: true,
@@ -256,7 +259,7 @@ const router = createRouter({
     {
       path: '/settings/auto-assign',
       name: 'AutoAssignSettings',
-      component: () => import('../views/Growatt/Settings/AutoAssignSettings.vue'),
+      component: () => import('../views/SGE/Settings/AutoAssignSettings.vue'),
       meta: {
         title: 'Auto-assign Settings',
         requiresAuth: true,
@@ -267,7 +270,7 @@ const router = createRouter({
     {
       path: '/settings/sla',
       name: 'SlaSettings',
-      component: () => import('../views/Growatt/Settings/SlaSettings.vue'),
+      component: () => import('../views/SGE/Settings/SlaSettings.vue'),
       meta: {
         title: 'SLA Settings',
         requiresAuth: true,
@@ -311,6 +314,15 @@ const router = createRouter({
         requiresAuth: true,
       },
     },
+    {
+      path: '/warranty-policy',
+      name: 'WarrantyPolicy',
+      component: () => import('../views/Policies/WarrantyPolicy.vue'),
+      meta: {
+        title: 'Chính sách bảo hành',
+        requiresAuth: true,
+      },
+    },
 
     {
       path: '/error-404',
@@ -351,24 +363,13 @@ const router = createRouter({
     },
     // Customer routes (end_user, distributor)
     ...customerRoutes,
-    // Catch-all route for API requests - redirect to backend
-    {
-      path: '/api/:pathMatch(.*)*',
-      redirect: () => {
-        // Redirect API requests to backend
-        const backendUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-          ? 'http://localhost:3000'
-          : `http://${window.location.hostname}:3000`
-        return `${backendUrl}${window.location.pathname}`
-      },
-    },
   ],
 })
 
 export default router
 
 router.beforeEach(async (to, from, next) => {
-  document.title = `${to.meta.title || 'Growatt'} | Growatt After-Sales Management System`
+  document.title = `${to.meta.title || 'SGE'} | SGE After-Sales Management System`
   
   // Wait for auth initialization to complete
   if (!authInitialized) {
@@ -386,6 +387,12 @@ router.beforeEach(async (to, from, next) => {
     const userRole = getUserRole.value
     const defaultRoute = getDefaultRouteByRole(userRole)
     next(defaultRoute)
+    return
+  }
+
+  // Khách hàng dùng route /customer/* cho thống nhất sidebar & URL
+  if (isAuthenticated.value && isCustomerRole(getUserRole.value) && to.path === '/warranty-policy') {
+    next('/customer/warranty-policy')
     return
   }
 

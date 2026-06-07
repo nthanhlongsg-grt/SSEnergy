@@ -5,7 +5,7 @@ import { fileURLToPath } from 'url'
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
-const dbPath = process.env.DATABASE_PATH || path.join(__dirname, '../../database/growatt.db')
+const dbPath = process.env.DATABASE_PATH || path.join(__dirname, '../../database/SGE.db')
 
 // Ensure database directory exists
 import fs from 'fs'
@@ -99,6 +99,15 @@ db.exec(`
     organization TEXT,
     tax_code TEXT,
     contact_person TEXT,
+    contact_phone TEXT,
+    contact_email TEXT,
+    contact_address TEXT,
+    representative_name TEXT,
+    representative_position TEXT,
+    authorization_doc TEXT,
+    recipient_name TEXT,
+    recipient_address TEXT,
+    recipient_phone TEXT,
     notes TEXT,
     user_id INTEGER,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -111,11 +120,13 @@ db.exec(`
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     serial_number TEXT NOT NULL UNIQUE,
     model TEXT NOT NULL,
+    manufacturer TEXT,
     type TEXT,
     power_rating TEXT,
     installation_date DATE,
     warranty_start_date DATE,
     warranty_end_date DATE,
+    warranty_months INTEGER,
     warranty_type TEXT,
     customer_id INTEGER,
     distributor_id INTEGER,
@@ -163,6 +174,7 @@ db.exec(`
     ticket_id INTEGER NOT NULL,
     user_id INTEGER NOT NULL,
     comment TEXT NOT NULL,
+    is_internal INTEGER DEFAULT 0,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (ticket_id) REFERENCES tickets(id) ON DELETE CASCADE,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
@@ -172,6 +184,7 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS ticket_attachments (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     ticket_id INTEGER NOT NULL,
+    comment_id INTEGER,
     filename TEXT NOT NULL,
     file_path TEXT NOT NULL,
     file_size INTEGER,
@@ -180,6 +193,17 @@ db.exec(`
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (ticket_id) REFERENCES tickets(id) ON DELETE CASCADE,
     FOREIGN KEY (uploaded_by) REFERENCES users(id) ON DELETE CASCADE
+  );
+
+  -- Ticket watchers (users following ticket updates)
+  CREATE TABLE IF NOT EXISTS ticket_watchers (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    ticket_id INTEGER NOT NULL,
+    user_id INTEGER NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (ticket_id) REFERENCES tickets(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE(ticket_id, user_id)
   );
 
   -- Service Reports table
@@ -420,6 +444,49 @@ db.exec(`
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
 
+  -- Contracts table
+  CREATE TABLE IF NOT EXISTS contracts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    contract_number TEXT NOT NULL UNIQUE,
+    customer_id INTEGER NOT NULL,
+    title TEXT NOT NULL,
+    contract_type TEXT NOT NULL DEFAULT 'maintenance',
+    start_date DATE NOT NULL,
+    end_date DATE NOT NULL,
+    value REAL DEFAULT 0,
+    status TEXT NOT NULL DEFAULT 'draft',
+    description TEXT,
+    notes TEXT,
+    signed_date DATE,
+    delivery_days INTEGER DEFAULT 7,
+    warranty_months INTEGER DEFAULT 12,
+    items TEXT,
+    vat_rate REAL DEFAULT 8,
+    created_by INTEGER NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE CASCADE,
+    FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE CASCADE
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_contracts_customer ON contracts(customer_id);
+  CREATE INDEX IF NOT EXISTS idx_contracts_status ON contracts(status);
+  CREATE INDEX IF NOT EXISTS idx_contracts_end_date ON contracts(end_date);
+  CREATE INDEX IF NOT EXISTS idx_contracts_created_at ON contracts(created_at);
+
+  -- Contract Inverters (many-to-many)
+  CREATE TABLE IF NOT EXISTS contract_inverters (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    contract_id INTEGER NOT NULL,
+    inverter_id INTEGER NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (contract_id) REFERENCES contracts(id) ON DELETE CASCADE,
+    FOREIGN KEY (inverter_id) REFERENCES inverters(id) ON DELETE CASCADE,
+    UNIQUE(contract_id, inverter_id)
+  );
+  CREATE INDEX IF NOT EXISTS idx_contract_inverters_contract ON contract_inverters(contract_id);
+  CREATE INDEX IF NOT EXISTS idx_contract_inverters_inverter ON contract_inverters(inverter_id);
+
   -- System Settings table
   CREATE TABLE IF NOT EXISTS settings (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -536,6 +603,145 @@ db.exec(`
 // Note: initCountColumns() is called from index.ts after db initialization
 // to avoid circular dependency
 
+// Migration: Drop unique index on customers.user_id (allow one user to be contact for multiple companies)
+try {
+  db.exec('DROP INDEX IF EXISTS idx_customers_user_id_unique')
+  console.log('✅ Dropped unique index on customers.user_id')
+} catch (err: any) {
+  console.log('ℹ️  idx_customers_user_id_unique:', err.message)
+}
+
+// Migration: Add contact_user_id column to customers if missing
+try {
+  const custCols = db.prepare("PRAGMA table_info(customers)").all() as Array<{ name: string }>
+  if (!custCols.some(c => c.name === 'contact_user_id')) {
+    db.prepare('ALTER TABLE customers ADD COLUMN contact_user_id INTEGER REFERENCES users(id) ON DELETE SET NULL').run()
+    // Copy existing user_id -> contact_user_id
+    db.prepare('UPDATE customers SET contact_user_id = user_id WHERE user_id IS NOT NULL').run()
+    console.log('✅ Added contact_user_id to customers')
+  }
+} catch (err: any) {
+  console.log('ℹ️  contact_user_id migration:', err.message)
+}
+
+// Migration: Add contact detail columns (phone/email/address) to customers if missing
+try {
+  const custCols = db.prepare("PRAGMA table_info(customers)").all() as Array<{ name: string }>
+  if (!custCols.some(c => c.name === 'contact_phone')) {
+    db.prepare('ALTER TABLE customers ADD COLUMN contact_phone TEXT').run()
+    console.log('✅ Added contact_phone to customers')
+  }
+  if (!custCols.some(c => c.name === 'contact_email')) {
+    db.prepare('ALTER TABLE customers ADD COLUMN contact_email TEXT').run()
+    console.log('✅ Added contact_email to customers')
+  }
+  if (!custCols.some(c => c.name === 'contact_address')) {
+    db.prepare('ALTER TABLE customers ADD COLUMN contact_address TEXT').run()
+    console.log('✅ Added contact_address to customers')
+  }
+} catch (err: any) {
+  console.log('ℹ️  customer contact detail columns migration:', err.message)
+}
+
+// Migration: Add legal representative columns to customers if missing
+try {
+  const custCols = db.prepare("PRAGMA table_info(customers)").all() as Array<{ name: string }>
+  if (!custCols.some(c => c.name === 'representative_name')) {
+    db.prepare('ALTER TABLE customers ADD COLUMN representative_name TEXT').run()
+    console.log('✅ Added representative_name to customers')
+  }
+  if (!custCols.some(c => c.name === 'representative_position')) {
+    db.prepare('ALTER TABLE customers ADD COLUMN representative_position TEXT').run()
+    console.log('✅ Added representative_position to customers')
+  }
+  if (!custCols.some(c => c.name === 'authorization_doc')) {
+    db.prepare('ALTER TABLE customers ADD COLUMN authorization_doc TEXT').run()
+    console.log('✅ Added authorization_doc to customers')
+  }
+} catch (err: any) {
+  console.log('ℹ️  customer representative columns migration:', err.message)
+}
+
+// Migration: Add contract recipient columns to customers if missing
+try {
+  const custCols = db.prepare("PRAGMA table_info(customers)").all() as Array<{ name: string }>
+  if (!custCols.some(c => c.name === 'recipient_name')) {
+    db.prepare('ALTER TABLE customers ADD COLUMN recipient_name TEXT').run()
+    console.log('✅ Added recipient_name to customers')
+  }
+  if (!custCols.some(c => c.name === 'recipient_address')) {
+    db.prepare('ALTER TABLE customers ADD COLUMN recipient_address TEXT').run()
+    console.log('✅ Added recipient_address to customers')
+  }
+  if (!custCols.some(c => c.name === 'recipient_phone')) {
+    db.prepare('ALTER TABLE customers ADD COLUMN recipient_phone TEXT').run()
+    console.log('✅ Added recipient_phone to customers')
+  }
+} catch (err: any) {
+  console.log('ℹ️  customer recipient columns migration:', err.message)
+}
+
+// Migration: Add manufacturer / warranty_months columns to inverters if missing
+try {
+  const invCols = db.prepare("PRAGMA table_info(inverters)").all() as Array<{ name: string }>
+  if (!invCols.some(c => c.name === 'manufacturer')) {
+    db.prepare('ALTER TABLE inverters ADD COLUMN manufacturer TEXT').run()
+    console.log('✅ Added manufacturer to inverters')
+  }
+  if (!invCols.some(c => c.name === 'warranty_months')) {
+    db.prepare('ALTER TABLE inverters ADD COLUMN warranty_months INTEGER').run()
+    console.log('✅ Added warranty_months to inverters')
+  }
+} catch (err: any) {
+  console.log('ℹ️  inverter columns migration:', err.message)
+}
+
+// Migration: Add line-item columns to contracts if missing
+try {
+  const contractCols = db.prepare("PRAGMA table_info(contracts)").all() as Array<{ name: string }>
+  if (!contractCols.some(c => c.name === 'items')) {
+    db.prepare('ALTER TABLE contracts ADD COLUMN items TEXT').run()
+    console.log('✅ Added items to contracts')
+  }
+  if (!contractCols.some(c => c.name === 'vat_rate')) {
+    db.prepare('ALTER TABLE contracts ADD COLUMN vat_rate REAL DEFAULT 8').run()
+    console.log('✅ Added vat_rate to contracts')
+  }
+  if (!contractCols.some(c => c.name === 'delivery_days')) {
+    db.prepare('ALTER TABLE contracts ADD COLUMN delivery_days INTEGER DEFAULT 7').run()
+    console.log('✅ Added delivery_days to contracts')
+  }
+  if (!contractCols.some(c => c.name === 'warranty_months')) {
+    db.prepare('ALTER TABLE contracts ADD COLUMN warranty_months INTEGER DEFAULT 12').run()
+    console.log('✅ Added warranty_months to contracts')
+  }
+  if (!contractCols.some(c => c.name === 'paperwork')) {
+    db.prepare('ALTER TABLE contracts ADD COLUMN paperwork TEXT').run()
+    console.log('✅ Added paperwork to contracts')
+  }
+} catch (err: any) {
+  console.log('ℹ️  contract items columns migration:', err.message)
+}
+
+// Migration: denormalized ticket fields (customer/inverter snapshot)
+try {
+  const ticketCols = db.prepare('PRAGMA table_info(tickets)').all() as Array<{ name: string }>
+  const addTicketCol = (name: string, ddl: string) => {
+    if (!ticketCols.some(c => c.name === name)) {
+      db.prepare(`ALTER TABLE tickets ADD COLUMN ${ddl}`).run()
+      console.log(`✅ Added ${name} to tickets`)
+    }
+  }
+  addTicketCol('customer_name', 'customer_name TEXT')
+  addTicketCol('customer_email', 'customer_email TEXT')
+  addTicketCol('customer_phone', 'customer_phone TEXT')
+  addTicketCol('customer_address', 'customer_address TEXT')
+  addTicketCol('inverter_serial', 'inverter_serial TEXT')
+  addTicketCol('inverter_model', 'inverter_model TEXT')
+} catch (err: any) {
+  console.log('ℹ️  tickets denormalized columns migration:', err.message)
+}
+
 // Migration: Add function column to users table if it doesn't exist
 try {
   const tableInfo = db.prepare("PRAGMA table_info(users)").all() as Array<{ name: string }>
@@ -551,6 +757,48 @@ try {
   } else {
     console.error('⚠️  Error checking/adding function column:', err.message)
   }
+}
+
+// Migration: ticket_watchers table (required by GET /api/tickets/:id)
+try {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS ticket_watchers (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      ticket_id INTEGER NOT NULL,
+      user_id INTEGER NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (ticket_id) REFERENCES tickets(id) ON DELETE CASCADE,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+      UNIQUE(ticket_id, user_id)
+    );
+    CREATE INDEX IF NOT EXISTS idx_ticket_watchers_ticket ON ticket_watchers(ticket_id);
+    CREATE INDEX IF NOT EXISTS idx_ticket_watchers_user ON ticket_watchers(user_id);
+  `)
+} catch (err: any) {
+  console.log('ℹ️  ticket_watchers migration:', err.message)
+}
+
+// Migration: comment_id on ticket_attachments (comment-linked images)
+try {
+  const attCols = db.prepare('PRAGMA table_info(ticket_attachments)').all() as Array<{ name: string }>
+  if (!attCols.some(c => c.name === 'comment_id')) {
+    db.prepare('ALTER TABLE ticket_attachments ADD COLUMN comment_id INTEGER').run()
+    db.prepare('CREATE INDEX IF NOT EXISTS idx_ticket_attachments_comment_id ON ticket_attachments(comment_id)').run()
+    console.log('✅ Added comment_id to ticket_attachments')
+  }
+} catch (err: any) {
+  console.log('ℹ️  ticket_attachments comment_id migration:', err.message)
+}
+
+// Migration: is_internal on ticket_comments
+try {
+  const commentCols = db.prepare('PRAGMA table_info(ticket_comments)').all() as Array<{ name: string }>
+  if (!commentCols.some(c => c.name === 'is_internal')) {
+    db.prepare('ALTER TABLE ticket_comments ADD COLUMN is_internal INTEGER DEFAULT 0').run()
+    console.log('✅ Added is_internal to ticket_comments')
+  }
+} catch (err: any) {
+  console.log('ℹ️  ticket_comments is_internal migration:', err.message)
 }
 
 export default db

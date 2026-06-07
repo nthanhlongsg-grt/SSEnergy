@@ -2,6 +2,11 @@ import { Router } from 'express'
 import db from '../database/db.js'
 import { authenticateToken, requireRole } from '../middleware/auth.js'
 import { UserRole } from '../types/index.js'
+import {
+  resolveStaffFunction,
+  AUTO_ASSIGN_STAFF_ROLES,
+  type AutoAssignFunction,
+} from '../utils/staffFunction.js'
 
 const router = Router()
 
@@ -11,8 +16,6 @@ export const AUTO_ASSIGN_KEYS = {
   sale: 'auto_assign_sale',
   management: 'auto_assign_management',
 } as const
-
-export type AutoAssignFunction = keyof typeof AUTO_ASSIGN_KEYS
 
 export interface AutoAssignSettings {
   repair: number | null
@@ -93,17 +96,18 @@ router.put(
           throw new Error(`${fn}: user ID must be a positive integer or null`)
         }
 
-        // Verify user exists, is active, and has the matching function
+        const rolePlaceholders = AUTO_ASSIGN_STAFF_ROLES.map(() => '?').join(', ')
         const user = db.prepare(
-          `SELECT id, function FROM users WHERE id = ? AND status = 'active' AND role IN (?, ?, ?)`
-        ).get(numVal, UserRole.TECHNICIAN, UserRole.ADMIN, UserRole.DEV) as { id: number; function: string | null } | undefined
+          `SELECT id, role, function FROM users WHERE id = ? AND status = 'active' AND role IN (${rolePlaceholders})`
+        ).get(numVal, ...AUTO_ASSIGN_STAFF_ROLES) as { id: number; role: string; function: string | null } | undefined
 
         if (!user) {
           throw new Error(`${fn}: user not found or not an active staff member`)
         }
 
-        if (user.function !== fn) {
-          throw new Error(`${fn}: user function does not match (expected "${fn}", got "${user.function}")`)
+        const effectiveFn = resolveStaffFunction(user.role, user.function)
+        if (effectiveFn !== fn) {
+          throw new Error(`${fn}: user function does not match (expected "${fn}", got "${effectiveFn ?? user.function}")`)
         }
 
         upsert.run(AUTO_ASSIGN_KEYS[fn], String(numVal), `Auto-assign staff for function: ${fn}`)

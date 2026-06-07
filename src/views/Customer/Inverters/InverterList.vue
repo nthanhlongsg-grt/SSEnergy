@@ -8,16 +8,9 @@
           {{ t('customers.inverters.list.header.title') }}
         </h1>
         <p class="text-sm sm:text-base text-gray-500 dark:text-gray-400 mt-1">
-          {{ t('customers.inverters.list.header.subtitle') }}
+          Thiết bị theo hợp đồng của bạn
         </p>
       </div>
-      <router-link
-        to="/customer/inverters/register"
-        class="flex items-center gap-2 px-3 sm:px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm sm:text-base whitespace-nowrap w-full sm:w-auto justify-center"
-      >
-        <PlusIcon class="h-4 w-4 sm:h-5 sm:w-5" />
-        <span>{{ t('customers.inverters.list.actions.registerNew') }}</span>
-      </router-link>
     </div>
 
     <!-- Filters -->
@@ -101,7 +94,7 @@
             </tr>
             <tr v-else-if="inverters.length === 0">
               <td colspan="6" class="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
-                {{ t('customers.inverters.list.table.empty') }} <router-link to="/customer/inverters/register" class="text-blue-600 hover:underline">{{ t('customers.inverters.list.table.registerNow') }}</router-link>
+                Chưa có thiết bị nào trong hợp đồng
               </td>
             </tr>
             <tr
@@ -153,10 +146,7 @@
           {{ error }}
         </div>
         <div v-else-if="inverters.length === 0" class="p-6 text-center text-gray-500 dark:text-gray-400 text-sm">
-          {{ t('customers.inverters.list.table.empty') }}
-          <router-link to="/customer/inverters/register" class="block mt-2 text-blue-600 hover:underline">
-            {{ t('customers.inverters.list.table.registerNow') }}
-          </router-link>
+          Chưa có thiết bị nào trong hợp đồng
         </div>
         <div
           v-for="inverter in inverters"
@@ -207,7 +197,6 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import PlusIcon from '@/icons/PlusIcon.vue'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import { inverterService } from '@/services/inverterService'
 

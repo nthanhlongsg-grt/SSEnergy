@@ -3,6 +3,7 @@ import db from '../database/db.js'
 import { authenticateToken, requireRole, AuthRequest } from '../middleware/auth.js'
 import { UserRole } from '../types/index.js'
 import { syncCustomerToTickets, syncUserToCustomers } from '../database/sync.js'
+import { createNotification, notifyUsersByRoles } from '../services/notificationService.js'
 
 const router = Router()
 
@@ -10,130 +11,42 @@ const router = Router()
 router.get('/', authenticateToken, (req, res) => {
   try {
     const { search, customer_type, page = '1', limit = '1000' } = req.query
-    
-    // Get users with customer roles (END_USER, DISTRIBUTOR, DEALER)
-    let userQuery = `
-      SELECT 
-        u.id,
-        u.name,
-        u.email,
-        u.phone,
-        u.address,
-        u.role as type,
-        u.organization,
-        u.code,
-        u.parent_distributor_id,
-        u.created_at,
-        dist.name as distributor_name,
-        dist.code as distributor_code
-      FROM users u
-      LEFT JOIN distributors dist ON u.parent_distributor_id = dist.id
-      WHERE u.role IN ('end_user', 'distributor', 'dealer')
-        AND u.status = 'active'
+
+    let query = `
+      SELECT
+        c.id, c.name, c.email, c.phone, c.address,
+        c.customer_type as type, c.customer_type,
+        c.tax_code, c.contact_person, c.notes,
+        c.representative_name, c.representative_position, c.authorization_doc,
+        c.recipient_name, c.recipient_address, c.recipient_phone,
+        c.contact_user_id, c.created_at,
+        c.contact_person  AS contact_name,
+        c.contact_email   AS contact_email,
+        c.contact_phone   AS contact_phone,
+        c.contact_address AS contact_address
+      FROM customers c
+      WHERE 1=1
     `
-    const userParams: any[] = []
+    const params: any[] = []
 
     if (search) {
-      userQuery += ' AND (u.name LIKE ? OR u.email LIKE ? OR u.phone LIKE ? OR u.organization LIKE ? OR u.code LIKE ?)'
-      const searchTerm = `%${search}%`
-      userParams.push(searchTerm, searchTerm, searchTerm, searchTerm, searchTerm)
+      query += ` AND (c.name LIKE ? OR c.email LIKE ? OR c.tax_code LIKE ?
+                   OR c.contact_person LIKE ?)`
+      const s = `%${search}%`
+      params.push(s, s, s, s)
     }
+    if (customer_type) { query += ' AND c.customer_type = ?'; params.push(customer_type) }
 
-    if (customer_type) {
-      if (customer_type === 'end_user') {
-        userQuery += ' AND u.role = ?'
-        userParams.push('end_user')
-      } else if (customer_type === 'distributor') {
-        userQuery += ' AND u.role = ?'
-        userParams.push('distributor')
-      }
-    }
+    query += ' ORDER BY c.created_at DESC'
 
-    const users = db.prepare(userQuery).all(...userParams)
+    const allCustomers = db.prepare(query).all(...params) as any[]
 
-    // Map users to customer format
-    const allCustomers = users.map((u: any) => ({
-      id: u.id, // Use actual user ID instead of prefix
-      user_id: u.id, // Keep for reference
-      name: u.name,
-      email: u.email || null,
-      phone: u.phone || null,
-      address: u.address || null,
-      type: u.type,
-      customer_type: u.type,
-      organization: u.organization || null,
-      code: u.code || null,
-      parent_distributor_id: u.parent_distributor_id || null,
-      distributor_name: u.distributor_name || null,
-      distributor_code: u.distributor_code || null,
-      source: 'user',
-      created_at: u.created_at,
-      projectCount: 0,
-      inverterCount: 0,
-    }))
-
-    // Get statistics for each customer
-    for (const customer of allCustomers) {
-      // Count inverters
-      // 1. Inverters where user is the distributor
-      // 2. Inverters linked via customer_id that matches this user's email/phone in customers table
-      let inverterCount = 0
-      
-      // Count inverters where user is distributor
-      const distributorCount = db.prepare('SELECT COUNT(*) as count FROM inverters WHERE distributor_id = ?').get(customer.user_id) as { count: number } | undefined
-      inverterCount += distributorCount?.count || 0
-      
-      // Try to find via matching customer record (for backward compatibility)
-      if (customer.email || customer.phone) {
-        const matchingCustomer = db.prepare(`
-          SELECT id FROM customers 
-          WHERE (email = ? OR phone = ?) 
-          LIMIT 1
-        `).get(customer.email || '', customer.phone || '') as { id: number } | undefined
-        
-        if (matchingCustomer) {
-          const count = db.prepare('SELECT COUNT(*) as count FROM inverters WHERE customer_id = ?').get(matchingCustomer.id) as { count: number } | undefined
-          inverterCount += count?.count || 0
-        }
-      }
-      
-      customer.inverterCount = inverterCount
-      
-      // Count tickets as projects indicator
-      // 1. Tickets created by this user
-      // 2. Tickets linked via customer_id that matches this user's email/phone in customers table
-      let ticketCount = 0
-      
-      // Count tickets created by this user
-      const createdCount = db.prepare('SELECT COUNT(*) as count FROM tickets WHERE created_by = ?').get(customer.user_id) as { count: number } | undefined
-      ticketCount += createdCount?.count || 0
-      
-      // Try to find via matching customer record (for backward compatibility)
-      if (customer.email || customer.phone) {
-        const matchingCustomer = db.prepare(`
-          SELECT id FROM customers 
-          WHERE (email = ? OR phone = ?) 
-          LIMIT 1
-        `).get(customer.email || '', customer.phone || '') as { id: number } | undefined
-        
-        if (matchingCustomer) {
-          const count = db.prepare('SELECT COUNT(*) as count FROM tickets WHERE customer_id = ?').get(matchingCustomer.id) as { count: number } | undefined
-          ticketCount += count?.count || 0
-        }
-      }
-      
-      customer.projectCount = ticketCount
-    }
-
-    // Sort by created_at DESC
-    allCustomers.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-
-    // Apply pagination
     const limitNum = parseInt(limit as string)
     const offset = (parseInt(page as string) - 1) * limitNum
     const paginatedCustomers = allCustomers.slice(offset, offset + limitNum)
 
     res.json({
+      customers: paginatedCustomers,
       data: paginatedCustomers,
       pagination: {
         page: parseInt(page as string),
@@ -160,27 +73,41 @@ router.get('/:id', authenticateToken, (req, res) => {
 
     // Check if ID is a user ID (number or user_ prefix)
     const userId = id.startsWith('user_') ? parseInt(id.replace('user_', '')) : parseInt(id)
-    
+
     if (!isNaN(userId) && userId > 0) {
       console.log('🔍 [GET /customers/:id] Parsed userId:', userId)
-      // Try to get from users table
-      customer = db.prepare(`
-        SELECT 
-          id,
-          name,
-          email,
-          phone,
-          address,
-          role as type,
-          role as customer_type,
-          organization,
-          code,
-          created_at,
-          updated_at,
-          'user' as source
-        FROM users
-        WHERE id = ? AND role IN ('end_user', 'distributor', 'dealer') AND status = 'active'
+
+      // Try customers table first (has richer fields)
+      const custRecord = db.prepare(`
+        SELECT c.id, c.name, c.email, c.phone, c.address,
+               c.customer_type as type, c.customer_type,
+               c.organization, c.tax_code as code, c.tax_code,
+               c.contact_person, c.representative_name, c.representative_position, c.authorization_doc,
+               c.recipient_name, c.recipient_address, c.recipient_phone,
+               c.notes, c.user_id, c.contact_user_id,
+               c.created_at, c.updated_at, 'customer' as source,
+               c.contact_person  AS contact_name,
+               c.contact_email   AS contact_email,
+               c.contact_phone   AS contact_phone,
+               c.contact_address AS contact_address
+        FROM customers c
+        WHERE c.id = ?
       `).get(userId) as any
+
+      if (custRecord) {
+        customer = custRecord
+      } else {
+        // Try users table
+        customer = db.prepare(`
+          SELECT
+            id, name, email, phone, address,
+            role as type, role as customer_type,
+            organization, code, NULL as tax_code, NULL as contact_person,
+            created_at, updated_at, 'user' as source
+          FROM users
+          WHERE id = ? AND role IN ('end_user', 'distributor', 'dealer') AND status = 'active'
+        `).get(userId) as any
+      }
 
       if (customer) {
         console.log('✅ [GET /customers/:id] Found customer from users table:', customer.name)
@@ -384,6 +311,18 @@ router.get('/:id', authenticateToken, (req, res) => {
       customer_type: customer.customer_type || customer.type || null,
       organization: customer.organization || null,
       code: customer.code || null,
+      tax_code: customer.tax_code || customer.code || null,
+      contact_person: customer.contact_person || null,
+      representative_name: customer.representative_name || null,
+      representative_position: customer.representative_position || null,
+      authorization_doc: customer.authorization_doc || null,
+      contact_name: customer.contact_name || null,
+      contact_email: customer.contact_email || null,
+      contact_phone: customer.contact_phone || null,
+      contact_address: customer.contact_address || null,
+      recipient_name: customer.recipient_name || null,
+      recipient_address: customer.recipient_address || null,
+      recipient_phone: customer.recipient_phone || null,
       parent_distributor_id: customer.parent_distributor_id || null,
       distributor_name: customer.distributor_name || null,
       distributor_code: customer.distributor_code || null,
@@ -406,8 +345,9 @@ router.get('/:id', authenticateToken, (req, res) => {
 })
 
 // Create customer
-router.post('/', authenticateToken, requireRole(UserRole.ADMIN, UserRole.SERVICE_CENTER, UserRole.DISTRIBUTOR), (req, res) => {
+router.post('/', authenticateToken, requireRole(UserRole.ADMIN, UserRole.SERVICE_CENTER, UserRole.DISTRIBUTOR), (req: AuthRequest, res) => {
   try {
+    const authUser = req.user!
     const {
       name,
       email,
@@ -417,37 +357,104 @@ router.post('/', authenticateToken, requireRole(UserRole.ADMIN, UserRole.SERVICE
       organization,
       tax_code,
       contact_person,
+      contact_phone,
+      contact_email,
+      contact_address,
+      representative_name,
+      representative_position,
+      authorization_doc,
+      recipient_name,
+      recipient_address,
+      recipient_phone,
+      contact_user_id,
+      user_id,
       notes,
     } = req.body
 
-    if (!name || !customer_type) {
-      return res.status(400).json({ error: 'Name and customer_type are required' })
+    if (!name) {
+      return res.status(400).json({ error: 'Name is required' })
     }
 
-    // Check if email already exists
+    if (!representative_name || !String(representative_name).trim()) {
+      return res.status(400).json({ error: 'Người đại diện là bắt buộc' })
+    }
+    if (!representative_position || !String(representative_position).trim()) {
+      return res.status(400).json({ error: 'Chức vụ người đại diện là bắt buộc' })
+    }
+
+    // Check if email already exists in customers table
     if (email) {
       const existingCustomer = db.prepare('SELECT id FROM customers WHERE email = ?').get(email) as any
       if (existingCustomer) {
-        return res.status(400).json({ error: 'Email already exists' })
+        return res.status(400).json({ error: 'Email đã tồn tại trong hệ thống' })
       }
     }
 
+    const resolvedContactUserId = contact_user_id || user_id || null
+
+    // Get contact person name from users table if contact_user_id provided and contact_person not given
+    let resolvedContactPerson = contact_person || null
+    if (resolvedContactUserId && !resolvedContactPerson) {
+      const contactUser = db.prepare('SELECT name FROM users WHERE id = ?').get(resolvedContactUserId) as any
+      if (contactUser) resolvedContactPerson = contactUser.name
+    }
+
     const result = db.prepare(`
-      INSERT INTO customers (name, email, phone, address, customer_type, organization, tax_code, contact_person, notes)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO customers (name, email, phone, address, customer_type, organization, tax_code, contact_person, contact_phone, contact_email, contact_address, representative_name, representative_position, authorization_doc, recipient_name, recipient_address, recipient_phone, contact_user_id, notes)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       name,
       email || null,
       phone || null,
       address || null,
-      customer_type,
+      customer_type || 'end_user',
       organization || null,
       tax_code || null,
-      contact_person || null,
+      resolvedContactPerson,
+      contact_phone || null,
+      contact_email || null,
+      contact_address || null,
+      representative_name || null,
+      representative_position || null,
+      authorization_doc || null,
+      recipient_name || null,
+      recipient_address || null,
+      recipient_phone || null,
+      resolvedContactUserId,
       notes || null
     )
 
     const newCustomer = db.prepare('SELECT * FROM customers WHERE id = ?').get(result.lastInsertRowid) as any
+
+    try {
+      const creator = db.prepare('SELECT name FROM users WHERE id = ?').get(authUser.id) as { name: string } | undefined
+      const creatorName = creator?.name || 'Nhân viên'
+      const customerId = Number(result.lastInsertRowid)
+
+      createNotification(authUser.id, {
+        type: 'customer_created',
+        title: 'Khách hàng mới đã được tạo',
+        message: `Bạn đã thêm khách hàng "${name}" vào hệ thống`,
+        entityType: 'customer',
+        entityId: customerId,
+        data: { customer_name: name },
+      })
+
+      notifyUsersByRoles(
+        [UserRole.ADMIN, UserRole.DEV, UserRole.SERVICE_CENTER],
+        {
+          type: 'customer_created',
+          title: `Khách hàng mới: ${name}`,
+          message: `${creatorName} đã thêm khách hàng "${name}"`,
+          entityType: 'customer',
+          entityId: customerId,
+          data: { customer_name: name },
+        },
+        { excludeIds: [authUser.id] }
+      )
+    } catch (notifyErr) {
+      console.error('Customer notification error (customer still created):', notifyErr)
+    }
 
     res.status(201).json(newCustomer)
   } catch (error) {
@@ -471,6 +478,15 @@ router.put('/:id', authenticateToken, requireRole(UserRole.ADMIN, UserRole.SERVI
       organization,
       tax_code,
       contact_person,
+      contact_phone,
+      contact_email,
+      contact_address,
+      representative_name,
+      representative_position,
+      authorization_doc,
+      recipient_name,
+      recipient_address,
+      recipient_phone,
       notes,
     } = req.body
 
@@ -579,6 +595,15 @@ router.put('/:id', authenticateToken, requireRole(UserRole.ADMIN, UserRole.SERVI
           organization = COALESCE(?, organization),
           tax_code = COALESCE(?, tax_code),
           contact_person = COALESCE(?, contact_person),
+          contact_phone = COALESCE(?, contact_phone),
+          contact_email = COALESCE(?, contact_email),
+          contact_address = COALESCE(?, contact_address),
+          representative_name = COALESCE(?, representative_name),
+          representative_position = COALESCE(?, representative_position),
+          authorization_doc = COALESCE(?, authorization_doc),
+          recipient_name = COALESCE(?, recipient_name),
+          recipient_address = COALESCE(?, recipient_address),
+          recipient_phone = COALESCE(?, recipient_phone),
           notes = COALESCE(?, notes),
           updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
@@ -591,6 +616,15 @@ router.put('/:id', authenticateToken, requireRole(UserRole.ADMIN, UserRole.SERVI
       organization || null,
       tax_code || null,
       contact_person || null,
+      contact_phone || null,
+      contact_email || null,
+      contact_address || null,
+      representative_name || null,
+      representative_position || null,
+      authorization_doc || null,
+      recipient_name || null,
+      recipient_address || null,
+      recipient_phone || null,
       notes || null,
       customerId
     )
@@ -760,6 +794,23 @@ router.delete('/:id', authenticateToken, requireRole(UserRole.ADMIN), (req, res)
   } catch (error) {
     console.error('Delete customer error:', error)
     res.status(500).json({ error: 'Internal server error' })
+  }
+})
+
+// GET /api/customers/:id/contracts
+router.get('/:id/contracts', authenticateToken, (req, res) => {
+  try {
+    const customerId = parseInt(req.params.id)
+    const contracts = db.prepare(`
+      SELECT c.*,
+        (SELECT COUNT(*) FROM contract_inverters ci WHERE ci.contract_id = c.id) AS device_count
+      FROM contracts c
+      WHERE c.customer_id = ?
+      ORDER BY c.created_at DESC
+    `).all(customerId)
+    res.json(contracts)
+  } catch (err: any) {
+    res.status(500).json({ error: err.message })
   }
 })
 

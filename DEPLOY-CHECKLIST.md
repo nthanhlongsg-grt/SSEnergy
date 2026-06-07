@@ -12,12 +12,12 @@
 
 #### Frontend (`.env.production`)
 ```env
-VITE_API_URL=https://growattvietnam.com/api
+VITE_API_URL=https://SGEvietnam.com/api
 ```
 **Lưu ý**: 
 - File `.env.production` KHÔNG được commit vào Git
-- Nếu backend chạy trên subdomain riêng: `VITE_API_URL=https://api.growattvietnam.com`
-- Nếu backend chạy cùng domain: `VITE_API_URL=https://growattvietnam.com/api`
+- Nếu backend chạy trên subdomain riêng: `VITE_API_URL=https://api.SGEvietnam.com`
+- Nếu backend chạy cùng domain: `VITE_API_URL=https://SGEvietnam.com/api`
 
 #### Backend (`.env`)
 ```env
@@ -25,8 +25,8 @@ PORT=3000
 NODE_ENV=production
 JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
 JWT_EXPIRES_IN=7d
-DATABASE_PATH=./database/growatt.db
-CORS_ORIGIN=https://growattvietnam.com
+DATABASE_PATH=./database/SGE.db
+CORS_ORIGIN=https://SGEvietnam.com
 ```
 
 ### 3. Cấu hình Backend
@@ -78,7 +78,7 @@ Kiểm tra:
    - Output Directory: `dist`
    - Install Command: `npm install`
    - Environment Variables:
-     - `VITE_API_URL`: `https://growattvietnam.com/api`
+     - `VITE_API_URL`: `https://SGEvietnam.com/api`
 
 2. **Backend**:
    - Kết nối GitHub repository
@@ -91,15 +91,15 @@ Kiểm tra:
      - `PORT`: `3000`
      - `NODE_ENV`: `production`
      - `JWT_SECRET`: `[your-secret]`
-     - `CORS_ORIGIN`: `https://growattvietnam.com`
-     - `DATABASE_PATH`: `./database/growatt.db`
+     - `CORS_ORIGIN`: `https://SGEvietnam.com`
+     - `DATABASE_PATH`: `./database/SGE.db`
 
 ### Option 2: Server (Nginx)
 
 1. **Upload files**:
    ```bash
    # Upload dist/ lên server
-   scp -r dist/ user@server:/var/www/growatt/
+   scp -r dist/ user@server:/var/www/SGE/
    ```
 
 2. **Cấu hình Nginx** (xem `DEPLOY.md`)
@@ -111,7 +111,7 @@ Kiểm tra:
 ## ✅ Kiểm tra sau khi deploy
 
 ### Frontend
-- [ ] Trang chủ load thành công: https://growattvietnam.com
+- [ ] Trang chủ load thành công: https://SGEvietnam.com
 - [ ] Login/Register hoạt động
 - [ ] API calls thành công (mở DevTools > Network)
 - [ ] Routing hoạt động (thử navigate giữa các trang)
@@ -119,7 +119,7 @@ Kiểm tra:
 - [ ] Responsive design hoạt động trên mobile
 
 ### Backend
-- [ ] Health check: `https://growattvietnam.com/api/health`
+- [ ] Health check: `https://SGEvietnam.com/api/health`
 - [ ] API endpoints hoạt động
 - [ ] Authentication hoạt động
 - [ ] Database connection thành công

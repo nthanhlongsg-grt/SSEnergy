@@ -79,6 +79,23 @@ export const getVietnamNow = (): Date => {
   return new Date(new Date().toLocaleString('en-US', { timeZone: VIETNAM_TIMEZONE }))
 }
 
+/** YYYY-MM-DD in Vietnam timezone */
+export const getVietnamDateString = (date: Date = getVietnamNow()): string => {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: VIETNAM_TIMEZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(date)
+}
+
+/** First day of current month → today in Vietnam timezone */
+export const getVietnamMonthRange = (): { from: string; to: string } => {
+  const now = getVietnamNow()
+  const from = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
+  return { from, to: getVietnamDateString(now) }
+}
+
 /**
  * Convert a date string to ISO string in Vietnam timezone
  * @param dateString - Date string or Date object

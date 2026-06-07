@@ -288,6 +288,9 @@ import AdminLayout from '@/components/layout/AdminLayout.vue'
 import { ticketService } from '@/services/ticketService'
 import { inverterService } from '@/services/inverterService'
 import { useAuth } from '@/composables/useAuth'
+import { useToast } from '@/composables/useToast'
+
+const { showSuccess } = useToast()
 
 const { t } = useI18n()
 
@@ -593,6 +596,7 @@ const handleSubmit = async () => {
       }
     }
     
+    showSuccess(t('common.messages.ticketCreated'))
     router.push('/customer/tickets')
   } catch (err: any) {
     console.error('Error creating ticket:', err)

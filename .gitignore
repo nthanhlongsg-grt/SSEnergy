@@ -83,6 +83,13 @@ Thumbs.db
 # Deploy artifacts
 .deploy/
 
+# Agent / local tooling (not part of app)
+.claude/
+.claire/
+
+# Separate experimental Next.js app (not deployed with Vue stack)
+sge-inverter-app/
+
 # Local chat/screenshot artifacts
 assets/
 

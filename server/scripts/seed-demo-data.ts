@@ -36,16 +36,16 @@ const seedUsers = async () => {
   log('\n👥 Seeding users...')
 
   const raw = [
-    { name: 'Developer', email: 'developer@growattvietnam.com', pw: 'Growatt2025', code: 'DEV001', role: 'dev', fn: 'management', org: 'Growatt Vietnam' },
-    { name: 'Admin Trần Minh', email: 'admin@growattvietnam.com', pw: 'Growatt2025', code: 'ADM001', role: 'admin', fn: 'management', org: 'Growatt Vietnam' },
-    { name: 'Trung tâm Dịch vụ', email: 'service@growattvietnam.com', pw: 'Growatt2025', code: 'SVC001', role: 'service_center', fn: 'management', org: 'Growatt Vietnam' },
-    { name: 'KTV Nguyễn Văn An', email: 'an.kythuatbaohanh@growattvietnam.com', pw: 'Growatt2025', code: 'KTV001', role: 'technician', fn: 'repair', org: 'Growatt Vietnam', phone: '0901111111' },
-    { name: 'KTV Lê Thị Bảo', email: 'bao.hotrokythuat@growattvietnam.com', pw: 'Growatt2025', code: 'KTV002', role: 'technician', fn: 'technicalSupport', org: 'Growatt Vietnam', phone: '0902222222' },
-    { name: 'KTV Phạm Quốc Cường', email: 'cuong.sale@growattvietnam.com', pw: 'Growatt2025', code: 'KTV003', role: 'technician', fn: 'sale', org: 'Growatt Vietnam', phone: '0903333333' },
-    { name: 'Nhà PP Năng Lượng Xanh', email: 'npp.nangluongxanh@gmail.com', pw: 'Growatt2025', code: 'NPP001', role: 'distributor', fn: null, org: 'Năng Lượng Xanh Co.', phone: '0281234567' },
-    { name: 'Đại lý Solar Miền Nam', email: 'dl.solarmiemnam@gmail.com', pw: 'Growatt2025', code: 'DL001', role: 'distributor', fn: null, org: 'Solar Miền Nam', phone: '0289876543' },
-    { name: 'Công ty ABC Solar', email: 'contact@abcsolar.vn', pw: 'Growatt2025', code: 'END001', role: 'end_user', fn: null, org: 'ABC Solar Co.' },
-    { name: 'Nguyễn Văn Hùng', email: 'hung.nguyen@gmail.com', pw: 'Growatt2025', code: 'END002', role: 'end_user', fn: null, org: null, phone: '0912345678' },
+    { name: 'Developer', email: 'developer@SGEvietnam.com', pw: 'SGE2025', code: 'DEV001', role: 'dev', fn: 'management', org: 'SGE Vietnam' },
+    { name: 'Admin Trần Minh', email: 'admin@SGEvietnam.com', pw: 'SGE2025', code: 'ADM001', role: 'admin', fn: 'management', org: 'SGE Vietnam' },
+    { name: 'Trung tâm Dịch vụ', email: 'service@SGEvietnam.com', pw: 'SGE2025', code: 'SVC001', role: 'service_center', fn: 'management', org: 'SGE Vietnam' },
+    { name: 'KTV Nguyễn Văn An', email: 'an.kythuatbaohanh@SGEvietnam.com', pw: 'SGE2025', code: 'KTV001', role: 'technician', fn: 'repair', org: 'SGE Vietnam', phone: '0901111111' },
+    { name: 'KTV Lê Thị Bảo', email: 'bao.hotrokythuat@SGEvietnam.com', pw: 'SGE2025', code: 'KTV002', role: 'technician', fn: 'technicalSupport', org: 'SGE Vietnam', phone: '0902222222' },
+    { name: 'KTV Phạm Quốc Cường', email: 'cuong.sale@SGEvietnam.com', pw: 'SGE2025', code: 'KTV003', role: 'technician', fn: 'sale', org: 'SGE Vietnam', phone: '0903333333' },
+    { name: 'Nhà PP Năng Lượng Xanh', email: 'npp.nangluongxanh@gmail.com', pw: 'SGE2025', code: 'NPP001', role: 'distributor', fn: null, org: 'Năng Lượng Xanh Co.', phone: '0281234567' },
+    { name: 'Đại lý Solar Miền Nam', email: 'dl.solarmiemnam@gmail.com', pw: 'SGE2025', code: 'DL001', role: 'distributor', fn: null, org: 'Solar Miền Nam', phone: '0289876543' },
+    { name: 'Công ty ABC Solar', email: 'contact@abcsolar.vn', pw: 'SGE2025', code: 'END001', role: 'end_user', fn: null, org: 'ABC Solar Co.' },
+    { name: 'Nguyễn Văn Hùng', email: 'hung.nguyen@gmail.com', pw: 'SGE2025', code: 'END002', role: 'end_user', fn: null, org: null, phone: '0912345678' },
   ]
 
   for (const u of raw) {
@@ -61,7 +61,7 @@ const seedModels = () => {
   log('\n📦 Seeding inverter models...')
   const insert = db.prepare(`
     INSERT INTO models (name, manufacturer, type, description, status)
-    VALUES (?, 'Growatt', ?, ?, 'active')
+    VALUES (?, 'SGE', ?, ?, 'active')
     ON CONFLICT(name) DO NOTHING
   `)
   const models = [
@@ -214,7 +214,7 @@ const seedTickets = () => {
     ['TKT-2025-000009', inv('GW-2024-MID-002'), cust('admin@thptnguyendu.edu.vn'), 'Yêu cầu kiểm tra định kỳ', 'Bảo dưỡng định kỳ theo hợp đồng bảo trì 6 tháng một lần.', 'medium', 'initialized', 'technical_support', null, creatorId, dt(5), dt(0)],
     ['TKT-2025-000010', inv('GW-2024-MAX-003'), cust('info@phumyenergy.vn'), 'Tư vấn nâng cấp công suất hệ thống', 'Khách hàng muốn tư vấn bổ sung thêm 2 inverter và tăng tổng công suất lên 30kW.', 'medium', 'initialized', 'product_consultation', null, creatorId, dt(6), dt(0)],
     // Low - new/initialized
-    ['TKT-2025-000011', inv('GW-2024-SPF-002'), cust('thuanphat.factory@gmail.com'), 'Cập nhật firmware máy biến tần', 'Yêu cầu cập nhật firmware lên phiên bản mới nhất theo thông báo của Growatt.', 'low', 'initialized', 'technical_support', null, creatorId, dt(10), dt(-1)],
+    ['TKT-2025-000011', inv('GW-2024-SPF-002'), cust('thuanphat.factory@gmail.com'), 'Cập nhật firmware máy biến tần', 'Yêu cầu cập nhật firmware lên phiên bản mới nhất theo thông báo của SGE.', 'low', 'initialized', 'technical_support', null, creatorId, dt(10), dt(-1)],
     ['TKT-2025-000012', null, cust('contact@abcsolar.vn'), 'Đăng ký bảo hành thiết bị mới', 'Công ty vừa lắp thêm 2 inverter mới, cần đăng ký bảo hành chính hãng.', 'low', 'initialized', 'warranty', null, creatorId, dt(12), dt(0)],
     // Completed
     ['TKT-2025-000013', inv('GW-2024-MAX-001'), cust('contact@abcsolar.vn'), 'Thay thế quạt tản nhiệt', 'Quạt tản nhiệt hỏng gây quá nhiệt. Đã thay thế thành công.', 'high', 'completed', 'warranty', techRepair?.id, creatorId, dt(-30), dt(-60)],
@@ -244,7 +244,7 @@ const seedWarehouseParts = () => {
   const insert = db.prepare(`
     INSERT OR IGNORE INTO warehouse_parts
       (part_number, name, category, description, manufacturer, quantity, min_quantity, unit_price, unit, supplier, status)
-    VALUES (?, ?, ?, ?, 'Growatt', ?, ?, ?, ?, 'Growatt Vietnam', 'active')
+    VALUES (?, ?, ?, ?, 'SGE', ?, ?, ?, ?, 'SGE Vietnam', 'active')
   `)
   const parts = [
     ['PN-MPPT-001', 'Bộ điều khiển MPPT', 'Electronics', 'MPPT Controller 60A cho biến tần MAX', 25, 10, 2500000, 'pcs'],
@@ -256,7 +256,7 @@ const seedWarehouseParts = () => {
     ['PN-FUSE-001', 'Cầu chì DC 15A', 'Protection', 'Cầu chì DC 15A 1000V loại string', 200, 50, 45000, 'pcs'],
     ['PN-SURGE-001', 'Thiết bị chống sét SPD', 'Protection', 'Surge Protection Device 1000V DC type II', 30, 10, 850000, 'pcs'],
     ['PN-RELAY-001', 'Relay AC 10A', 'Electronics', 'AC Relay 10A 250V cho mạch điều khiển', 40, 15, 120000, 'pcs'],
-    ['PN-WIFI-001', 'Module WiFi Shine-GPRS-X', 'Communication', 'Wifi datalogger Growatt Shine-GPRS-X', 20, 8, 950000, 'pcs'],
+    ['PN-WIFI-001', 'Module WiFi Shine-GPRS-X', 'Communication', 'Wifi datalogger SGE Shine-GPRS-X', 20, 8, 950000, 'pcs'],
   ]
   for (const p of parts) {
     insert.run(...p)
@@ -380,10 +380,10 @@ const seedSlaSettings = () => {
   upsert.run('sla_hours_high', '24', 'SLA hours for high priority tickets')
   upsert.run('sla_hours_medium', '72', 'SLA hours for medium priority tickets')
   upsert.run('sla_hours_low', '168', 'SLA hours for low priority tickets')
-  upsert.run('company_name', 'Growatt Vietnam', 'Tên công ty')
+  upsert.run('company_name', 'SGE Vietnam', 'Tên công ty')
   upsert.run('company_address', 'Tầng 15, Tòa nhà Vincom Center, 72 Lê Thánh Tôn, Q.1, TP.HCM', 'Địa chỉ công ty')
-  upsert.run('company_phone', '1800 6474', 'Hotline Growatt Vietnam')
-  upsert.run('company_email', 'service@growattvietnam.com', 'Email dịch vụ')
+  upsert.run('company_phone', '1800 6474', 'Hotline SGE Vietnam')
+  upsert.run('company_email', 'service@SGEvietnam.com', 'Email dịch vụ')
   log('  ✓ SLA & company settings upserted')
 }
 
@@ -408,11 +408,11 @@ const run = async () => {
     log('\n' + '━'.repeat(50))
     log('✅ Demo data seeded successfully!\n')
 
-    log('🔑 Test accounts (password: Growatt2025):')
-    log('  admin@growattvietnam.com         → Admin')
-    log('  service@growattvietnam.com       → Service Center')
-    log('  an.kythuatbaohanh@growattvietnam.com → KTV Sửa chữa')
-    log('  bao.hotrokythuat@growattvietnam.com  → KTV Hỗ trợ KT')
+    log('🔑 Test accounts (password: SGE2025):')
+    log('  admin@SGEvietnam.com         → Admin')
+    log('  service@SGEvietnam.com       → Service Center')
+    log('  an.kythuatbaohanh@SGEvietnam.com → KTV Sửa chữa')
+    log('  bao.hotrokythuat@SGEvietnam.com  → KTV Hỗ trợ KT')
     log('  npp.nangluongxanh@gmail.com      → Nhà phân phối')
     log('  contact@abcsolar.vn              → End user (doanh nghiệp)')
     log('  hung.nguyen@gmail.com            → End user (cá nhân)')

@@ -1,6 +1,6 @@
 @echo off
 echo ========================================
-echo Stopping All Growatt Demo Servers
+echo Stopping All SGE Demo Servers
 echo ========================================
 echo.
 

@@ -1,6 +1,6 @@
 # Hướng dẫn Sửa Database
 
-Dự án này sử dụng **SQLite** với `better-sqlite3`. Database file nằm tại: `server/database/growatt.db`
+Dự án này sử dụng **SQLite** với `better-sqlite3`. Database file nằm tại: `server/database/SGE.db`
 
 ## 📋 Các Cách Sửa Database
 
@@ -74,7 +74,7 @@ npm run db:migrate
 ### 3. Sử dụng DB Browser for SQLite (GUI Tool)
 
 1. **Tải DB Browser for SQLite:** https://sqlitebrowser.org/
-2. **Mở database file:** `server/database/growatt.db`
+2. **Mở database file:** `server/database/SGE.db`
 3. **Sửa dữ liệu trực tiếp qua giao diện**
 
 ### 4. Sửa trực tiếp trong Code
@@ -141,7 +141,7 @@ DELETE FROM users;
 ```bash
 cd server
 # Xóa file database
-rm database/growatt.db
+rm database/SGE.db
 
 # Chạy lại server (sẽ tự động tạo database)
 npm run dev
@@ -160,7 +160,7 @@ Xem schema đầy đủ tại:
 
 1. **Backup database trước khi sửa:**
    ```bash
-   cp server/database/growatt.db server/database/growatt.db.backup
+   cp server/database/SGE.db server/database/SGE.db.backup
    ```
 
 2. **Foreign Keys:** Database đã bật foreign key constraints. Khi xóa dữ liệu, cần xóa các bảng con trước.

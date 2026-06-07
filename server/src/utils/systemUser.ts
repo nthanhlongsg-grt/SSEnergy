@@ -1,13 +1,14 @@
 import db from '../database/db.js'
 
 const SYSTEM_USER_EMAILS = [
-  'deverloper@growattvietnam.com',
-  'developer@growatt.vn',
-  'developer@growattvietnam.com',
+  'deverloper@sgesolartech.vn',
+  'deverloper@SGEvietnam.com',
+  'developer@SGE.vn',
+  'developer@SGEvietnam.com',
 ]
 
 const SYSTEM_DISPLAY_NAME = 'System'
-const SYSTEM_DISPLAY_EMAIL = 'system@growatt.vn'
+const SYSTEM_DISPLAY_EMAIL = 'system@SGE.vn'
 
 const loadSystemUserIds = (): Set<number> => {
   const placeholders = SYSTEM_USER_EMAILS.map(() => '?').join(',')

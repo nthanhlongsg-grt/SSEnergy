@@ -297,8 +297,8 @@ router.post('/', authenticateToken, requireRole(UserRole.ADMIN, UserRole.DEV), a
     const hashedPassword = await bcrypt.hash(userData.password, 10)
 
     const result = db.prepare(`
-      INSERT INTO users (name, email, password, code, role, function, organization, status, parent_distributor_id)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO users (name, email, password, code, role, function, organization, status, phone, address, parent_distributor_id)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       userData.name,
       userData.email,
@@ -308,11 +308,13 @@ router.post('/', authenticateToken, requireRole(UserRole.ADMIN, UserRole.DEV), a
       userData.function || null,
       userData.organization || null,
       userData.status || 'active',
+      userData.phone || null,
+      userData.address || null,
       userData.parent_distributor_id || null
     )
 
     const newUser = db.prepare(`
-      SELECT id, name, email, code, role, function, organization, status, parent_distributor_id, created_at, updated_at
+      SELECT id, name, email, code, role, function, organization, status, phone, address, parent_distributor_id, created_at, updated_at
       FROM users
       WHERE id = ?
     `).get(result.lastInsertRowid) as any

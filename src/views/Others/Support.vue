@@ -44,8 +44,8 @@
                 </svg>
                 <div>
                   <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Email</p>
-                  <a href="mailto:nguyenthanhlong@growatt.com" class="text-base font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300">
-                    nguyenthanhlong@growatt.com
+                  <a href="mailto:nguyenthanhlong@SGE.com" class="text-base font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300">
+                    nguyenthanhlong@SGE.com
                   </a>
                 </div>
               </div>

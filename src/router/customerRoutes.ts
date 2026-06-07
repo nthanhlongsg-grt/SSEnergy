@@ -26,7 +26,7 @@ export const customerRoutes = [
     name: 'CustomerInverters',
     component: () => import('@/views/Customer/Inverters/InverterList.vue'),
     meta: {
-      title: 'Thiết bị của tôi',
+      title: 'Danh sách Biến tần',
       requiresAuth: true,
       userGroup: 'customer',
       allowedRoles: [UserRole.END_USER, UserRole.DISTRIBUTOR],
@@ -44,11 +44,22 @@ export const customerRoutes = [
     },
   },
   {
-    path: '/customer/inverters/register',
-    name: 'CustomerRegisterInverter',
-    component: () => import('@/views/Customer/Inverters/RegisterInverter.vue'),
+    path: '/customer/contracts',
+    name: 'CustomerContracts',
+    component: () => import('@/views/Customer/Contracts/ContractList.vue'),
     meta: {
-      title: 'Đăng ký Thiết bị mới',
+      title: 'Hợp đồng',
+      requiresAuth: true,
+      userGroup: 'customer',
+      allowedRoles: [UserRole.END_USER, UserRole.DISTRIBUTOR],
+    },
+  },
+  {
+    path: '/customer/contracts/:id',
+    name: 'CustomerContractDetail',
+    component: () => import('@/views/SGE/Contracts/ContractDetail.vue'),
+    meta: {
+      title: 'Chi tiết Hợp đồng',
       requiresAuth: true,
       userGroup: 'customer',
       allowedRoles: [UserRole.END_USER, UserRole.DISTRIBUTOR],
@@ -104,6 +115,17 @@ export const customerRoutes = [
     component: () => import('@/views/Customer/Notifications.vue'),
     meta: {
       title: 'Thông báo',
+      requiresAuth: true,
+      userGroup: 'customer',
+      allowedRoles: [UserRole.END_USER, UserRole.DISTRIBUTOR],
+    },
+  },
+  {
+    path: '/customer/warranty-policy',
+    name: 'CustomerWarrantyPolicy',
+    component: () => import('@/views/Policies/WarrantyPolicy.vue'),
+    meta: {
+      title: 'Chính sách bảo hành',
       requiresAuth: true,
       userGroup: 'customer',
       allowedRoles: [UserRole.END_USER, UserRole.DISTRIBUTOR],

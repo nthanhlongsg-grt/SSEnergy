@@ -5,10 +5,10 @@ const addDeveloperAccount = async () => {
   try {
     console.log('🔧 Adding developer account...')
     
-    // Canonical email matches production DB (growattvietnam.com). Legacy .vn kept for lookup only.
-    const email = 'developer@growattvietnam.com'
-    const legacyEmail = 'developer@growatt.vn'
-    const password = 'Growatt2025'
+    // Canonical email matches production DB (SGEvietnam.com). Legacy .vn kept for lookup only.
+    const email = 'developer@SGEvietnam.com'
+    const legacyEmail = 'developer@SGE.vn'
+    const password = 'SGE2025'
     const name = 'developer'
     const role = 'dev'
     
@@ -40,7 +40,7 @@ const addDeveloperAccount = async () => {
         hashedPassword,
         'DEV001',
         role,
-        'Growatt Development',
+        'SGE Development',
         'active'
       )
       console.log(`  ✓ Created developer account: ${email}`)

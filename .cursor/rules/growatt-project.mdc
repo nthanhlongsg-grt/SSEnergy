@@ -1,18 +1,18 @@
 ---
-description: Growatt Vietnam After-Sales Management System — toàn bộ quy tắc, kiến trúc và convention của dự án
+description: SGE Vietnam After-Sales Management System — toàn bộ quy tắc, kiến trúc và convention của dự án
 globs: ["**/*.vue", "**/*.ts", "**/*.tsx", "**/*.js", "server/**/*"]
 alwaysApply: true
 ---
 
-# Growatt Vietnam — Agent Skill
+# SGE Vietnam — Agent Skill
 
 ## Tổng quan dự án
 
-Hệ thống quản lý bảo hành và hỗ trợ kỹ thuật sau bán hàng cho Growatt Vietnam.  
+Hệ thống quản lý bảo hành và hỗ trợ kỹ thuật sau bán hàng cho SGE Vietnam.  
 Hai luồng người dùng tách biệt: **nội bộ (management)** và **khách hàng (customer portal)**.
 
-- **Frontend:** `e:\AI\Growatt_V1.02\` — Vue 3.5, Vite 6, TypeScript, Vue Router 4, vue-i18n, Tailwind 4
-- **Backend:** `e:\AI\Growatt_V1.02\server\` — Express 4, TypeScript, SQLite (better-sqlite3), JWT
+- **Frontend:** `e:\AI\SGE_V1.02\` — Vue 3.5, Vite 6, TypeScript, Vue Router 4, vue-i18n, Tailwind 4
+- **Backend:** `e:\AI\SGE_V1.02\server\` — Express 4, TypeScript, SQLite (better-sqlite3), JWT
 - **Dev ports:** Frontend `:5173`, Backend `:3000`
 - **Timezone:** `Asia/Ho_Chi_Minh`
 
@@ -25,7 +25,7 @@ Hai luồng người dùng tách biệt: **nội bộ (management)** và **khác
 ```
 src/
 ├── views/
-│   ├── Growatt/          # Giao diện nội bộ (admin, kỹ thuật, kho...)
+│   ├── SGE/          # Giao diện nội bộ (admin, kỹ thuật, kho...)
 │   │   ├── Dashboard.vue
 │   │   ├── Tickets/      # TicketList, TicketDetail, NewTicket
 │   │   ├── Technicians/  # TechnicianList, TechnicianSchedule
@@ -101,8 +101,8 @@ onUnmounted(() => stopAutoRefresh())
 ```
 
 **Hiện trạng polling:**
-- Growatt TicketDetail: 10s ✅
-- Growatt TicketList: 30s ✅
+- SGE TicketDetail: 10s ✅
+- SGE TicketList: 30s ✅
 - Customer TicketList: 30s ✅
 - Customer TicketDetail: 15s ✅
 
@@ -348,5 +348,5 @@ npm run db:add:developer  # Reset tài khoản developer
 ```
 
 **Tài khoản mặc định:**
-- Admin: `admin@growattvietnam.com` / `admin123`
-- Developer: `developer@growattvietnam.com` / `Growatt2025`
+- Admin: `admin@SGEvietnam.com` / `admin123`
+- Developer: `developer@SGEvietnam.com` / `SGE2025`

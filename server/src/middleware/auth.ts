@@ -1,6 +1,7 @@
-﻿import { Request, Response, NextFunction } from 'express'
+import { Request, Response, NextFunction } from 'express'
 import jwt from 'jsonwebtoken'
 import { UserRole } from '../types/index.js'
+import { getJwtSecret } from '../config/env.js'
 
 export interface AuthRequest extends Request {
   user?: {
@@ -18,7 +19,7 @@ export const authenticateToken = (req: AuthRequest, res: Response, next: NextFun
     return res.status(401).json({ error: 'Access token required' })
   }
 
-  const jwtSecret = process.env.JWT_SECRET || 'your-secret-key'
+  const jwtSecret = getJwtSecret()
 
   jwt.verify(token, jwtSecret, (err, user) => {
     if (err) {

@@ -6,6 +6,89 @@ import { syncInverterToTickets } from '../database/sync.js'
 
 const router = Router()
 
+/** Lấy trường khách hàng từ hợp đồng liên kết gần nhất (ưu tiên hơn customer_id trực tiếp trên máy) */
+const contractCustomerColumn = (column: string): string => `
+  (SELECT cu_ct.${column}
+   FROM contract_inverters ci_ct
+   JOIN contracts ct_ct ON ct_ct.id = ci_ct.contract_id
+   JOIN customers cu_ct ON cu_ct.id = ct_ct.customer_id
+   WHERE ci_ct.inverter_id = i.id
+   ORDER BY ct_ct.updated_at DESC, ci_ct.contract_id DESC
+   LIMIT 1)`
+
+const inverterCustomerSelect = `
+  COALESCE(${contractCustomerColumn('id')}, i.customer_id) AS customer_id,
+  COALESCE(${contractCustomerColumn('name')}, c.name) AS customer_name,
+  COALESCE(${contractCustomerColumn('email')}, c.email) AS customer_email,
+  COALESCE(${contractCustomerColumn('phone')}, c.phone) AS customer_phone,
+  COALESCE(${contractCustomerColumn('address')}, c.address) AS customer_address,
+  (SELECT ct_ct.contract_number
+   FROM contract_inverters ci_ct
+   JOIN contracts ct_ct ON ct_ct.id = ci_ct.contract_id
+   WHERE ci_ct.inverter_id = i.id
+   ORDER BY ct_ct.updated_at DESC, ci_ct.contract_id DESC
+   LIMIT 1) AS contract_number,
+  (SELECT ct_ct.id
+   FROM contract_inverters ci_ct
+   JOIN contracts ct_ct ON ct_ct.id = ci_ct.contract_id
+   WHERE ci_ct.inverter_id = i.id
+   ORDER BY ct_ct.updated_at DESC, ci_ct.contract_id DESC
+   LIMIT 1) AS contract_id
+`
+
+const isStaffRole = (role: UserRole): boolean =>
+  role !== UserRole.END_USER && role !== UserRole.DISTRIBUTOR
+
+/** User IDs có quyền xem thiết bị/hợp đồng của khách hàng (owner + end user thuộc đại lý) */
+const getLinkedUserIds = (user: NonNullable<AuthRequest['user']>): number[] => {
+  if (user.role === UserRole.DISTRIBUTOR) {
+    const linked = db
+      .prepare(`SELECT id FROM users WHERE parent_distributor_id = ? AND role = ?`)
+      .all(user.id, UserRole.END_USER) as Array<{ id: number }>
+    return linked.length > 0 ? [user.id, ...linked.map((u) => u.id)] : [user.id]
+  }
+  return [user.id]
+}
+
+/** Kiểm tra user portal có quyền xem thiết bị qua hợp đồng (user_id hoặc contact_user_id trên customers) */
+const canAccessInverterViaContract = (
+  user: NonNullable<AuthRequest['user']>,
+  inverterId: number
+): boolean => {
+  if (isStaffRole(user.role)) return true
+  const userIds = getLinkedUserIds(user)
+  const placeholders = userIds.map(() => '?').join(', ')
+  const row = db
+    .prepare(`
+      SELECT 1
+      FROM contract_inverters ci
+      JOIN contracts ct ON ct.id = ci.contract_id
+      JOIN customers cu ON cu.id = ct.customer_id
+      WHERE ci.inverter_id = ?
+        AND (cu.user_id IN (${placeholders}) OR cu.contact_user_id IN (${placeholders}))
+    `)
+    .get(inverterId, ...userIds, ...userIds)
+  return !!row
+}
+
+const appendContractPortalAccessFilter = (
+  user: NonNullable<AuthRequest['user']>,
+  baseQuery: string,
+  params: unknown[]
+): string => {
+  if (isStaffRole(user.role)) return baseQuery
+  const userIds = getLinkedUserIds(user)
+  const placeholders = userIds.map(() => '?').join(', ')
+  params.push(...userIds, ...userIds)
+  return `${baseQuery} AND EXISTS (
+    SELECT 1 FROM contract_inverters ci2
+    JOIN contracts ct ON ct.id = ci2.contract_id
+    JOIN customers cu ON cu.id = ct.customer_id
+    WHERE ci2.inverter_id = i.id
+      AND (cu.user_id IN (${placeholders}) OR cu.contact_user_id IN (${placeholders}))
+  )`
+}
+
 // Get all inverters
 router.get('/', authenticateToken, (req: AuthRequest, res) => {
   try {
@@ -16,39 +99,27 @@ router.get('/', authenticateToken, (req: AuthRequest, res) => {
       FROM inverters i
       LEFT JOIN customers c ON i.customer_id = c.id
       LEFT JOIN users u ON i.distributor_id = u.id
-      WHERE 1=1
+      WHERE EXISTS (
+        SELECT 1 FROM contract_inverters ci WHERE ci.inverter_id = i.id
+      )
     `
     const params: any[] = []
     
-    // Filter by user_id for END_USER and DISTRIBUTOR
-    if (user.role === UserRole.END_USER) {
-      // End users can only see their own inverters (user_id = their id)
-      baseQuery += ' AND i.user_id = ?'
-      params.push(user.id)
-    } else if (user.role === UserRole.DISTRIBUTOR) {
-      // Distributors can see:
-      // 1. Their own inverters (user_id = their id)
-      // 2. Inverters of linked end users (user_id of end users with parent_distributor_id = distributor id)
-      const linkedEndUsers = db.prepare(`
-        SELECT id FROM users 
-        WHERE parent_distributor_id = ? AND role = ?
-      `).all(user.id, UserRole.END_USER) as Array<{ id: number }>
-      
-      if (linkedEndUsers.length > 0) {
-        const endUserIds = linkedEndUsers.map(u => u.id)
-        const allUserIds = [user.id, ...endUserIds]
-        baseQuery += ` AND i.user_id IN (${allUserIds.map(() => '?').join(',')})`
-        params.push(...allUserIds)
-      } else {
-        // Only show their own inverters
-        baseQuery += ' AND i.user_id = ?'
-        params.push(user.id)
-      }
-    }
+    baseQuery = appendContractPortalAccessFilter(user, baseQuery, params)
 
     if (search) {
-      baseQuery += ' AND (i.serial_number LIKE ? OR i.model LIKE ? OR c.name LIKE ?)'
       const searchTerm = `%${search}%`
+      baseQuery += ` AND (
+        i.serial_number LIKE ?
+        OR EXISTS (
+          SELECT 1 FROM contract_inverters ci_s
+          JOIN contracts ct_s ON ct_s.id = ci_s.contract_id
+          JOIN customers cu_s ON cu_s.id = ct_s.customer_id
+          WHERE ci_s.inverter_id = i.id AND (
+            cu_s.name LIKE ? OR cu_s.organization LIKE ?
+          )
+        )
+      )`
       params.push(searchTerm, searchTerm, searchTerm)
     }
 
@@ -94,9 +165,17 @@ router.get('/', authenticateToken, (req: AuthRequest, res) => {
     // Get paginated data
     const query = `
       SELECT i.*, 
-             c.name as customer_name, 
-             c.email as customer_email,
-             u.name as distributor_name
+             u.name as distributor_name,
+             COALESCE(i.manufacturer, '') AS manufacturer,
+             (SELECT GROUP_CONCAT(DISTINCT ct.contract_number)
+              FROM contract_inverters ci3
+              JOIN contracts ct ON ct.id = ci3.contract_id
+              WHERE ci3.inverter_id = i.id) AS contract_numbers,
+             (SELECT GROUP_CONCAT(DISTINCT cu_ct.name)
+              FROM contract_inverters ci4
+              JOIN contracts ct2 ON ct2.id = ci4.contract_id
+              JOIN customers cu_ct ON cu_ct.id = ct2.customer_id
+              WHERE ci4.inverter_id = i.id) AS customer_name
       ${baseQuery}
       ORDER BY i.created_at DESC LIMIT ? OFFSET ?
     `
@@ -124,25 +203,70 @@ router.get('/', authenticateToken, (req: AuthRequest, res) => {
 })
 
 // Get inverter by ID
-router.get('/:id', authenticateToken, (req, res) => {
+router.get('/:id', authenticateToken, (req: AuthRequest, res) => {
   try {
     const inverterId = parseInt(req.params.id)
+    const user = req.user!
     
     const inverter = db.prepare(`
-      SELECT i.*, 
-             c.name as customer_name, 
-             c.email as customer_email,
-             c.phone as customer_phone,
-             c.address as customer_address,
+      SELECT i.*,
+             ${inverterCustomerSelect},
+             COALESCE(NULLIF(TRIM(i.manufacturer), ''), m.manufacturer, '') AS manufacturer,
              u.name as distributor_name
       FROM inverters i
       LEFT JOIN customers c ON i.customer_id = c.id
+      LEFT JOIN models m ON m.name = i.model
       LEFT JOIN users u ON i.distributor_id = u.id
       WHERE i.id = ?
     `).get(inverterId) as any
 
     if (!inverter) {
       return res.status(404).json({ error: 'Inverter not found' })
+    }
+
+    if (!canAccessInverterViaContract(user, inverterId)) {
+      return res.status(403).json({ error: 'Forbidden' })
+    }
+
+    const linkedContracts = db.prepare(`
+      SELECT
+        ct.id,
+        ct.contract_number,
+        ct.updated_at,
+        cu.name AS customer_name,
+        cu.email AS customer_email,
+        cu.phone AS customer_phone,
+        cu.address AS customer_address
+      FROM contract_inverters ci
+      JOIN contracts ct ON ct.id = ci.contract_id
+      JOIN customers cu ON cu.id = ct.customer_id
+      WHERE ci.inverter_id = ?
+      ORDER BY ct.updated_at DESC, ci.contract_id DESC
+    `).all(inverterId) as Array<{
+      id: number
+      contract_number: string
+      customer_name: string
+      customer_email: string | null
+      customer_phone: string | null
+      customer_address: string | null
+    }>
+
+    inverter.contracts = linkedContracts
+    inverter.contract_numbers = linkedContracts.map(c => c.contract_number).join(', ')
+
+    const contractIdFilter = req.query.contract_id
+      ? parseInt(String(req.query.contract_id), 10)
+      : null
+    if (contractIdFilter && !Number.isNaN(contractIdFilter)) {
+      const ctx = linkedContracts.find(c => c.id === contractIdFilter)
+      if (ctx) {
+        inverter.contract_id = ctx.id
+        inverter.contract_number = ctx.contract_number
+        inverter.customer_name = ctx.customer_name
+        inverter.customer_email = ctx.customer_email
+        inverter.customer_phone = ctx.customer_phone
+        inverter.customer_address = ctx.customer_address
+      }
     }
 
     // Get related tickets
@@ -211,11 +335,13 @@ router.post('/', authenticateToken, requireRole(UserRole.ADMIN, UserRole.SERVICE
     const {
       serial_number,
       model,
+      manufacturer,
       type,
       power_rating,
       installation_date,
       warranty_start_date,
       warranty_end_date,
+      warranty_months,
       warranty_type,
       customer_id,
       distributor_id,
@@ -407,20 +533,22 @@ router.post('/', authenticateToken, requireRole(UserRole.ADMIN, UserRole.SERVICE
     
     const result = db.prepare(`
       INSERT INTO inverters (
-        serial_number, model, type, power_rating, installation_date,
-        warranty_start_date, warranty_end_date, warranty_type,
+        serial_number, model, manufacturer, type, power_rating, installation_date,
+        warranty_start_date, warranty_end_date, warranty_months, warranty_type,
         customer_id, distributor_id, installation_address,
         location_lat, location_lng, status, notes, user_id
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       serial_number,
       model,
+      manufacturer || null,
       type || null,
       power_rating || null,
       installation_date || null,
       warranty_start_date || null,
       warranty_end_date || null,
+      (warranty_months !== undefined && warranty_months !== null && warranty_months !== '') ? Number(warranty_months) : null,
       warranty_type || null,
       finalCustomerId || null,
       distributor_id || null,
@@ -468,11 +596,13 @@ router.put('/:id', authenticateToken, requireRole(UserRole.ADMIN, UserRole.SERVI
     const {
       serial_number,
       model,
+      manufacturer,
       type,
       power_rating,
       installation_date,
       warranty_start_date,
       warranty_end_date,
+      warranty_months,
       warranty_type,
       customer_id,
       distributor_id,
@@ -617,15 +747,22 @@ router.put('/:id', authenticateToken, requireRole(UserRole.ADMIN, UserRole.SERVI
     
     console.log('📤 [PUT /inverters/:id] Final customer_id to update:', finalCustomerId)
 
+    const normalizedWarrantyMonths =
+      warranty_months !== undefined && warranty_months !== null && warranty_months !== ''
+        ? Number(warranty_months)
+        : null
+
     db.prepare(`
       UPDATE inverters
       SET serial_number = COALESCE(?, serial_number),
           model = COALESCE(?, model),
+          manufacturer = COALESCE(?, manufacturer),
           type = COALESCE(?, type),
           power_rating = COALESCE(?, power_rating),
           installation_date = COALESCE(?, installation_date),
           warranty_start_date = COALESCE(?, warranty_start_date),
           warranty_end_date = COALESCE(?, warranty_end_date),
+          warranty_months = COALESCE(?, warranty_months),
           warranty_type = COALESCE(?, warranty_type),
           customer_id = ?,
           distributor_id = COALESCE(?, distributor_id),
@@ -639,11 +776,13 @@ router.put('/:id', authenticateToken, requireRole(UserRole.ADMIN, UserRole.SERVI
     `).run(
       serial_number || null,
       model || null,
+      manufacturer || null,
       type || null,
       power_rating || null,
       installation_date || null,
       warranty_start_date || null,
       warranty_end_date || null,
+      normalizedWarrantyMonths,
       warranty_type || null,
       finalCustomerId,
       distributor_id || null,
@@ -659,11 +798,8 @@ router.put('/:id', authenticateToken, requireRole(UserRole.ADMIN, UserRole.SERVI
     syncInverterToTickets(inverterId)
 
     const updatedInverter = db.prepare(`
-      SELECT i.*, 
-             c.name as customer_name, 
-             c.email as customer_email,
-             c.phone as customer_phone,
-             c.address as customer_address
+      SELECT i.*,
+             ${inverterCustomerSelect}
       FROM inverters i
       LEFT JOIN customers c ON i.customer_id = c.id
       WHERE i.id = ?

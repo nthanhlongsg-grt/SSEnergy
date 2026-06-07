@@ -69,6 +69,10 @@ export enum Permission {
   EDIT_USER = 'edit_user',
   DELETE_USER = 'delete_user',
   MANAGE_ROLES = 'manage_roles',
+
+  // Contract Management
+  VIEW_CONTRACTS = 'view_contracts',
+  MANAGE_CONTRACTS = 'manage_contracts',
 }
 
 // Role permissions mapping
@@ -99,6 +103,8 @@ const rolePermissions: Record<UserRole, Permission[]> = {
     Permission.EXPORT_REPORT,
     Permission.VIEW_ANALYTICS,
     Permission.EXPORT_DATA,
+    Permission.VIEW_CONTRACTS,
+    Permission.MANAGE_CONTRACTS,
   ],
   [UserRole.TECHNICIAN]: [
     Permission.VIEW_INVERTERS,
@@ -111,12 +117,14 @@ const rolePermissions: Record<UserRole, Permission[]> = {
     Permission.VIEW_REPORTS,
     Permission.CREATE_REPORT,
     Permission.EDIT_REPORT,
+    Permission.VIEW_CONTRACTS,
   ],
   [UserRole.DISTRIBUTOR]: [
     Permission.VIEW_INVERTERS,
     Permission.CREATE_INVERTER,
     Permission.VIEW_TICKETS,
     Permission.CREATE_TICKET,
+    Permission.VIEW_CONTRACTS,
   ],
   [UserRole.DEALER]: [
     Permission.VIEW_INVERTERS,
@@ -131,6 +139,7 @@ const rolePermissions: Record<UserRole, Permission[]> = {
     Permission.CREATE_INVERTER,
     Permission.VIEW_TICKETS,
     Permission.CREATE_TICKET,
+    Permission.VIEW_CONTRACTS,
   ],
   [UserRole.WAREHOUSE]: [
     Permission.VIEW_WAREHOUSE,

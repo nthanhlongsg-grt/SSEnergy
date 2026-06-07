@@ -30,14 +30,14 @@ const addModelsTable = () => {
 
       // Insert default models
       const defaultModels = [
-        { name: 'MAX 10KTL3-X', manufacturer: 'Growatt', type: 'Hòa lưới' },
-        { name: 'MAX 15KTL3-X', manufacturer: 'Growatt', type: 'Hòa lưới' },
-        { name: 'MAX 20KTL3-X', manufacturer: 'Growatt', type: 'Hòa lưới' },
-        { name: 'MID 15KTL3-X', manufacturer: 'Growatt', type: 'Hòa lưới' },
-        { name: 'SPH 6000', manufacturer: 'Growatt', type: 'Hybrid' },
-        { name: 'SPH 8000', manufacturer: 'Growatt', type: 'Hybrid' },
-        { name: 'MIN 3000TL-XE', manufacturer: 'Growatt', type: 'Hòa lưới' },
-        { name: 'MIN 5000TL-XE', manufacturer: 'Growatt', type: 'Hòa lưới' },
+        { name: 'MAX 10KTL3-X', manufacturer: 'SGE', type: 'Hòa lưới' },
+        { name: 'MAX 15KTL3-X', manufacturer: 'SGE', type: 'Hòa lưới' },
+        { name: 'MAX 20KTL3-X', manufacturer: 'SGE', type: 'Hòa lưới' },
+        { name: 'MID 15KTL3-X', manufacturer: 'SGE', type: 'Hòa lưới' },
+        { name: 'SPH 6000', manufacturer: 'SGE', type: 'Hybrid' },
+        { name: 'SPH 8000', manufacturer: 'SGE', type: 'Hybrid' },
+        { name: 'MIN 3000TL-XE', manufacturer: 'SGE', type: 'Hòa lưới' },
+        { name: 'MIN 5000TL-XE', manufacturer: 'SGE', type: 'Hòa lưới' },
       ]
 
       const stmt = db.prepare(`

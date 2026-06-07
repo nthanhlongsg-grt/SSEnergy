@@ -8,7 +8,7 @@
           <div class="w-full max-w-md pt-4 mx-auto sm:pt-10">
             <div class="flex items-center justify-between">
               <a
-                href="https://vn.growatt.com/"
+                :href="SGE_HOME_URL"
                 target="_blank"
                 rel="noopener noreferrer"
                 class="inline-flex items-center text-sm text-gray-500 transition-colors hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
@@ -41,7 +41,7 @@
                 <router-link to="/" class="flex items-center justify-center">
                   <img 
                     src="/images/logo/logo.png" 
-                    alt="Growatt VietNam" 
+                    alt="SGE VietNam" 
                     class="object-contain h-16 w-auto sm:h-20"
                   />
                 </router-link>
@@ -217,16 +217,6 @@
           style="background-image: url('/images/background.png');"
         >
           <div class="absolute inset-0 bg-black/20 dark:bg-black/40"></div>
-          <div class="relative flex items-center justify-center z-1 w-full h-full">
-            <div class="flex flex-col items-center max-w-md">
-              <router-link to="/" class="block mb-4">
-                <img width="350" height="73" src="/images/logo/logo.png" alt="Growatt VietNam" class="object-contain" />
-              </router-link>
-              <p class="text-center text-gray-100 dark:text-white/90">
-                {{ t('auth.signin.tagline') }}
-              </p>
-            </div>
-          </div>
           <!-- Version -->
           <div class="absolute bottom-4 right-4 z-10">
             <span class="text-sm text-gray-200 dark:text-gray-300">V1.02</span>
@@ -245,6 +235,7 @@ import CommonGridShape from '@/components/common/CommonGridShape.vue'
 import FullScreenLayout from '@/components/layout/FullScreenLayout.vue'
 import LanguageSwitcher from '@/components/common/LanguageSwitcher.vue'
 import { login } from '@/composables/useAuth'
+import { SGE_HOME_URL } from '@/constants/site'
 
 const router = useRouter()
 const { t } = useI18n()

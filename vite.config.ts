@@ -6,38 +6,40 @@ import { defineConfig } from 'vite'
 import vueDevTools from 'vite-plugin-vue-devtools'
 
 // https://vite.dev/config/
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   base: process.env.VITE_BASE_PATH || '/',
-  plugins: [vue(), vueJsx(), vueDevTools()],
+  plugins: [
+    vue(),
+    vueJsx(),
+    ...(mode === 'development' ? [vueDevTools()] : []),
+  ],
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
   },
   server: {
-    host: '0.0.0.0', // Listen on all network interfaces
+    host: '0.0.0.0',
     port: 5173,
     strictPort: false,
     proxy: {
-      // Proxy API requests to backend
       '/api': {
         target: 'http://localhost:3000',
         changeOrigin: true,
         secure: false,
-        // Rewrite: remove /api prefix if needed (but we want to keep it)
-        // configure: (proxy, options) => {
-        //   proxy.on('proxyReq', (proxyReq, req, res) => {
-        //     console.log('Proxying request:', req.url)
-        //   })
-        // }
       },
     },
   },
   build: {
+    target: 'es2020',
+    sourcemap: false,
     rollupOptions: {
       output: {
-        manualChunks: undefined,
+        manualChunks: {
+          vue: ['vue', 'vue-router', 'vue-i18n'],
+          charts: ['apexcharts', 'vue3-apexcharts'],
+        },
       },
     },
   },
-})
+}))

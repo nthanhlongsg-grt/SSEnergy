@@ -3,7 +3,7 @@ import path from 'path'
 import fs from 'fs'
 
 const dbDir = path.join(process.cwd(), 'data')
-const dbPath = path.join(dbDir, 'growatt.db')
+const dbPath = path.join(dbDir, 'SGE.db')
 
 if (!fs.existsSync(dbDir)) {
   fs.mkdirSync(dbDir, { recursive: true })

@@ -61,7 +61,7 @@ const readme = [
   'Environment baseline:',
   '- NODE_ENV=production',
   '- JWT_SECRET=<strong-secret>',
-  '- CORS_ORIGIN=https://growattvietnam.com,https://www.growattvietnam.com',
+  '- CORS_ORIGIN=https://baohanh.sgesolartech.vn',
   '- TZ=Asia/Ho_Chi_Minh',
 ].join('\n')
 

@@ -1,0 +1,1227 @@
+<template>
+  <admin-layout>
+    <div class="px-4 sm:px-0 space-y-4 sm:space-y-6">
+      <!-- Header -->
+      <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+        <div>
+          <h1 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
+            Quản lý Hợp đồng
+          </h1>
+          <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+            Danh sách hợp đồng bảo trì, bảo hành và dịch vụ
+          </p>
+        </div>
+        <button
+          @click="openCreate"
+          class="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+        >
+          <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+          </svg>
+          Tạo hợp đồng mới
+        </button>
+      </div>
+
+      <!-- Stats Cards -->
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        <div
+          v-for="card in statCards"
+          :key="card.key"
+          @click="card.filterable && applyStatusFilter(card.key)"
+          :class="[
+            'rounded-xl p-3 border transition-all',
+            card.filterable ? 'cursor-pointer' : '',
+            card.filterable && filters.status === card.key && !filters.unpaid
+              ? `${card.activeBg} border-transparent`
+              : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700',
+            card.filterable ? 'hover:border-gray-300 dark:hover:border-gray-500' : '',
+          ]"
+        >
+          <p class="text-xs text-gray-500 dark:text-gray-400">{{ card.label }}</p>
+          <p :class="['text-2xl font-bold mt-1', card.filterable && filters.status === card.key && !filters.unpaid ? card.activeText : 'text-gray-900 dark:text-white']">
+            {{ stats[card.key as keyof typeof stats] ?? 0 }}
+          </p>
+        </div>
+        <div
+          class="rounded-xl p-3 border cursor-pointer transition-all hover:border-rose-300 dark:hover:border-rose-600"
+          :class="filters.unpaid
+            ? 'bg-rose-100 dark:bg-rose-900/30 border-transparent'
+            : 'bg-rose-50 dark:bg-rose-900/20 border-rose-200 dark:border-rose-700'"
+          @click="toggleActiveUnpaidFilter"
+        >
+          <p class="text-xs text-rose-600 dark:text-rose-400">Hiệu lực · chưa thanh toán</p>
+          <p class="text-2xl font-bold mt-1 text-rose-700 dark:text-rose-300">{{ stats.active_unpaid ?? 0 }}</p>
+        </div>
+        <div class="rounded-xl p-3 border bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-700">
+          <p class="text-xs text-amber-600 dark:text-amber-400">Sắp hết hạn (30 ngày)</p>
+          <p class="text-2xl font-bold mt-1 text-amber-700 dark:text-amber-300">{{ stats.expiring_soon ?? 0 }}</p>
+        </div>
+      </div>
+
+      <!-- Filters -->
+      <div class="flex flex-col sm:flex-row gap-3">
+        <div class="relative flex-1">
+          <svg class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M17 11A6 6 0 115 11a6 6 0 0112 0z"/>
+          </svg>
+          <input
+            v-model="filters.search"
+            @input="debouncedLoad"
+            type="text"
+            placeholder="Tìm theo số HĐ, tiêu đề, khách hàng..."
+            class="w-full pl-9 pr-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+        <select
+          v-model="filters.status"
+          @change="onStatusFilterChange"
+          class="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          <option value="">Tất cả trạng thái</option>
+          <option value="draft">Bản nháp</option>
+          <option value="active">Đang hiệu lực</option>
+          <option value="expired">Hết hạn</option>
+          <option value="cancelled">Đã hủy</option>
+        </select>
+        <select
+          v-model="filters.contract_type"
+          @change="loadContracts"
+          class="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          <option value="">Tất cả loại</option>
+          <option value="service">Dịch vụ</option>
+          <option value="economic">Kinh tế</option>
+          <option value="other">Khác</option>
+        </select>
+      </div>
+
+      <!-- Error -->
+      <div v-if="error" class="rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-4">
+        <p class="text-sm text-red-800 dark:text-red-200">{{ error }}</p>
+      </div>
+
+      <!-- Loading -->
+      <div v-if="loading && contracts.length === 0" class="flex justify-center py-12">
+        <div class="text-gray-500 dark:text-gray-400 text-sm">Đang tải dữ liệu...</div>
+      </div>
+
+      <!-- Table -->
+      <div v-else class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-600">
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Số HĐ</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Khách hàng</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase hidden sm:table-cell">Người liên hệ</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase hidden md:table-cell">Loại</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase hidden lg:table-cell">Ngày ký HĐ / NT</th>
+                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase hidden lg:table-cell">Giá trị</th>
+                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Trạng thái / Thanh toán / Giao máy</th>
+                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Thao tác</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+              <tr
+                v-for="c in contracts"
+                :key="c.id"
+                @click="router.push(`/contracts/${c.id}`)"
+                class="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors cursor-pointer"
+              >
+                <td class="px-4 py-3 font-mono text-blue-600 dark:text-blue-400 font-medium">{{ c.contract_number }}</td>
+                <td class="px-4 py-3">
+                  <p class="font-medium text-gray-900 dark:text-white line-clamp-1">{{ c.customer_name }}</p>
+                  <p class="text-xs text-gray-500 dark:text-gray-400 sm:hidden">{{ (c as any).customer_contact || '—' }}</p>
+                </td>
+                <td class="px-4 py-3 hidden sm:table-cell text-gray-700 dark:text-gray-300">{{ (c as any).customer_contact || '—' }}</td>
+                <td class="px-4 py-3 hidden md:table-cell">
+                  <span :class="typeClass(c.contract_type)" class="px-2 py-0.5 rounded-full text-xs font-medium">
+                    {{ typeLabel(c.contract_type) }}
+                  </span>
+                </td>
+                <td class="px-4 py-3 hidden lg:table-cell text-gray-600 dark:text-gray-400 text-xs">
+                  {{ c.signed_date ? formatDate(c.signed_date) : '—' }} / {{ c.end_date ? formatDate(c.end_date) : '—' }}
+                </td>
+                <td class="px-4 py-3 hidden lg:table-cell text-right font-medium text-gray-900 dark:text-white">
+                  {{ formatCurrency(c.value) }}
+                </td>
+                <td class="px-4 py-3 text-center">
+                  <div class="flex flex-col items-center gap-1">
+                    <span :class="statusClass(c.status)" class="px-2 py-0.5 rounded-full text-xs font-medium">
+                      {{ statusLabel(c.status) }}
+                    </span>
+                    <span :class="paymentStatusClass(isContractPaid(c))" class="px-2 py-0.5 rounded-full text-xs font-medium">
+                      {{ getPaymentStatusLabel(c) }}
+                    </span>
+                    <span :class="deviceDeliveryStatusClass(isContractDeviceDelivered(c))" class="px-2 py-0.5 rounded-full text-xs font-medium">
+                      {{ getDeviceDeliveryStatusLabel(c) }}
+                    </span>
+                  </div>
+                </td>
+                <td class="px-4 py-3 text-center" @click.stop>
+                  <div class="flex items-center justify-center gap-1">
+                    <button
+                      @click="openEdit(c)"
+                      class="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
+                      title="Chỉnh sửa"
+                    >
+                      <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536M9 13l6.536-6.536a2 2 0 012.828 0l.172.172a2 2 0 010 2.828L12 16H9v-3z"/>
+                      </svg>
+                    </button>
+                    <button
+                      @click="confirmDelete(c)"
+                      class="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
+                      title="Xóa"
+                    >
+                      <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                      </svg>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              <tr v-if="!loading && contracts.length === 0">
+                <td colspan="8" class="px-4 py-12 text-center text-gray-500 dark:text-gray-400">
+                  Không có hợp đồng nào
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pagination -->
+        <div v-if="total > filters.limit" class="flex items-center justify-between px-4 py-3 border-t border-gray-200 dark:border-gray-600">
+          <p class="text-xs text-gray-500 dark:text-gray-400">
+            Hiển thị {{ (filters.page - 1) * filters.limit + 1 }}–{{ Math.min(filters.page * filters.limit, total) }} / {{ total }} hợp đồng
+          </p>
+          <div class="flex gap-2">
+            <button
+              @click="filters.page--; loadContracts()"
+              :disabled="filters.page <= 1"
+              class="px-3 py-1 text-sm rounded-lg border border-gray-300 dark:border-gray-600 disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-gray-700"
+            >Trước</button>
+            <button
+              @click="filters.page++; loadContracts()"
+              :disabled="filters.page * filters.limit >= total"
+              class="px-3 py-1 text-sm rounded-lg border border-gray-300 dark:border-gray-600 disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-gray-700"
+            >Sau</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Create/Edit Modal -->
+    <teleport to="body">
+      <div v-if="showModal" class="fixed inset-0 z-[100000] flex items-start justify-center pt-20 px-4 pb-4 lg:pl-[290px] bg-black/50 overflow-y-auto">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-5xl max-h-[90vh] overflow-y-auto">
+          <div class="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+            <h2 class="text-lg font-bold text-gray-900 dark:text-white">
+              {{ editingContract ? 'Chỉnh sửa hợp đồng' : 'Tạo hợp đồng mới' }}
+            </h2>
+            <button @click="showModal = false" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+              <svg class="h-5 w-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+            </button>
+          </div>
+
+          <form @submit.prevent="saveContract" class="p-6 space-y-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <!-- Customer -->
+              <div class="sm:col-span-2">
+                <div class="flex items-center justify-between mb-1">
+                  <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Khách hàng <span class="text-red-500">*</span>
+                  </label>
+                  <router-link
+                    :to="{ path: '/customers', query: { new: '1' } }"
+                    target="_blank"
+                    class="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                  >
+                    + Công ty mới
+                  </router-link>
+                </div>
+
+                <!-- Chọn khách hàng có sẵn (search + autocomplete) -->
+                <div class="relative customer-search-wrapper">
+                  <!-- Đã chọn -->
+                  <div v-if="form.customer_id" class="flex items-center gap-2 px-3 py-2 border border-blue-400 dark:border-blue-500 rounded-lg bg-blue-50 dark:bg-blue-900/20">
+                    <svg class="h-4 w-4 text-blue-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    </svg>
+                    <span class="text-sm font-medium text-gray-900 dark:text-white flex-1">{{ selectedCustomerName }}</span>
+                    <button type="button" @click="clearCustomer" class="text-gray-400 hover:text-red-500 transition-colors">
+                      <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                      </svg>
+                    </button>
+                  </div>
+
+                  <!-- Search input -->
+                  <div v-else>
+                    <div class="relative">
+                      <svg class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M17 11A6 6 0 115 11a6 6 0 0112 0z"/>
+                      </svg>
+                      <input
+                        v-model="customerSearch"
+                        @input="onCustomerSearch"
+                        @focus="showCustomerDropdown = true"
+                        type="text"
+                        placeholder="Tìm tên công ty, email, SĐT..."
+                        class="w-full pl-9 pr-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+
+                    <!-- Dropdown kết quả -->
+                    <div
+                      v-if="showCustomerDropdown && filteredCustomerOptions.length"
+                      class="absolute z-20 mt-1 w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl shadow-lg max-h-48 overflow-y-auto"
+                    >
+                      <button
+                        v-for="cust in filteredCustomerOptions"
+                        :key="cust.id"
+                        type="button"
+                        @click="selectCustomer(cust)"
+                        class="w-full flex items-start gap-3 px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-left"
+                      >
+                        <div class="w-7 h-7 rounded-full bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <span class="text-xs font-bold text-blue-600 dark:text-blue-400">{{ cust.name.charAt(0).toUpperCase() }}</span>
+                        </div>
+                        <div class="min-w-0">
+                          <p class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ cust.name }}</p>
+                          <p v-if="cust.phone || cust.email" class="text-xs text-gray-400 dark:text-gray-500 truncate">
+                            {{ cust.phone }}{{ cust.phone && cust.email ? ' · ' : '' }}{{ cust.email }}
+                          </p>
+                        </div>
+                      </button>
+                      <div v-if="filteredCustomerOptions.length === 0 && customerSearch" class="px-4 py-3 text-sm text-gray-400 text-center">
+                        Không tìm thấy khách hàng
+                      </div>
+                    </div>
+                    <div v-if="!form.customer_id" class="mt-1 text-xs text-red-400 hidden peer-invalid:block">Vui lòng chọn khách hàng</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Số HĐ / Loại / Trạng thái -->
+              <div class="sm:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <!-- Contract number -->
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Số HĐ <span class="text-red-500">*</span></label>
+                  <input v-model="form.contract_number" required type="text" placeholder="Nhập số hợp đồng" class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                </div>
+
+                <!-- Type -->
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Loại hợp đồng</label>
+                  <select v-model="form.contract_type" class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="service">Dịch vụ</option>
+                    <option value="economic">Kinh tế</option>
+                    <option value="other">Khác</option>
+                  </select>
+                </div>
+
+                <!-- Status -->
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Trạng thái</label>
+                  <select v-model="form.status" class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="draft">Bản nháp</option>
+                    <option value="active">Đang hiệu lực</option>
+                    <option value="expired">Hết hạn</option>
+                    <option value="cancelled">Đã hủy</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Ngày ký hợp đồng / nghiệm thu — chỉ khi chỉnh sửa -->
+              <template v-if="editingContract">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Ngày ký hợp đồng</label>
+                  <flat-pickr v-model="form.signed_date" :config="datePickerConfig" placeholder="dd/mm/yyyy" class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                </div>
+
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Ngày ký nghiệm thu</label>
+                  <flat-pickr v-model="form.end_date" :config="datePickerConfig" placeholder="dd/mm/yyyy" class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                </div>
+              </template>
+
+            </div>
+
+            <!-- Nội dung hợp đồng (hạng mục) -->
+            <div class="border border-gray-200 dark:border-gray-600 rounded-xl overflow-hidden">
+              <div class="flex items-center justify-between px-4 py-3 bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-600">
+                <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                  <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+                  </svg>
+                  Nội dung hợp đồng
+                  <span class="px-2 py-0.5 text-xs bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 rounded-full">{{ form.items.length }}</span>
+                </h3>
+                <button
+                  type="button"
+                  @click="addItemRow"
+                  class="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-blue-600 dark:text-blue-400 border border-blue-300 dark:border-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
+                >
+                  <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                  </svg>
+                  Thêm hạng mục
+                </button>
+              </div>
+
+              <div class="overflow-x-auto">
+                <table class="w-full text-sm min-w-[680px]">
+                  <thead>
+                    <tr class="bg-gray-50 dark:bg-gray-700/30 border-b border-gray-100 dark:border-gray-700 text-xs text-gray-500 dark:text-gray-400">
+                      <th class="px-3 py-2 text-center w-10">STT</th>
+                      <th class="px-3 py-2 text-left">Hạng mục</th>
+                      <th class="px-3 py-2 text-center w-20">ĐVT</th>
+                      <th class="px-3 py-2 text-right w-20">Số lượng</th>
+                      <th class="px-3 py-2 text-right w-32">Đơn giá</th>
+                      <th class="px-3 py-2 text-right w-32">Thành tiền</th>
+                      <th class="px-3 py-2 w-8"></th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+                    <tr v-if="!form.items.length">
+                      <td colspan="7" class="px-3 py-4 text-center text-gray-400 text-xs">Chưa có hạng mục. Bấm "Thêm hạng mục" để thêm.</td>
+                    </tr>
+                    <tr v-for="(it, idx) in form.items" :key="idx">
+                      <td class="px-3 py-2 text-center text-gray-500">{{ idx + 1 }}</td>
+                      <td class="px-2 py-1.5">
+                        <input v-model="it.description" type="text" placeholder="VD: Sửa chữa main board SG110CX" class="w-full px-2.5 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                      </td>
+                      <td class="px-2 py-1.5">
+                        <input v-model="it.unit" type="text" placeholder="Cái" class="w-full px-2 py-1.5 text-sm text-center border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                      </td>
+                      <td class="px-2 py-1.5">
+                        <input v-model.number="it.quantity" type="number" min="0" step="1" class="w-full px-2 py-1.5 text-sm text-right border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                      </td>
+                      <td class="px-2 py-1.5">
+                        <input v-model.number="it.unit_price" type="number" min="0" step="1000" class="w-full px-2 py-1.5 text-sm text-right border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                      </td>
+                      <td class="px-3 py-2 text-right font-medium text-gray-900 dark:text-white whitespace-nowrap">{{ formatCurrency(lineAmount(it)) }}</td>
+                      <td class="px-2 py-2 text-center">
+                        <button type="button" @click="removeItemRow(idx)" class="text-gray-400 hover:text-red-500 transition-colors">
+                          <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                        </button>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Tổng kết -->
+              <div class="border-t border-gray-200 dark:border-gray-600 px-4 py-3 bg-gray-50 dark:bg-gray-700/30">
+                <div class="ml-auto w-full sm:w-80 space-y-1.5 text-sm">
+                  <div class="flex items-center justify-between">
+                    <span class="text-gray-600 dark:text-gray-400">Tổng cộng:</span>
+                    <span class="font-medium text-gray-900 dark:text-white">{{ formatCurrency(itemsSubtotal) }}</span>
+                  </div>
+                  <div class="flex items-center justify-between">
+                    <span class="text-gray-600 dark:text-gray-400 flex items-center gap-1">
+                      Thuế GTGT (
+                      <input v-model.number="form.vat_rate" type="number" min="0" max="100" step="1" class="w-12 px-1 py-0.5 text-center text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                      %):
+                    </span>
+                    <span class="font-medium text-gray-900 dark:text-white">{{ formatCurrency(itemsVat) }}</span>
+                  </div>
+                  <div class="flex items-center justify-between pt-1.5 border-t border-gray-200 dark:border-gray-600">
+                    <span class="font-semibold text-gray-900 dark:text-white">Tổng cộng thanh toán:</span>
+                    <span class="font-bold text-blue-600 dark:text-blue-400">{{ formatCurrency(itemsTotal) }}</span>
+                  </div>
+                  <p class="text-xs italic text-gray-500 dark:text-gray-400 pt-1">Bằng chữ: {{ itemsTotalInWords }}</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Thời gian giao hàng & bảo hành -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-xl">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Thời gian giao hàng (ngày)</label>
+                <input
+                  v-model.number="form.delivery_days"
+                  type="number"
+                  min="1"
+                  step="1"
+                  placeholder="7"
+                  class="w-full max-w-[8rem] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Thời gian bảo hành (tháng)</label>
+                <input
+                  v-model.number="form.warranty_months"
+                  type="number"
+                  min="1"
+                  step="1"
+                  placeholder="12"
+                  class="w-full max-w-[8rem] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+
+            <!-- Ghi chú nội bộ (chỉ nhân viên) -->
+            <div v-if="isStaff">
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Ghi chú nội bộ
+                <span class="text-xs font-normal text-gray-400">(chỉ nhân viên xem được)</span>
+              </label>
+              <textarea v-model="form.notes" rows="2" placeholder="Ghi chú nội bộ..." class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"></textarea>
+            </div>
+
+            <!-- Danh sách thiết bị liên kết -->
+            <div class="border border-gray-200 dark:border-gray-600 rounded-xl overflow-hidden">
+              <div class="flex items-center justify-between px-4 py-3 bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-600">
+                <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                  <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V9l-6-6zM9 3v6h6"/>
+                  </svg>
+                  Thiết bị liên kết
+                  <span class="px-2 py-0.5 text-xs bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 rounded-full">{{ form.existing_devices.length + form.new_devices.length }}</span>
+                </h3>
+                <button
+                  type="button"
+                  @click="addDeviceRow"
+                  class="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-blue-600 dark:text-blue-400 border border-blue-300 dark:border-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
+                >
+                  <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                  </svg>
+                  Thêm thiết bị
+                </button>
+              </div>
+
+              <!-- Header cột -->
+              <div v-if="form.existing_devices.length || form.new_devices.length" class="grid grid-cols-[1fr_1fr_1fr_6rem_1fr_2rem] gap-2 px-4 py-2 bg-gray-50 dark:bg-gray-700/30 border-b border-gray-100 dark:border-gray-700">
+                <span class="text-xs font-medium text-gray-500 dark:text-gray-400">Hãng</span>
+                <span class="text-xs font-medium text-gray-500 dark:text-gray-400">Model <span class="text-red-400">*</span></span>
+                <span class="text-xs font-medium text-gray-500 dark:text-gray-400">Số SN <span class="text-red-400">*</span></span>
+                <span class="text-xs font-medium text-gray-500 dark:text-gray-400">BH (tháng)</span>
+                <span class="text-xs font-medium text-gray-500 dark:text-gray-400">Ghi chú</span>
+                <span></span>
+              </div>
+
+              <!-- Rows -->
+              <div class="divide-y divide-gray-100 dark:divide-gray-700 max-h-56 overflow-y-auto">
+                <!-- Thiết bị đã liên kết (chỉnh sửa được) -->
+                <div
+                  v-for="(dev, idx) in form.existing_devices"
+                  :key="'ex-' + dev.id"
+                  class="grid grid-cols-[1fr_1fr_1fr_6rem_1fr_2rem] gap-2 px-4 py-2.5 items-center"
+                >
+                  <input
+                    v-model="dev.manufacturer"
+                    type="text"
+                    list="manufacturer-options"
+                    placeholder="Chọn hoặc nhập hãng"
+                    class="px-2.5 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 w-full"
+                  />
+                  <input
+                    v-model="dev.model"
+                    type="text"
+                    placeholder="VD: MAX-10K"
+                    required
+                    class="px-2.5 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 w-full"
+                  />
+                  <input
+                    v-model="dev.serial_number"
+                    type="text"
+                    placeholder="VD: SN20250001"
+                    required
+                    class="px-2.5 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 w-full font-mono"
+                  />
+                  <input
+                    v-model.number="dev.warranty_months"
+                    type="number"
+                    min="0"
+                    step="1"
+                    placeholder="12"
+                    class="px-2.5 py-1.5 text-sm text-center border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 w-full"
+                  />
+                  <input
+                    v-model="dev.notes"
+                    type="text"
+                    placeholder="Ghi chú..."
+                    class="px-2.5 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 w-full"
+                  />
+                  <button
+                    type="button"
+                    @click="removeExistingDevice(idx)"
+                    class="p-1 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded transition-colors"
+                    title="Gỡ liên kết thiết bị"
+                  >
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                  </button>
+                </div>
+
+                <!-- Thiết bị mới thêm -->
+                <div
+                  v-for="(dev, idx) in form.new_devices"
+                  :key="idx"
+                  class="grid grid-cols-[1fr_1fr_1fr_6rem_1fr_2rem] gap-2 px-4 py-2.5 items-center"
+                >
+                  <input
+                    v-model="dev.manufacturer"
+                    type="text"
+                    list="manufacturer-options"
+                    placeholder="Chọn hoặc nhập hãng"
+                    class="px-2.5 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 w-full"
+                  />
+                  <input
+                    v-model="dev.model"
+                    type="text"
+                    placeholder="VD: MAX-10K"
+                    required
+                    class="px-2.5 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 w-full"
+                  />
+                  <input
+                    v-model="dev.serial_number"
+                    type="text"
+                    placeholder="VD: SN20250001"
+                    required
+                    class="px-2.5 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 w-full font-mono"
+                  />
+                  <input
+                    v-model.number="dev.warranty_months"
+                    type="number"
+                    min="0"
+                    step="1"
+                    placeholder="12"
+                    class="px-2.5 py-1.5 text-sm text-center border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 w-full"
+                  />
+                  <input
+                    v-model="dev.notes"
+                    type="text"
+                    placeholder="Ghi chú..."
+                    class="px-2.5 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 w-full"
+                  />
+                  <button
+                    type="button"
+                    @click="removeDeviceRow(idx)"
+                    class="p-1 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded transition-colors"
+                    title="Xóa"
+                  >
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                  </button>
+                </div>
+
+                <!-- Empty state -->
+                <div v-if="!form.existing_devices.length && !form.new_devices.length" class="px-4 py-6 text-center text-sm text-gray-400 dark:text-gray-500">
+                  Chưa có thiết bị nào — nhấn <strong>Thêm thiết bị</strong> để thêm
+                </div>
+              </div>
+            </div>
+
+            <!-- Danh sách hãng gợi ý cho thiết bị -->
+            <datalist id="manufacturer-options">
+              <option v-for="m in MANUFACTURER_OPTIONS" :key="m" :value="m" />
+            </datalist>
+
+            <!-- Form error -->
+            <div v-if="formError" class="rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-3">
+              <p class="text-sm text-red-700 dark:text-red-300">{{ formError }}</p>
+            </div>
+
+            <div class="flex gap-3 justify-end pt-2">
+              <button type="button" @click="showModal = false" class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                Hủy
+              </button>
+              <button
+                type="submit"
+                :disabled="saving"
+                class="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 rounded-lg transition-colors flex items-center gap-2"
+              >
+                <span v-if="saving" class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                {{ saving ? 'Đang lưu...' : (editingContract ? 'Cập nhật' : 'Tạo mới') }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Delete Confirm -->
+      <div v-if="deletingContract" class="fixed inset-0 z-[100000] flex items-center justify-center p-4 bg-black/50">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-md p-6">
+          <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-2">Xác nhận xóa</h3>
+          <p class="text-sm text-gray-600 dark:text-gray-400 mb-6">
+            Bạn có chắc muốn xóa hợp đồng <strong>{{ deletingContract.contract_number }}</strong>?
+            Hành động này không thể hoàn tác.
+          </p>
+          <div class="flex gap-3 justify-end">
+            <button @click="deletingContract = null" class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">Hủy</button>
+            <button @click="deleteContract" :disabled="saving" class="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 disabled:opacity-50 rounded-lg flex items-center gap-2">
+              <span v-if="saving" class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+              Xóa
+            </button>
+          </div>
+        </div>
+      </div>
+    </teleport>
+  </admin-layout>
+</template>
+
+<script setup lang="ts">
+import { ref, reactive, computed, onMounted, watch } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
+import AdminLayout from '@/components/layout/AdminLayout.vue'
+import { contractService, type Contract } from '@/services/contractService'
+import { getApiBaseUrl } from '@/utils/apiUrl'
+import { amountToVietnameseWords } from '@/utils/numberToWords'
+import flatPickr from 'vue-flatpickr-component'
+import 'flatpickr/dist/flatpickr.css'
+import { useFlatpickrConfig } from '@/composables/useFlatpickr'
+import { useAuth, UserRole } from '@/composables/useAuth'
+import { isContractPaid, getPaymentStatusLabel, paymentStatusClass, isContractDeviceDelivered, getDeviceDeliveryStatusLabel, deviceDeliveryStatusClass } from '@/utils/contractPaperwork'
+import { useToast } from '@/composables/useToast'
+import { useI18n } from 'vue-i18n'
+
+const router = useRouter()
+const route = useRoute()
+const { getUserRole } = useAuth()
+const { t } = useI18n()
+const { showSuccess } = useToast()
+const isStaff = computed(() => getUserRole.value !== UserRole.END_USER)
+
+const { dateConfig } = useFlatpickrConfig()
+const datePickerConfig = { ...dateConfig, altInputPlaceholder: 'dd/mm/yyyy' }
+
+const contracts = ref<Contract[]>([])
+const total = ref(0)
+const loading = ref(false)
+const error = ref('')
+const showModal = ref(false)
+const saving = ref(false)
+const formError = ref('')
+const editingContract = ref<Contract | null>(null)
+const deletingContract = ref<Contract | null>(null)
+const stats = ref({ total: 0, draft: 0, active: 0, expired: 0, cancelled: 0, expiring_soon: 0, active_unpaid: 0 })
+const customers = ref<{ id: number; name: string; phone?: string; email?: string }[]>([])
+const availableInverters = ref<{ id: number; serial_number: string; model: string; manufacturer: string; power_rating?: string; status: string }[]>([])
+const loadingInverters = ref(false)
+
+// Customer search
+const customerSearch = ref('')
+const showCustomerDropdown = ref(false)
+const filteredCustomerOptions = ref<{ id: number; name: string; phone?: string; email?: string }[]>([])
+const selectedCustomerName = ref('')
+
+const filters = reactive({
+  search: '',
+  status: '',
+  contract_type: '',
+  unpaid: false,
+  page: 1,
+  limit: 20,
+})
+
+interface NewDevice {
+  manufacturer: string
+  model: string
+  serial_number: string
+  warranty_months: number
+  notes: string
+}
+
+interface ExistingDevice {
+  id: number
+  manufacturer: string
+  model: string
+  serial_number: string
+  warranty_months: number
+  notes: string
+}
+
+interface ContractItem {
+  description: string
+  unit: string
+  quantity: number
+  unit_price: number
+}
+
+const MANUFACTURER_OPTIONS = ['Sungrow', 'Huawei', 'Growatt', 'GoodWe', 'Solis', 'SMA']
+
+const DEFAULT_DELIVERY_DAYS = 7
+const DEFAULT_WARRANTY_MONTHS = 12
+
+const emptyForm = () => ({
+  customer_id: '' as any,
+  contract_number: '',
+  title: '',
+  contract_type: 'service' as Contract['contract_type'],
+  start_date: '',
+  end_date: '',
+  value: 0,
+  vat_rate: 8,
+  status: 'draft' as Contract['status'],
+  description: '',
+  notes: '',
+  delivery_days: DEFAULT_DELIVERY_DAYS,
+  warranty_months: DEFAULT_WARRANTY_MONTHS,
+  signed_date: '',
+  items: [] as ContractItem[],
+  inverter_ids: [] as number[],
+  existing_devices: [] as ExistingDevice[],
+  new_devices: [] as NewDevice[],
+})
+
+const form = reactive(emptyForm())
+
+const itemsSubtotal = computed(() =>
+  form.items.reduce((sum, it) => sum + (Number(it.quantity) || 0) * (Number(it.unit_price) || 0), 0)
+)
+const itemsVat = computed(() => Math.round(itemsSubtotal.value * (Number(form.vat_rate) || 0) / 100))
+const itemsTotal = computed(() => itemsSubtotal.value + itemsVat.value)
+const itemsTotalInWords = computed(() => amountToVietnameseWords(itemsTotal.value))
+
+watch(itemsTotal, (v) => { form.value = v })
+
+function addItemRow() {
+  form.items.push({ description: '', unit: '', quantity: 1, unit_price: 0 })
+}
+function removeItemRow(idx: number) {
+  form.items.splice(idx, 1)
+}
+function lineAmount(it: ContractItem) {
+  return (Number(it.quantity) || 0) * (Number(it.unit_price) || 0)
+}
+
+const statCards = [
+  { key: 'total', label: 'Tổng cộng', activeBg: '', activeText: '', filterable: false },
+  { key: 'active', label: 'Đang hiệu lực', activeBg: 'bg-green-100 dark:bg-green-900/30', activeText: 'text-green-700 dark:text-green-300', filterable: true },
+  { key: 'draft', label: 'Bản nháp', activeBg: 'bg-gray-100 dark:bg-gray-700', activeText: 'text-gray-700 dark:text-gray-200', filterable: true },
+  { key: 'expired', label: 'Hết hạn', activeBg: 'bg-red-100 dark:bg-red-900/30', activeText: 'text-red-700 dark:text-red-300', filterable: true },
+]
+
+let debounceTimer: ReturnType<typeof setTimeout>
+const debouncedLoad = () => {
+  clearTimeout(debounceTimer)
+  debounceTimer = setTimeout(() => { filters.page = 1; loadContracts() }, 400)
+}
+
+async function loadContracts() {
+  loading.value = true
+  error.value = ''
+  try {
+    const res = await contractService.list({
+      status: filters.status || undefined,
+      search: filters.search || undefined,
+      unpaid: filters.unpaid || undefined,
+      page: filters.page,
+      limit: filters.limit,
+    })
+    contracts.value = res.contracts
+    total.value = res.total
+  } catch (e: any) {
+    error.value = e.message
+  } finally {
+    loading.value = false
+  }
+}
+
+function applyStatusFilter(statusKey: string) {
+  filters.unpaid = false
+  filters.status = filters.status === statusKey ? '' : statusKey
+  filters.page = 1
+  loadContracts()
+}
+
+function toggleActiveUnpaidFilter() {
+  if (filters.unpaid) {
+    filters.unpaid = false
+    filters.status = ''
+  } else {
+    filters.unpaid = true
+    filters.status = 'active'
+  }
+  filters.page = 1
+  loadContracts()
+}
+
+function onStatusFilterChange() {
+  filters.unpaid = false
+  filters.page = 1
+  loadContracts()
+}
+
+async function loadStats() {
+  try {
+    stats.value = await contractService.stats()
+  } catch {}
+}
+
+async function loadCustomers() {
+  try {
+    const token = localStorage.getItem('token')
+    const res = await fetch(`${getApiBaseUrl()}/api/customers?limit=500`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    const data = await res.json()
+    customers.value = (data.customers || data || []).map((c: any) => ({
+      id: c.id,
+      name: c.name,
+      phone: c.phone,
+      email: c.email,
+    }))
+  } catch {}
+}
+
+function onCustomerSearch() {
+  const q = customerSearch.value.toLowerCase().trim()
+  if (!q) {
+    filteredCustomerOptions.value = customers.value.slice(0, 20)
+  } else {
+    filteredCustomerOptions.value = customers.value
+      .filter(c =>
+        c.name.toLowerCase().includes(q) ||
+        (c.phone && c.phone.includes(q)) ||
+        (c.email && c.email.toLowerCase().includes(q))
+      )
+      .slice(0, 20)
+  }
+  showCustomerDropdown.value = true
+}
+
+function selectCustomer(cust: { id: number; name: string }) {
+  form.customer_id = cust.id
+  selectedCustomerName.value = cust.name
+  customerSearch.value = ''
+  showCustomerDropdown.value = false
+  loadAvailableInverters(cust.id)
+}
+
+function clearCustomer() {
+  form.customer_id = ''
+  selectedCustomerName.value = ''
+  customerSearch.value = ''
+  form.inverter_ids = []
+  availableInverters.value = []
+}
+
+async function loadAvailableInverters(customerId: number | string) {
+  if (!customerId) { availableInverters.value = []; return }
+  loadingInverters.value = true
+  try {
+    const token = localStorage.getItem('token')
+    const res = await fetch(`${getApiBaseUrl()}/api/contracts/customer-inverters?customer_id=${customerId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    availableInverters.value = await res.json()
+  } catch {
+    availableInverters.value = []
+  } finally {
+    loadingInverters.value = false
+  }
+}
+
+watch(() => form.customer_id, (newId) => {
+  form.inverter_ids = []
+  loadAvailableInverters(newId)
+})
+
+function toggleInverter(id: number) {
+  const idx = form.inverter_ids.indexOf(id)
+  if (idx === -1) form.inverter_ids.push(id)
+  else form.inverter_ids.splice(idx, 1)
+}
+
+function addDeviceRow() {
+  form.new_devices.push({
+    manufacturer: '',
+    model: '',
+    serial_number: '',
+    warranty_months: Number(form.warranty_months) || DEFAULT_WARRANTY_MONTHS,
+    notes: '',
+  })
+}
+
+function removeDeviceRow(idx: number) {
+  form.new_devices.splice(idx, 1)
+}
+
+function openCreate() {
+  editingContract.value = null
+  Object.assign(form, emptyForm())
+  formError.value = ''
+  customerSearch.value = ''
+  selectedCustomerName.value = ''
+  showModal.value = true
+  filteredCustomerOptions.value = customers.value.slice(0, 20)
+}
+
+async function openEdit(c: Contract) {
+  editingContract.value = c
+  Object.assign(form, {
+    customer_id: c.customer_id,
+    contract_number: (c as any).contract_number ?? '',
+    title: c.title,
+    contract_type: c.contract_type,
+    start_date: c.start_date?.slice(0, 10) ?? '',
+    end_date: c.end_date?.slice(0, 10) ?? '',
+    value: c.value,
+    vat_rate: (c as any).vat_rate ?? 8,
+    status: c.status,
+    description: c.description ?? '',
+    notes: c.notes ?? '',
+    delivery_days: Number((c as any).delivery_days) || DEFAULT_DELIVERY_DAYS,
+    warranty_months: Number((c as any).warranty_months) || DEFAULT_WARRANTY_MONTHS,
+    signed_date: c.signed_date?.slice(0, 10) ?? '',
+    items: Array.isArray((c as any).items)
+      ? (c as any).items.map((it: any) => ({
+          description: it.description ?? '',
+          unit: it.unit ?? '',
+          quantity: Number(it.quantity) || 0,
+          unit_price: Number(it.unit_price) || 0,
+        }))
+      : [],
+    inverter_ids: [],
+    existing_devices: [],
+    new_devices: [],
+  })
+  formError.value = ''
+  showModal.value = true
+  // Load thiết bị của khách hàng và pre-select
+  await loadAvailableInverters(c.customer_id)
+  try {
+    const detail = await contractService.get(c.id)
+    const invs = (detail as any).inverters ?? []
+    form.inverter_ids = invs.map((i: any) => i.id)
+    form.delivery_days = Number((detail as any).delivery_days) || DEFAULT_DELIVERY_DAYS
+    form.warranty_months = Number((detail as any).warranty_months) || DEFAULT_WARRANTY_MONTHS
+    form.existing_devices = invs.map((i: any) => ({
+      id: i.id,
+      manufacturer: i.manufacturer ?? '',
+      model: i.model ?? '',
+      serial_number: i.serial_number ?? '',
+      warranty_months: Number(i.warranty_months) || 0,
+      notes: i.notes ?? '',
+    }))
+  } catch {}
+}
+
+function removeExistingDevice(idx: number) {
+  const dev = form.existing_devices[idx]
+  if (dev) {
+    const i = form.inverter_ids.indexOf(dev.id)
+    if (i !== -1) form.inverter_ids.splice(i, 1)
+  }
+  form.existing_devices.splice(idx, 1)
+}
+
+async function saveContract() {
+  saving.value = true
+  formError.value = ''
+  try {
+    // Validate devices
+    for (const d of [...form.existing_devices, ...form.new_devices]) {
+      if (!d.model.trim() || !d.serial_number.trim()) {
+        formError.value = 'Vui lòng nhập đầy đủ Model và Số SN cho tất cả thiết bị'
+        saving.value = false
+        return
+      }
+    }
+
+    if (!form.customer_id) {
+      formError.value = 'Vui lòng chọn khách hàng'
+      saving.value = false
+      return
+    }
+
+    if (!form.contract_number.trim()) {
+      formError.value = 'Vui lòng nhập số hợp đồng'
+      saving.value = false
+      return
+    }
+
+    // Dùng số hợp đồng làm tiêu đề khi chưa có tiêu đề riêng
+    if (!form.title.trim()) form.title = form.contract_number.trim()
+
+    let contractId: number
+
+    if (editingContract.value) {
+      // Lưu chỉnh sửa các thiết bị đã liên kết trước (để hợp đồng đồng bộ BH theo số tháng mới)
+      const token = localStorage.getItem('token')
+      for (const d of form.existing_devices) {
+        try {
+          await fetch(`${getApiBaseUrl()}/api/inverters/${d.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body: JSON.stringify({
+              serial_number: d.serial_number.trim(),
+              model: d.model.trim(),
+              manufacturer: d.manufacturer.trim() || undefined,
+              notes: d.notes.trim() || undefined,
+              warranty_months: Number(d.warranty_months) || 0,
+            }),
+          })
+        } catch {}
+      }
+      const updated = await contractService.update(editingContract.value.id, form)
+      contractId = (updated as any).id ?? editingContract.value.id
+    } else {
+      const created = await contractService.create(form)
+      contractId = (created as any).id
+    }
+
+    // Tạo thiết bị mới và liên kết vào hợp đồng
+    if (form.new_devices.length && contractId) {
+      const token = localStorage.getItem('token')
+      const newInverterIds: number[] = []
+
+      // Ngày bắt đầu bảo hành = Ngày ký nghiệm thu (end_date).
+      // Nếu chưa có ngày nghiệm thu -> để trống, máy xem như chưa trong thời hạn bảo hành.
+      const acceptanceDate = form.end_date || ''
+      for (const d of form.new_devices) {
+        const months = Number(d.warranty_months) || 0
+        let warrantyStart: string | undefined
+        let warrantyEnd: string | undefined
+        if (acceptanceDate && months > 0) {
+          warrantyStart = acceptanceDate
+          const end = new Date(acceptanceDate)
+          end.setMonth(end.getMonth() + months)
+          warrantyEnd = end.toISOString().slice(0, 10)
+        }
+        try {
+          const res = await fetch(`${getApiBaseUrl()}/api/inverters`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body: JSON.stringify({
+              serial_number: d.serial_number.trim(),
+              model: d.model.trim(),
+              manufacturer: d.manufacturer.trim() || undefined,
+              notes: d.notes.trim() || undefined,
+              customer_id: form.customer_id,
+              warranty_months: months || undefined,
+              warranty_start_date: warrantyStart,
+              warranty_end_date: warrantyEnd,
+              status: 'active',
+            }),
+          })
+          if (res.ok) {
+            const inv = await res.json()
+            if (inv?.id) newInverterIds.push(inv.id)
+          }
+        } catch {}
+      }
+
+      // Link all new inverters to contract
+      if (newInverterIds.length) {
+        await fetch(`${getApiBaseUrl()}/api/contracts/${contractId}/inverters`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ inverter_ids: [...form.inverter_ids, ...newInverterIds] }),
+        })
+      }
+    }
+
+    showModal.value = false
+    showSuccess(
+      editingContract.value
+        ? t('common.messages.contractUpdated')
+        : t('common.messages.contractCreated')
+    )
+    await Promise.all([loadContracts(), loadStats()])
+  } catch (e: any) {
+    formError.value = e.message
+  } finally {
+    saving.value = false
+  }
+}
+
+function confirmDelete(c: Contract) {
+  deletingContract.value = c
+}
+
+async function deleteContract() {
+  if (!deletingContract.value) return
+  saving.value = true
+  try {
+    await contractService.remove(deletingContract.value.id)
+    deletingContract.value = null
+    await Promise.all([loadContracts(), loadStats()])
+  } catch (e: any) {
+    error.value = e.message
+  } finally {
+    saving.value = false
+  }
+}
+
+function statusLabel(s: string) {
+  const map: Record<string, string> = { draft: 'Nháp', active: 'Hiệu lực', expired: 'Hết hạn', cancelled: 'Đã hủy' }
+  return map[s] ?? s
+}
+
+function statusClass(s: string) {
+  const map: Record<string, string> = {
+    draft: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300',
+    active: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300',
+    expired: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
+    cancelled: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300',
+  }
+  return map[s] ?? 'bg-gray-100 text-gray-600'
+}
+
+function typeLabel(t: string) {
+  const map: Record<string, string> = {
+    service: 'Dịch vụ',
+    economic: 'Kinh tế',
+    other: 'Khác',
+  }
+  return map[t] ?? t
+}
+
+function typeClass(t: string) {
+  const map: Record<string, string> = {
+    service: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
+    economic: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300',
+    other: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300',
+  }
+  return map[t] ?? 'bg-gray-100 text-gray-600'
+}
+
+function formatDate(d?: string) {
+  if (!d) return '—'
+  return new Date(d).toLocaleDateString('vi-VN')
+}
+
+function formatCurrency(v: number) {
+  if (!v) return '—'
+  return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(v)
+}
+
+onMounted(async () => {
+  loadContracts()
+  loadStats()
+  loadCustomers()
+  document.addEventListener('click', (e) => {
+    if (!(e.target as Element)?.closest('.customer-search-wrapper')) {
+      showCustomerDropdown.value = false
+    }
+  })
+
+  // Mở sẵn form chỉnh sửa khi điều hướng từ trang chi tiết (?edit=<id>)
+  const editId = route.query.edit
+  if (editId) {
+    try {
+      const c = await contractService.get(Number(editId))
+      await openEdit(c as any)
+    } catch {}
+    router.replace({ query: {} })
+  }
+})
+</script>
+
+<style>
+/* Đảm bảo lịch flatpickr hiển thị phía trên modal (z-[100000]) */
+.flatpickr-calendar {
+  z-index: 100001 !important;
+}
+</style>
+

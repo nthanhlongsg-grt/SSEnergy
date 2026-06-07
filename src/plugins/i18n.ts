@@ -2,7 +2,7 @@ import { createI18n } from 'vue-i18n'
 import en from '@/locales/en'
 import vi from '@/locales/vi'
 
-export const LANGUAGE_STORAGE_KEY = 'growatt:language'
+export const LANGUAGE_STORAGE_KEY = 'SGE:language'
 export const SUPPORTED_LOCALES = ['vi', 'en'] as const
 export type SupportedLocale = (typeof SUPPORTED_LOCALES)[number]
 
