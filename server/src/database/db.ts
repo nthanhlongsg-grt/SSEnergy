@@ -5,7 +5,10 @@ import { fileURLToPath } from 'url'
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
-const dbPath = process.env.DATABASE_PATH || path.join(__dirname, '../../database/SGE.db')
+// Use absolute path when DATABASE_PATH is provided (required on Linux hosting)
+const dbPath = process.env.DATABASE_PATH
+  ? path.resolve(process.env.DATABASE_PATH)
+  : path.resolve(__dirname, '../../database/SGE.db')
 
 // Ensure database directory exists
 import fs from 'fs'
@@ -24,10 +27,9 @@ try {
   db = new Database(dbPath)
   console.log(`✅ Database connected: ${dbPath}`)
   
-  // Set timezone to UTC for SQLite (we'll format to Vietnam timezone in responses)
-  // SQLite doesn't have native timezone support, so we handle conversion in application layer
-  db.prepare('PRAGMA timezone = UTC').run()
-  
+  // Note: SQLite does not support PRAGMA timezone — timezone handling is done
+  // in the application layer (see utils/dateTime.ts)
+
   // Test connection
   const testResult = db.prepare('SELECT 1 as test').get()
   console.log('✅ Database connection test passed:', testResult)

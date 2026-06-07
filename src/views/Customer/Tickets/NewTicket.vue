@@ -109,7 +109,7 @@
       </div>
 
       <div>
-        <label class="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 sm:mb-2">
+        <label id="serialNumberField" class="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 sm:mb-2">
           {{ t('customers.tickets.new.fields.serialNumber') }} <span class="text-red-500">*</span>
         </label>
         <div class="relative">
@@ -144,9 +144,37 @@
             </p>
           </div>
         </div>
-        <p v-if="form.inverter_id" class="mt-1.5 sm:mt-1 text-xs text-green-600 dark:text-green-400">
+        <!-- Thiết bị đã được chọn -->
+        <p v-if="form.inverter_id" class="mt-1.5 sm:mt-1 text-xs text-green-600 dark:text-green-400 flex items-center gap-1">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+          </svg>
           {{ t('customers.tickets.new.device.selected') }} {{ getSelectedInverterDisplay() }}
         </p>
+
+        <!-- Cảnh báo: SN đã nhập nhưng không tìm thấy trong hệ thống -->
+        <div
+          v-if="serialNumberSearch.trim() && !form.inverter_id && !showSerialDropdown"
+          class="mt-2 flex items-start gap-2 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700"
+        >
+          <svg class="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+          </svg>
+          <div class="text-xs text-amber-800 dark:text-amber-300">
+            <p class="font-medium">
+              Số SN <span class="font-mono font-bold">{{ serialNumberSearch.trim() }}</span> chưa được đăng ký trong hệ thống.
+            </p>
+            <p class="mt-0.5">
+              Vui lòng đăng ký thiết bị trước khi tạo yêu cầu hỗ trợ.
+              <router-link
+                to="/devices/register"
+                class="underline font-semibold text-amber-900 dark:text-amber-200 hover:text-amber-700 ml-1"
+              >
+                {{ t('customers.tickets.new.messages.deviceNotRegisteredLink') }}
+              </router-link>
+            </p>
+          </div>
+        </div>
       </div>
 
       <div>
@@ -529,8 +557,16 @@ const handleSubmit = async () => {
 
     // Validate required serial number (inverter_id)
     if (!form.value.inverter_id) {
-      error.value = t('customers.tickets.new.messages.serialNumberRequired')
+      if (serialNumberSearch.value.trim()) {
+        // User typed a SN but it's not registered in the system
+        error.value = `Số SN "${serialNumberSearch.value.trim()}" chưa được đăng ký trong hệ thống. Vui lòng đăng ký thiết bị trước khi tạo yêu cầu hỗ trợ.`
+      } else {
+        // User didn't enter anything
+        error.value = t('customers.tickets.new.messages.serialNumberRequired')
+      }
       submitting.value = false
+      // Scroll to the SN field
+      document.getElementById('serialNumberField')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
       return
     }
 

@@ -2,6 +2,10 @@ node_modules/
 dist/
 .env
 *.log
+logs/*
+!logs/.gitkeep
 *.db
 *.db-journal
+/database/
+/reports/
 .DS_Store

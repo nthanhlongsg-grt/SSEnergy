@@ -98,7 +98,145 @@
                 </div>
               </transition>
             </div>
+
           </div>
+
+          <!-- Checkbox: Thiết bị mới chưa đăng ký -->
+          <div class="mt-3">
+            <label class="inline-flex items-center gap-2 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                v-model="isNewDevice"
+                @change="onNewDeviceToggle"
+                class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
+              />
+              <span class="text-sm text-gray-700 dark:text-gray-300 font-medium">
+                Thiết bị mới chưa đăng ký trong hệ thống
+              </span>
+            </label>
+          </div>
+
+          <!-- Inline form: nhập thiết bị mới -->
+          <transition name="slide-down">
+            <div
+              v-if="isNewDevice"
+              class="mt-3 rounded-xl border-2 border-blue-200 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/20 p-4 space-y-3"
+            >
+              <div class="flex items-center gap-2 mb-1">
+                <svg class="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                </svg>
+                <span class="text-sm font-semibold text-blue-800 dark:text-blue-300">Thông tin thiết bị mới</span>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <!-- Serial Number (pre-filled, editable) -->
+                <div>
+                  <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                    Serial Number <span class="text-red-500">*</span>
+                  </label>
+                  <input
+                    v-model="newInverterForm.serial_number"
+                    type="text"
+                    required
+                    placeholder="Nhập số Serial Number"
+                    class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                  />
+                </div>
+
+                <!-- Model (searchable) -->
+                <div>
+                  <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                    Model
+                  </label>
+                  <div class="relative">
+                    <input
+                      v-model="modelSearchQuery"
+                      @focus="showModelDropdown = true"
+                      @blur="handleModelBlur"
+                      type="text"
+                      :placeholder="t('inverters.register.form.searchModel')"
+                      class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                    />
+                    <transition name="fade">
+                      <div
+                        v-if="showModelDropdown"
+                        class="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-48 overflow-y-auto"
+                      >
+                        <div
+                          v-if="filteredModels.length === 0"
+                          class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 text-center"
+                        >
+                          {{ t('inverters.register.form.noModelsFound') }}
+                        </div>
+                        <div
+                          v-for="model in filteredModels"
+                          :key="model.id"
+                          @mousedown.prevent="selectModel(model)"
+                          class="px-4 py-2 text-sm text-gray-900 dark:text-white cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
+                          :class="{ 'bg-blue-50 dark:bg-blue-900/20': newInverterForm.model === model.name }"
+                        >
+                          {{ model.name }} {{ model.manufacturer ? `(${model.manufacturer})` : '' }}
+                        </div>
+                        <div
+                          @mousedown.prevent="selectNewModel"
+                          class="px-4 py-2 text-sm text-blue-600 dark:text-blue-400 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 border-t border-gray-200 dark:border-gray-700"
+                        >
+                          + {{ t('tickets.new.modal.modelCreate') }}
+                        </div>
+                      </div>
+                    </transition>
+                    <div v-if="newInverterForm.model && newInverterForm.model !== '__NEW__'" class="mt-1 text-xs text-blue-700 dark:text-blue-300">
+                      Đã chọn: <span class="font-medium">{{ newInverterForm.model }}</span>
+                    </div>
+                    <input
+                      v-if="newInverterForm.model === '__NEW__'"
+                      v-model="newModelName"
+                      type="text"
+                      required
+                      :placeholder="t('tickets.new.modal.modelNewPlaceholder')"
+                      class="mt-1 w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <!-- Installation Address (optional) -->
+              <div>
+                <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                  Địa chỉ lắp đặt <span class="text-gray-400 font-normal">(không bắt buộc)</span>
+                </label>
+                <input
+                  v-model="newInverterForm.installation_address"
+                  type="text"
+                  :placeholder="t('tickets.new.modal.addressPlaceholder')"
+                  class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                />
+              </div>
+
+              <div class="flex items-center gap-3 pt-1">
+                <button
+                  type="button"
+                  :disabled="creatingInverter || !newInverterForm.serial_number"
+                  @click="createNewInverter"
+                  class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <svg v-if="creatingInverter" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                  {{ creatingInverter ? 'Đang tạo...' : 'Xác nhận tạo thiết bị' }}
+                </button>
+                <button
+                  type="button"
+                  @click="cancelNewDevice"
+                  class="px-3 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
+                >
+                  Hủy
+                </button>
+              </div>
+            </div>
+          </transition>
         </div>
 
         <!-- Inverter Details (read-only from contract) -->
@@ -504,6 +642,7 @@ const compressingImages = ref(false)
 const loadingInverters = ref(false)
 const showNewInverterModal = ref(false)
 const creatingInverter = ref(false)
+const isNewDevice = ref(false)   // checkbox state
 
 const newInverterForm = ref({
   serial_number: '',
@@ -628,16 +767,39 @@ const selectNewModel = () => {
 
 const closeNewInverterModal = () => {
   showNewInverterModal.value = false
-  // Reset form and search
   modelSearchQuery.value = ''
   showModelDropdown.value = false
-  newInverterForm.value = {
-    serial_number: '',
-    model: '',
-    installation_address: '',
-    }
+  newInverterForm.value = { serial_number: '', model: '', installation_address: '' }
+  newModelName.value = ''
+}
+
+// Checkbox toggle: pre-fill SN from search, reset inverter selection
+const onNewDeviceToggle = () => {
+  if (isNewDevice.value) {
+    // Pre-fill serial number from what user typed
+    newInverterForm.value.serial_number = serialNumberSearch.value.trim()
+    newInverterForm.value.model = ''
+    newInverterForm.value.installation_address = ''
+    modelSearchQuery.value = ''
     newModelName.value = ''
+    // Clear any existing selection
+    form.value.inverterId = ''
+    selectedInverter.value = null
+    selectedInverterDetails.value = null
+    selectedCustomerDetails.value = null
+    showSerialDropdown.value = false
+  } else {
+    cancelNewDevice()
   }
+}
+
+// Cancel inline new device form
+const cancelNewDevice = () => {
+  isNewDevice.value = false
+  newInverterForm.value = { serial_number: '', model: '', installation_address: '' }
+  modelSearchQuery.value = ''
+  newModelName.value = ''
+}
 
 const onModelSelected = () => {
   if (newInverterForm.value.model === '__NEW__') {
@@ -710,7 +872,8 @@ const createNewInverter = async () => {
     }
   }
 
-  if (!finalModel) {
+  // Model is optional for inline creation — allow empty
+  if (!finalModel && !isNewDevice.value) {
     error.value = t('tickets.new.messages.modelRequired')
     return
   }
@@ -748,13 +911,14 @@ const createNewInverter = async () => {
     // Auto-select the newly created inverter
     const newInverter = response.data as any
     if (newInverter) {
-      form.value.inverterId = newInverter.id.toString()
-      serialNumberSearch.value = newInverter.serial_number || serialNumberSearch.value
       await loadAllInverters() // Reload to include the new inverter
+      form.value.inverterId = newInverter.id.toString()
+      serialNumberSearch.value = newInverter.serial_number || newInverterForm.value.serial_number
       await onInverterSelected()
     }
 
-    // Close modal and reset form
+    // Close inline form + modal
+    isNewDevice.value = false
     closeNewInverterModal()
   } catch (err) {
     console.error('Error creating inverter:', err)
@@ -1165,3 +1329,24 @@ const handleSubmit = async () => {
   }
 }
 </script>
+
+<style scoped>
+/* Slide-down animation for the inline new device form */
+.slide-down-enter-active,
+.slide-down-leave-active {
+  transition: all 0.25s ease;
+  overflow: hidden;
+}
+.slide-down-enter-from,
+.slide-down-leave-to {
+  opacity: 0;
+  max-height: 0;
+  transform: translateY(-8px);
+}
+.slide-down-enter-to,
+.slide-down-leave-from {
+  opacity: 1;
+  max-height: 600px;
+  transform: translateY(0);
+}
+</style>

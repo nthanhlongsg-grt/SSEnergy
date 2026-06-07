@@ -1583,4 +1583,15 @@ onMounted(() => {
   initializeDateRange()
   loadDashboardData()
 })
+
+// Auto-refresh when tickets or users change (polls /api/sync/changes every 5s)
+useChangeDetection({
+  onTicketChange: () => {
+    loadTickets()
+    loadDashboardData()
+  },
+  onUserChange: () => {
+    loadTechnicians()
+  },
+})
 </script>

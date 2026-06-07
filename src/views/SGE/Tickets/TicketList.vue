@@ -703,6 +703,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch, onActivated } from 'vue'
 import { useAutoRefresh } from '@/composables/useAutoRefresh'
+import { useChangeDetection } from '@/composables/useChangeDetection'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
@@ -1333,7 +1334,7 @@ onActivated(() => {
   fetchTickets()
 })
 
-// Auto-refresh every 30 seconds to pick up new tickets/status changes
+// Fallback polling mỗi 30s (dự phòng nếu change detection miss)
 const { stop: stopAutoRefresh } = useAutoRefresh({
   interval: 30000,
   fetchFn: async () => {
@@ -1344,5 +1345,12 @@ const { stop: stopAutoRefresh } = useAutoRefresh({
 
 onUnmounted(() => {
   stopAutoRefresh()
+})
+
+// Change detection: refresh ngay khi có ticket mới/cập nhật (poll 5s nhẹ)
+useChangeDetection({
+  onTicketChange: async () => {
+    if (!loading.value) await fetchTickets()
+  },
 })
 </script>
