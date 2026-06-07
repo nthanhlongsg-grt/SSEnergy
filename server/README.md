@@ -73,10 +73,10 @@ Database được lưu tại `server/database/SGE.db` (SQLite)
 - **service_reports**: Biên bản dịch vụ
 - **warehouse_parts**: Linh kiện trong kho
 
-## Tài khoản mặc định
+## Tài khoản developer (local only)
 
-Sau khi chạy `npm run db:seed`, chỉ có **một** tài khoản nhà phát triển được tạo sẵn:
+Script seed đọc mật khẩu từ biến môi trường `DEV_SEED_PASSWORD` — **không lưu trong git**.
 
-- Email: `deverloper@SGEvietnam.com`
-- Password: `Tl16081995*`
-- Role: `dev`
+```bash
+DEV_SEED_PASSWORD=your-local-password npm run db:seed
+```

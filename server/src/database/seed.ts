@@ -1,32 +1,24 @@
 import bcrypt from 'bcryptjs'
 import db from './db.js'
+import { requireSeedPassword } from '../utils/seedPassword.js'
 
-// This is a minimal seed file for quick setup
-// Use seed-full.ts for complete database seeding with all sample data
-
-// Default developer account for initial access
-const MOCK_USERS = [
-  {
-    name: 'SGE Developer',
-    email: 'deverloper@sgesolartech.vn',
-    password: 'Tl16081995*',
-    code: 'DEV001',
-    role: 'dev',
-    organization: 'SGE Vietnam',
-    phone: '0900000000',
-  },
-]
+// Minimal seed — developer account email only; password from DEV_SEED_PASSWORD env.
+const DEV_EMAIL = process.env.DEV_SEED_EMAIL || 'developer@local.dev'
 
 const seedUsers = async () => {
-  console.log('🌱 Seeding mock users...')
-  
-  // Hash all passwords first
-  const usersWithHashedPasswords = await Promise.all(
-    MOCK_USERS.map(async (user) => ({
-      ...user,
-      password: await bcrypt.hash(user.password, 10),
-    }))
-  )
+  const plainPassword = requireSeedPassword()
+  console.log('🌱 Seeding developer user...')
+
+  const hashedPassword = await bcrypt.hash(plainPassword, 10)
+  const user = {
+    name: 'Developer',
+    email: DEV_EMAIL,
+    password: hashedPassword,
+    code: 'DEV001',
+    role: 'dev',
+    organization: 'SGE',
+    phone: '0900000000',
+  }
 
   const insertStmt = db.prepare(`
     INSERT INTO users (name, email, password, code, role, organization, status, phone)
@@ -34,51 +26,22 @@ const seedUsers = async () => {
   `)
 
   const updateStmt = db.prepare(`
-    UPDATE users 
+    UPDATE users
     SET name = ?, password = ?, code = ?, role = ?, organization = ?, status = ?, phone = ?
     WHERE email = ?
   `)
 
-  const checkStmt = db.prepare('SELECT id FROM users WHERE email = ?')
+  const existing = db.prepare('SELECT id FROM users WHERE email = ?').get(user.email) as { id: number } | undefined
 
-  let insertedCount = 0
-  let updatedCount = 0
-
-  for (const user of usersWithHashedPasswords) {
-    const existing = checkStmt.get(user.email) as { id: number } | undefined
-
-    if (existing) {
-      // Update existing user
-      updateStmt.run(
-        user.name,
-        user.password,
-        user.code,
-        user.role,
-        user.organization,
-        'active',
-        user.phone,
-        user.email
-      )
-      updatedCount++
-      console.log(`  ↻ Updated user: ${user.email}`)
-    } else {
-      // Insert new user
-      insertStmt.run(
-        user.name,
-        user.email,
-        user.password,
-        user.code,
-        user.role,
-        user.organization,
-        'active',
-        user.phone
-      )
-      insertedCount++
-      console.log(`  ✓ Inserted user: ${user.email}`)
-    }
+  if (existing) {
+    updateStmt.run(user.name, user.password, user.code, user.role, user.organization, 'active', user.phone, user.email)
+    console.log(`  ↻ Updated user: ${user.email}`)
+  } else {
+    insertStmt.run(user.name, user.email, user.password, user.code, user.role, user.organization, 'active', user.phone)
+    console.log(`  ✓ Inserted user: ${user.email}`)
   }
 
-  console.log(`✅ Seeded users successfully! (Inserted: ${insertedCount}, Updated: ${updatedCount})`)
+  console.log('✅ Seed completed (password was read from DEV_SEED_PASSWORD, not stored in repo).')
 }
 
 const seedDatabase = async () => {

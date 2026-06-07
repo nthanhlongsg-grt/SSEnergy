@@ -1,19 +1,20 @@
 import bcrypt from 'bcryptjs'
 import db from '../src/database/db.js'
-
-// Developer account information (aligned with scripts/add-developer-account.ts)
-const DEVELOPER_ACCOUNT = {
-  name: 'developer',
-  email: 'developer@SGEvietnam.com',
-  password: 'SGE2025',
-  code: 'DEV001',
-  role: 'dev',
-  organization: 'SGE Development',
-  phone: '0900000000',
-}
+import { requireSeedPassword } from '../src/utils/seedPassword.js'
 
 const resetDatabase = async () => {
   try {
+    const devPassword = requireSeedPassword()
+    const DEVELOPER_ACCOUNT = {
+      name: 'developer',
+      email: process.env.DEV_SEED_EMAIL || 'developer@local.dev',
+      password: devPassword,
+      code: 'DEV001',
+      role: 'dev',
+      organization: 'SGE Development',
+      phone: '0900000000',
+    }
+
     console.log('🔄 Bắt đầu reset database...')
     console.log('📋 Giữ lại tài khoản developer...\n')
 
@@ -147,7 +148,7 @@ const resetDatabase = async () => {
       console.log('\n✅ Reset database thành công!')
       console.log('\n📝 Thông tin tài khoản developer:')
       console.log(`   Email: ${DEVELOPER_ACCOUNT.email}`)
-      console.log(`   Password: ${DEVELOPER_ACCOUNT.password}`)
+      console.log(`   Email: ${DEVELOPER_ACCOUNT.email}`)
       console.log(`   Role: ${DEVELOPER_ACCOUNT.role}`)
 
     } catch (error: any) {

@@ -481,7 +481,7 @@
                   <input
                     v-model="userForm.password"
                     type="password"
-                    :placeholder="editingUser?.id ? t('users.management.modal.passwordPlaceholder') : 'Để trống → mặc định SGE2026'"
+                    :placeholder="editingUser?.id ? t('users.management.modal.passwordPlaceholder') : t('users.management.modal.passwordCreatePlaceholder')"
                     class="w-full px-4 py-2.5 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white touch-manipulation min-h-[44px] sm:min-h-0 text-base sm:text-sm"
                   />
                 </div>
@@ -897,11 +897,16 @@ const saveUser = async () => {
         closeEditModal()
       }, 1500)
     } else {
-      // Create new user — dùng mật khẩu mặc định nếu để trống
+      if (!userForm.value.password?.trim()) {
+        error.value = t('users.management.messages.passwordRequired')
+        loading.value = false
+        return
+      }
+
       const newUser = await userService.createUser({
         name: userForm.value.name,
         email: userForm.value.email,
-        password: userForm.value.password || 'SGE2026',
+        password: userForm.value.password.trim(),
         code: userForm.value.code || undefined,
         role: userForm.value.role as UserRole,
         organization: userForm.value.organization || undefined,

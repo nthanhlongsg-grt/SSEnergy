@@ -347,6 +347,6 @@ npm run db:get:admin # Xem tài khoản admin
 npm run db:add:developer  # Reset tài khoản developer
 ```
 
-**Tài khoản mặc định:**
-- Admin: `admin@SGEvietnam.com` / `admin123`
-- Developer: `developer@SGEvietnam.com` / `SGE2025`
+**Seed local (không lưu mật khẩu trong git):**
+- Đặt `DEV_SEED_PASSWORD` trong môi trường trước khi chạy `npm run db:seed`
+- Tùy chọn `DEV_SEED_EMAIL` cho email developer local

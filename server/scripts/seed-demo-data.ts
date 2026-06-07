@@ -34,18 +34,20 @@ const log = (msg: string) => console.log(msg)
 
 const seedUsers = async () => {
   log('\n👥 Seeding users...')
+  const { requireSeedPassword } = await import('../src/utils/seedPassword.js')
+  const demoPw = requireSeedPassword('DEMO_SEED_PASSWORD')
 
   const raw = [
-    { name: 'Developer', email: 'developer@SGEvietnam.com', pw: 'SGE2025', code: 'DEV001', role: 'dev', fn: 'management', org: 'SGE Vietnam' },
-    { name: 'Admin Trần Minh', email: 'admin@SGEvietnam.com', pw: 'SGE2025', code: 'ADM001', role: 'admin', fn: 'management', org: 'SGE Vietnam' },
-    { name: 'Trung tâm Dịch vụ', email: 'service@SGEvietnam.com', pw: 'SGE2025', code: 'SVC001', role: 'service_center', fn: 'management', org: 'SGE Vietnam' },
-    { name: 'KTV Nguyễn Văn An', email: 'an.kythuatbaohanh@SGEvietnam.com', pw: 'SGE2025', code: 'KTV001', role: 'technician', fn: 'repair', org: 'SGE Vietnam', phone: '0901111111' },
-    { name: 'KTV Lê Thị Bảo', email: 'bao.hotrokythuat@SGEvietnam.com', pw: 'SGE2025', code: 'KTV002', role: 'technician', fn: 'technicalSupport', org: 'SGE Vietnam', phone: '0902222222' },
-    { name: 'KTV Phạm Quốc Cường', email: 'cuong.sale@SGEvietnam.com', pw: 'SGE2025', code: 'KTV003', role: 'technician', fn: 'sale', org: 'SGE Vietnam', phone: '0903333333' },
-    { name: 'Nhà PP Năng Lượng Xanh', email: 'npp.nangluongxanh@gmail.com', pw: 'SGE2025', code: 'NPP001', role: 'distributor', fn: null, org: 'Năng Lượng Xanh Co.', phone: '0281234567' },
-    { name: 'Đại lý Solar Miền Nam', email: 'dl.solarmiemnam@gmail.com', pw: 'SGE2025', code: 'DL001', role: 'distributor', fn: null, org: 'Solar Miền Nam', phone: '0289876543' },
-    { name: 'Công ty ABC Solar', email: 'contact@abcsolar.vn', pw: 'SGE2025', code: 'END001', role: 'end_user', fn: null, org: 'ABC Solar Co.' },
-    { name: 'Nguyễn Văn Hùng', email: 'hung.nguyen@gmail.com', pw: 'SGE2025', code: 'END002', role: 'end_user', fn: null, org: null, phone: '0912345678' },
+    { name: 'Developer', email: 'developer@demo.local', pw: demoPw, code: 'DEV001', role: 'dev', fn: 'management', org: 'SGE Vietnam' },
+    { name: 'Admin Trần Minh', email: 'admin@demo.local', pw: demoPw, code: 'ADM001', role: 'admin', fn: 'management', org: 'SGE Vietnam' },
+    { name: 'Trung tâm Dịch vụ', email: 'service@demo.local', pw: demoPw, code: 'SVC001', role: 'service_center', fn: 'management', org: 'SGE Vietnam' },
+    { name: 'KTV Nguyễn Văn An', email: 'ktv1@demo.local', pw: demoPw, code: 'KTV001', role: 'technician', fn: 'repair', org: 'SGE Vietnam', phone: '0901111111' },
+    { name: 'KTV Lê Thị Bảo', email: 'ktv2@demo.local', pw: demoPw, code: 'KTV002', role: 'technician', fn: 'technicalSupport', org: 'SGE Vietnam', phone: '0902222222' },
+    { name: 'KTV Phạm Quốc Cường', email: 'ktv3@demo.local', pw: demoPw, code: 'KTV003', role: 'technician', fn: 'sale', org: 'SGE Vietnam', phone: '0903333333' },
+    { name: 'Nhà PP Năng Lượng Xanh', email: 'npp@demo.local', pw: demoPw, code: 'NPP001', role: 'distributor', fn: null, org: 'Năng Lượng Xanh Co.', phone: '0281234567' },
+    { name: 'Đại lý Solar Miền Nam', email: 'dl@demo.local', pw: demoPw, code: 'DL001', role: 'distributor', fn: null, org: 'Solar Miền Nam', phone: '0289876543' },
+    { name: 'Công ty ABC Solar', email: 'contact@demo.local', pw: demoPw, code: 'END001', role: 'end_user', fn: null, org: 'ABC Solar Co.' },
+    { name: 'Nguyễn Văn Hùng', email: 'enduser@demo.local', pw: demoPw, code: 'END002', role: 'end_user', fn: null, org: null, phone: '0912345678' },
   ]
 
   for (const u of raw) {
@@ -86,8 +88,8 @@ const seedCustomers = () => {
     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
   `)
 
-  const abcUser = db.prepare(`SELECT id FROM users WHERE email = ?`).get('contact@abcsolar.vn') as any
-  const hungUser = db.prepare(`SELECT id FROM users WHERE email = ?`).get('hung.nguyen@gmail.com') as any
+  const abcUser = db.prepare(`SELECT id FROM users WHERE email = ?`).get('contact@demo.local') as any
+  const hungUser = db.prepare(`SELECT id FROM users WHERE email = ?`).get('enduser@demo.local') as any
 
   const customers = [
     ['Công ty ABC Solar', 'contact@abcsolar.vn', '0281234567', '123 Nguyễn Huệ, Q1, TP.HCM', 'enterprise', 'ABC Solar Co.', '1234567890', abcUser?.id ?? null],
@@ -114,8 +116,8 @@ const seedDistributors = () => {
     VALUES (?, ?, ?, ?, ?, ?, ?, 'active', ?)
   `)
 
-  const nppUser = db.prepare(`SELECT id FROM users WHERE email = ?`).get('npp.nangluongxanh@gmail.com') as any
-  const dlUser = db.prepare(`SELECT id FROM users WHERE email = ?`).get('dl.solarmiemnam@gmail.com') as any
+  const nppUser = db.prepare(`SELECT id FROM users WHERE email = ?`).get('npp@demo.local') as any
+  const dlUser = db.prepare(`SELECT id FROM users WHERE email = ?`).get('dl@demo.local') as any
 
   insert.run('Năng Lượng Xanh Co.', 'NPP-NLX-001', 'Nguyễn Thị Thu', 'npp.nangluongxanh@gmail.com', '0281234567', '200 Nam Kỳ Khởi Nghĩa, Q3, TP.HCM', '2223334445', nppUser?.id ?? null)
   insert.run('Solar Miền Nam', 'DL-SMN-001', 'Trần Văn Sơn', 'dl.solarmiemnam@gmail.com', '0289876543', '100 Pasteur, Q3, TP.HCM', '1112223334', dlUser?.id ?? null)
@@ -406,16 +408,8 @@ const run = async () => {
     seedSlaSettings()
 
     log('\n' + '━'.repeat(50))
-    log('✅ Demo data seeded successfully!\n')
-
-    log('🔑 Test accounts (password: SGE2025):')
-    log('  admin@SGEvietnam.com         → Admin')
-    log('  service@SGEvietnam.com       → Service Center')
-    log('  an.kythuatbaohanh@SGEvietnam.com → KTV Sửa chữa')
-    log('  bao.hotrokythuat@SGEvietnam.com  → KTV Hỗ trợ KT')
-    log('  npp.nangluongxanh@gmail.com      → Nhà phân phối')
-    log('  contact@abcsolar.vn              → End user (doanh nghiệp)')
-    log('  hung.nguyen@gmail.com            → End user (cá nhân)')
+    log('✅ Demo data seeded successfully!')
+    log('   Demo passwords were read from DEMO_SEED_PASSWORD (not stored in repo).')
 
     db.close()
     process.exit(0)

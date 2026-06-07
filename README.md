@@ -69,12 +69,17 @@ Hoặc dừng tất cả server:
 stop-dev.bat
 ```
 
-## 🔐 Tài khoản mặc định
+## 🔐 Tài khoản dev (chỉ môi trường local)
 
-Sau khi chạy migration, tài khoản developer sẽ được tạo:
+Không có mật khẩu mặc định trong repository. Khi seed database local:
 
-- **Email**: `developer@SGEvietnam.com`
-- **Password**: `SGE2025` (script `npm run db:add:developer` cũng in lại trên console)
+```bash
+cd server
+set DEV_SEED_PASSWORD=your-local-password
+npm run db:seed
+```
+
+Tùy chọn: `DEV_SEED_EMAIL=you@example.com` để đặt email developer.
 
 ## 📁 Cấu trúc dự án
 

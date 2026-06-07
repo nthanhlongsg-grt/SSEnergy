@@ -1,28 +1,24 @@
 import bcrypt from 'bcryptjs'
 import db from './db.js'
+import { requireSeedPassword } from '../utils/seedPassword.js'
 
-const MOCK_USERS = [
-  {
-    name: 'SGE Developer',
-    email: 'deverloper@sgesolartech.vn',
-    password: 'Tl16081995*',
-    code: 'DEV001',
-    role: 'dev',
-    organization: 'SGE Vietnam',
-    phone: '0900000000',
-  },
-]
+const DEV_EMAIL = process.env.DEV_SEED_EMAIL || 'developer@local.dev'
 
 const seedUsers = async () => {
-  console.log('🌱 Seeding mock users...')
-  
-  // Hash all passwords first
-  const usersWithHashedPasswords = await Promise.all(
-    MOCK_USERS.map(async (user) => ({
-      ...user,
-      password: await bcrypt.hash(user.password, 10),
-    }))
-  )
+  const plainPassword = requireSeedPassword()
+  console.log('🌱 Seeding developer user...')
+
+  const MOCK_USERS = [
+    {
+      name: 'SGE Developer',
+      email: DEV_EMAIL,
+      password: await bcrypt.hash(plainPassword, 10),
+      code: 'DEV001',
+      role: 'dev',
+      organization: 'SGE Vietnam',
+      phone: '0900000000',
+    },
+  ]
 
   const insertStmt = db.prepare(`
     INSERT INTO users (name, email, password, code, role, organization, status, phone)
@@ -40,7 +36,7 @@ const seedUsers = async () => {
   let insertedCount = 0
   let updatedCount = 0
 
-  for (const user of usersWithHashedPasswords) {
+  for (const user of MOCK_USERS) {
     const existing = checkStmt.get(user.email) as { id: number } | undefined
 
     if (existing) {
