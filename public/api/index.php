@@ -6,14 +6,13 @@
  * Apache routes all /api/* requests here via .htaccess RewriteRule.
  * This script then forwards them to the Node.js backend running on localhost.
  *
- * Backend port must match PORT in server/.env (default: 3001 on shared hosting)
- * Port 3000 is often occupied; use 3001 in production .env.
+ * Backend port must match PORT env on the hosting server (baohanh: 3000).
  */
 
 // ── Configuration ─────────────────────────────────────────────────────────────
-// Must match PORT in server/.env on the hosting server
-define('BACKEND_PORT', '3001');
-define('BACKEND_BASE', 'http://localhost:' . BACKEND_PORT);
+// Must match PORT in server env on the hosting server
+define('BACKEND_PORT', '3000');
+define('BACKEND_BASE', 'http://127.0.0.1:' . BACKEND_PORT);
 define('REQUEST_TIMEOUT', 30);
 define('CONNECT_TIMEOUT', 5);
 

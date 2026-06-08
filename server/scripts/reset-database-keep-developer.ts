@@ -38,6 +38,9 @@ const resetDatabase = async () => {
       db.exec('DELETE FROM ticket_attachments')
       console.log('  ✓ Đã xóa ticket_attachments')
 
+      db.exec('DELETE FROM ticket_watchers')
+      console.log('  ✓ Đã xóa ticket_watchers')
+
       db.exec('DELETE FROM ticket_comments')
       console.log('  ✓ Đã xóa ticket_comments')
 
@@ -73,6 +76,12 @@ const resetDatabase = async () => {
 
       db.exec('DELETE FROM tickets')
       console.log('  ✓ Đã xóa tickets')
+
+      db.exec('DELETE FROM contract_inverters')
+      console.log('  ✓ Đã xóa contract_inverters')
+
+      db.exec('DELETE FROM contracts')
+      console.log('  ✓ Đã xóa contracts')
 
       db.exec('DELETE FROM inverters')
       console.log('  ✓ Đã xóa inverters')
@@ -148,8 +157,8 @@ const resetDatabase = async () => {
       console.log('\n✅ Reset database thành công!')
       console.log('\n📝 Thông tin tài khoản developer:')
       console.log(`   Email: ${DEVELOPER_ACCOUNT.email}`)
-      console.log(`   Email: ${DEVELOPER_ACCOUNT.email}`)
       console.log(`   Role: ${DEVELOPER_ACCOUNT.role}`)
+      console.log(`   Password: (giá trị DEV_SEED_PASSWORD bạn vừa set)`)
 
     } catch (error: any) {
       // Rollback nếu có lỗi

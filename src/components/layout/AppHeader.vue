@@ -76,7 +76,6 @@
       >
         <div class="flex items-center gap-2 2xsm:gap-3">
           <LanguageSwitcher />
-          <ThemeToggler />
           <NotificationMenu />
         </div>
         <UserMenu />
@@ -92,7 +91,6 @@
 import { ref, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useSidebar } from '@/composables/useSidebar'
-import ThemeToggler from '../common/ThemeToggler.vue'
 import SearchBar from './header/SearchBar.vue'
 import HeaderLogo from './header/HeaderLogo.vue'
 import NotificationMenu from './header/NotificationMenu.vue'

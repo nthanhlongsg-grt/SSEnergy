@@ -1,10 +1,10 @@
 <template>
-  <div class="min-h-screen xl:flex" :class="backgroundClass">
+  <div class="min-h-screen xl:flex bg-gray-50">
     <app-sidebar />
     <Backdrop />
     <div
       class="flex-1 flex flex-col transition-all duration-300 ease-in-out min-h-screen"
-      :class="[backgroundClass, isExpanded || isHovered ? 'lg:ml-[290px]' : 'lg:ml-[90px]']"
+      :class="['bg-gray-50', isExpanded || isHovered ? 'lg:ml-[290px]' : 'lg:ml-[90px]']"
     >
       <app-header />
       <div class="flex-1 p-4 mx-auto w-full max-w-full md:p-6 overflow-x-hidden">
@@ -57,11 +57,5 @@ import AppSidebar from './AppSidebar.vue'
 import Backdrop from './Backdrop.vue'
 import MobileSearchBar from './MobileSearchBar.vue'
 import AppToast from '@/components/common/AppToast.vue'
-import { useTheme } from './ThemeProvider.vue'
-import { computed, type Ref } from 'vue'
-
 const { isExpanded, isHovered } = useSidebar()
-const theme = useTheme() as { isDarkMode: Ref<boolean> }
-
-const backgroundClass = computed(() => (theme.isDarkMode.value ? 'bg-gray-950' : 'bg-gray-50'))
 </script>

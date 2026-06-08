@@ -813,6 +813,7 @@ import flatPickr from 'vue-flatpickr-component'
 import 'flatpickr/dist/flatpickr.css'
 import { useFlatpickrConfig } from '@/composables/useFlatpickr'
 import { useSlaSettings } from '@/composables/useSlaSettings'
+import { useChangeDetection } from '@/composables/useChangeDetection'
 import { getUser, UserRole } from '@/composables/useAuth'
 
 const { t } = useI18n()

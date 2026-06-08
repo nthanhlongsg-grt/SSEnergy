@@ -3,41 +3,17 @@
 </template>
 
 <script setup lang="ts">
-import { ref, provide, onMounted, watch, computed } from 'vue'
+import { provide, onMounted, computed } from 'vue'
 
-type Theme = 'light' | 'dark'
-
-const theme = ref<Theme>('dark')
-const isInitialized = ref(false)
-
-const isDarkMode = computed(() => theme.value === 'dark')
-
-const toggleTheme = () => {
-  theme.value = theme.value === 'light' ? 'dark' : 'light'
-}
+const isDarkMode = computed(() => false)
 
 onMounted(() => {
-  const savedTheme = localStorage.getItem('theme') as Theme | null
-  const initialTheme = savedTheme || 'dark' // Default to dark theme
-
-  theme.value = initialTheme
-  isInitialized.value = true
-})
-
-watch([theme, isInitialized], ([newTheme, newIsInitialized]) => {
-  if (newIsInitialized) {
-    localStorage.setItem('theme', newTheme)
-    if (newTheme === 'dark') {
-      document.documentElement.classList.add('dark')
-    } else {
-      document.documentElement.classList.remove('dark')
-    }
-  }
+  localStorage.setItem('theme', 'light')
+  document.documentElement.classList.remove('dark')
 })
 
 provide('theme', {
   isDarkMode,
-  toggleTheme,
 })
 </script>
 

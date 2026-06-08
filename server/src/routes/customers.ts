@@ -778,22 +778,29 @@ router.delete('/:id', authenticateToken, requireRole(UserRole.ADMIN), (req, res)
       return res.status(404).json({ error: 'Customer not found' })
     }
 
-    // Check if customer has related records
-    const inverterCount = db.prepare('SELECT COUNT(*) as count FROM inverters WHERE customer_id = ?').get(customerId) as { count: number }
-    const ticketCount = db.prepare('SELECT COUNT(*) as count FROM tickets WHERE customer_id = ?').get(customerId) as { count: number }
-
-    if (inverterCount.count > 0 || ticketCount.count > 0) {
-      return res.status(400).json({
-        error: 'Cannot delete customer with associated records. Please remove inverters and tickets first.',
-      })
+    db.exec('BEGIN TRANSACTION')
+    try {
+      // SQLite FK rules: tickets/contracts/projects/rma CASCADE; inverters.customer_id SET NULL
+      db.prepare('DELETE FROM customers WHERE id = ?').run(customerId)
+      db.exec('COMMIT')
+    } catch (deleteError) {
+      db.exec('ROLLBACK')
+      throw deleteError
     }
 
-    db.prepare('DELETE FROM customers WHERE id = ?').run(customerId)
-
     res.status(204).send()
-  } catch (error) {
+  } catch (error: any) {
     console.error('Delete customer error:', error)
-    res.status(500).json({ error: 'Internal server error' })
+    const related = {
+      inverters: (db.prepare('SELECT COUNT(*) as count FROM inverters WHERE customer_id = ?').get(parseInt(req.params.id)) as { count: number }).count,
+      tickets: (db.prepare('SELECT COUNT(*) as count FROM tickets WHERE customer_id = ?').get(parseInt(req.params.id)) as { count: number }).count,
+      contracts: (db.prepare('SELECT COUNT(*) as count FROM contracts WHERE customer_id = ?').get(parseInt(req.params.id)) as { count: number }).count,
+    }
+    res.status(500).json({
+      error: 'Cannot delete customer. Related records may still exist.',
+      details: related,
+      message: error?.message,
+    })
   }
 })
 
