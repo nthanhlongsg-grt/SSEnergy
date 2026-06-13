@@ -851,12 +851,11 @@ const loadDashboardData = async () => {
       }
     }
 
-    // Auto-filter tickets for TECHNICIAN / WAREHOUSE — chỉ ticket được giao cho mình
+    // Auto-filter tickets và tasks cho TECHNICIAN / WAREHOUSE — chỉ của mình
     const currentUser = getUser.value
     if (currentUser && isLimitedStaff.value) {
       ticketFilters.value.technicianId = currentUser.id.toString()
-    } else if (currentUser && currentUser.role === UserRole.TECHNICIAN) {
-      ticketFilters.value.technicianId = currentUser.id.toString()
+      taskFilters.value.technicianId = currentUser.id.toString()
     }
 
     // Load statistics data for summary cards
@@ -1316,18 +1315,21 @@ const statisticsData = ref({
 // Load statistics data (all tickets and tasks with high limit)
 const loadStatistics = async () => {
   try {
-    // Load all tickets (approaching deadline or overdue)
-    const ticketsResponse = await ticketService.getAllTickets({
-      limit: 500,
-      page: 1,
-    })
+    const currentUser = getUser.value
+    const statsParams: any = { limit: 500, page: 1 }
+    // Limited staff chỉ thống kê ticket/task của chính mình
+    if (isLimitedStaff.value && currentUser) {
+      statsParams.assigned_to = currentUser.id.toString()
+    }
+
+    const ticketsResponse = await ticketService.getAllTickets(statsParams)
     statisticsData.value.allTickets = ticketsResponse.data || []
     
-    // Load all tasks
-    const tasksResponse = await scheduleService.getSchedules({
-      limit: 500,
-      page: 1,
-    })
+    const taskStatsParams: any = { limit: 500, page: 1 }
+    if (isLimitedStaff.value && currentUser) {
+      taskStatsParams.technician_id = currentUser.id.toString()
+    }
+    const tasksResponse = await scheduleService.getSchedules(taskStatsParams)
     statisticsData.value.allTasks = tasksResponse.data || []
   } catch (err) {
     console.error('Error loading statistics:', err)
