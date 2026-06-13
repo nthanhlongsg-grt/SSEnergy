@@ -207,7 +207,13 @@
           {{ t('customers.tickets.new.fields.images') }} <span class="text-red-500">*</span>
           <span class="text-xs text-gray-500 dark:text-gray-400 ml-1 sm:ml-2">{{ t('customers.tickets.new.fields.imagesMax') }}</span>
         </label>
-        <div class="space-y-2 sm:space-y-3">
+        <div
+          ref="imageUploadZoneRef"
+          class="space-y-2 sm:space-y-3 rounded-lg border border-transparent p-2 -m-2 outline-none focus:ring-2 focus:ring-blue-400"
+          tabindex="0"
+          @click="focusImageUploadZone"
+          @paste="handleImagePaste"
+        >
           <!-- File Input (Hidden) -->
           <input
             ref="fileInput"
@@ -263,6 +269,9 @@
               </button>
             </div>
           </div>
+          <p class="text-xs text-gray-500 dark:text-gray-400">
+            {{ t('customers.tickets.new.images.pasteHint') }}
+          </p>
         </div>
       </div>
 
@@ -317,6 +326,8 @@ import { ticketService } from '@/services/ticketService'
 import { inverterService } from '@/services/inverterService'
 import { useAuth } from '@/composables/useAuth'
 import { useToast } from '@/composables/useToast'
+import { compressImage as compressImageFile, filterImageFiles } from '@/utils/imageUpload'
+import { useImagePaste } from '@/composables/useImagePaste'
 
 const { showSuccess } = useToast()
 
@@ -338,6 +349,7 @@ const form = ref({
 })
 const selectedImages = ref<Array<{ file: File; preview: string; name: string }>>([])
 const fileInput = ref<HTMLInputElement | null>(null)
+const imageUploadZoneRef = ref<HTMLElement | null>(null)
 const selectedImageModal = ref<string | null>(null)
 
 // Search functionality
@@ -423,114 +435,59 @@ const getSelectedInverterDisplay = () => {
   return inv ? `${inv.serial_number} - ${inv.model}` : ''
 }
 
-// Compress image function
-const compressImage = (file: File, maxWidth: number = 1920, maxHeight: number = 1920, quality: number = 0.7): Promise<File> => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      const img = new Image()
-      img.onload = () => {
-        const canvas = document.createElement('canvas')
-        let width = img.width
-        let height = img.height
+const addSelectedImages = async (files: File[]) => {
+  const imageFiles = filterImageFiles(files)
+  if (imageFiles.length === 0) return
 
-        // Calculate new dimensions
-        if (width > height) {
-          if (width > maxWidth) {
-            height = (height * maxWidth) / width
-            width = maxWidth
-          }
-        } else {
-          if (height > maxHeight) {
-            width = (width * maxHeight) / height
-            height = maxHeight
-          }
-        }
+  const currentCount = selectedImages.value?.length || 0
+  const remainingSlots = 4 - currentCount
+  if (remainingSlots <= 0) {
+    error.value = t('customers.tickets.new.messages.imageLimit')
+    return
+  }
 
-        canvas.width = width
-        canvas.height = height
+  const filesToAdd = imageFiles.slice(0, remainingSlots)
+  if (imageFiles.length > remainingSlots) {
+    error.value = t('customers.tickets.new.messages.imageLimitPartial', { count: remainingSlots })
+  }
 
-        const ctx = canvas.getContext('2d')
-        if (!ctx) {
-          reject(new Error('Could not get canvas context'))
-          return
-        }
-
-        ctx.drawImage(img, 0, 0, width, height)
-
-        canvas.toBlob(
-          (blob) => {
-            if (!blob) {
-              reject(new Error('Could not compress image'))
-              return
-            }
-            const compressedFile = new File([blob], file.name, {
-              type: file.type,
-              lastModified: Date.now(),
-            })
-            resolve(compressedFile)
-          },
-          file.type,
-          quality
-        )
+  for (const file of filesToAdd) {
+    try {
+      const compressedFile = await compressImageFile(file, 1920, 1920, 0.7, file.type || 'image/jpeg')
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        selectedImages.value.push({
+          file: compressedFile,
+          preview: e.target?.result as string,
+          name: compressedFile.name,
+        })
       }
-      img.onerror = reject
-      img.src = e.target?.result as string
+      reader.readAsDataURL(compressedFile)
+    } catch (err) {
+      console.error('Error compressing image:', err)
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        selectedImages.value.push({
+          file,
+          preview: e.target?.result as string,
+          name: file.name,
+        })
+      }
+      reader.readAsDataURL(file)
     }
-    reader.onerror = reject
-    reader.readAsDataURL(file)
-  })
+  }
 }
+
+const { handlePaste: handleImagePaste, focusZone: focusImageUploadZone } = useImagePaste(addSelectedImages, {
+  enabled: () => (selectedImages.value?.length || 0) < 4,
+  zoneRef: imageUploadZoneRef,
+  globalImagePaste: true,
+})
 
 const handleFileSelect = async (event: Event) => {
   const target = event.target as HTMLInputElement
   if (target.files && target.files.length > 0) {
-    const files = Array.from(target.files).filter(file => file.type.startsWith('image/'))
-    
-    // Check total count
-    const currentCount = selectedImages.value?.length || 0
-    const remainingSlots = 4 - currentCount
-    if (remainingSlots <= 0) {
-      error.value = t('customers.tickets.new.messages.imageLimit')
-      if (target) target.value = ''
-      return
-    }
-
-    const filesToAdd = files.slice(0, remainingSlots)
-    if (files.length > remainingSlots) {
-      error.value = t('customers.tickets.new.messages.imageLimitPartial', { count: remainingSlots })
-    }
-
-    // Process and compress images
-    for (const file of filesToAdd) {
-      try {
-        const compressedFile = await compressImage(file)
-        const reader = new FileReader()
-        reader.onload = (e) => {
-          selectedImages.value.push({
-            file: compressedFile,
-            preview: e.target?.result as string,
-            name: compressedFile.name,
-          })
-        }
-        reader.readAsDataURL(compressedFile)
-      } catch (err) {
-        console.error('Error compressing image:', err)
-        // Fallback to original file if compression fails
-        const reader = new FileReader()
-        reader.onload = (e) => {
-          selectedImages.value.push({
-            file,
-            preview: e.target?.result as string,
-            name: file.name,
-          })
-        }
-        reader.readAsDataURL(file)
-      }
-    }
-  }
-  // Reset input
-  if (target) {
+    await addSelectedImages(Array.from(target.files))
     target.value = ''
   }
 }

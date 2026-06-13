@@ -1,6 +1,6 @@
 import { Router } from 'express'
 import db from '../database/db.js'
-import { authenticateToken, requireRole } from '../middleware/auth.js'
+import { authenticateToken, requireSystemAdmin } from '../middleware/auth.js'
 import { UserRole } from '../types/index.js'
 import {
   resolveStaffFunction,
@@ -69,7 +69,7 @@ router.get('/', authenticateToken, (req, res) => {
 router.put(
   '/',
   authenticateToken,
-  requireRole(UserRole.ADMIN, UserRole.DEV),
+  requireSystemAdmin(UserRole.ADMIN, UserRole.DEV),
   (req, res) => {
     try {
       const body = req.body as Partial<Record<AutoAssignFunction, number | null>>

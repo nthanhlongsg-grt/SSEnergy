@@ -159,7 +159,6 @@ export const ticketService = {
   async assignTechnician(ticketId: number, technicianId: number): Promise<Ticket> {
     const response = await apiClient.put<Ticket>(`/tickets/${ticketId}`, {
       assigned_to: technicianId,
-      status: 'in_progress',
     })
     if (response.error) {
       throw new Error(response.error)

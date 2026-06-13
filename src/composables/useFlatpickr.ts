@@ -1,16 +1,22 @@
 /**
  * Composable for Flatpickr date/time picker configurations
  */
+import { Vietnamese } from 'flatpickr/dist/l10n/vn.js'
+
+const sharedDateLocale = {
+  ...Vietnamese,
+  firstDayOfWeek: 1,
+}
 
 export const useFlatpickrConfig = () => {
-  // Date picker config (date only, no time)
+  // Date picker config (date only, no time) — hiển thị dd/mm/yyyy qua altInput
   const dateConfig = {
     dateFormat: 'Y-m-d',
     altInput: true,
     altFormat: 'd/m/Y',
-    locale: {
-      firstDayOfWeek: 1, // Monday
-    },
+    altInputPlaceholder: 'dd/mm/yyyy',
+    disableMobile: true,
+    locale: sharedDateLocale,
   }
 
   // Date and time picker config (with time)
@@ -19,10 +25,10 @@ export const useFlatpickrConfig = () => {
     dateFormat: 'Y-m-d H:i',
     altInput: true,
     altFormat: 'd/m/Y H:i',
-    time_24hr: false,
-    locale: {
-      firstDayOfWeek: 1, // Monday
-    },
+    altInputPlaceholder: 'dd/mm/yyyy HH:mm',
+    time_24hr: true,
+    disableMobile: true,
+    locale: sharedDateLocale,
   }
 
   // Time picker config (time only, no date)
@@ -32,7 +38,7 @@ export const useFlatpickrConfig = () => {
     dateFormat: 'H:i',
     altInput: true,
     altFormat: 'H:i',
-    time_24hr: false,
+    time_24hr: true,
     minuteIncrement: 1,
   }
 
@@ -41,14 +47,14 @@ export const useFlatpickrConfig = () => {
    */
   const formatDateForFlatpickr = (dateString: string | Date | null | undefined): string => {
     if (!dateString) return ''
-    
+
     const date = typeof dateString === 'string' ? new Date(dateString) : dateString
     if (isNaN(date.getTime())) return ''
-    
+
     const year = date.getFullYear()
     const month = String(date.getMonth() + 1).padStart(2, '0')
     const day = String(date.getDate()).padStart(2, '0')
-    
+
     return `${year}-${month}-${day}`
   }
 
@@ -57,16 +63,16 @@ export const useFlatpickrConfig = () => {
    */
   const formatDateTimeForFlatpickr = (dateString: string | Date | null | undefined): string => {
     if (!dateString) return ''
-    
+
     const date = typeof dateString === 'string' ? new Date(dateString) : dateString
     if (isNaN(date.getTime())) return ''
-    
+
     const year = date.getFullYear()
     const month = String(date.getMonth() + 1).padStart(2, '0')
     const day = String(date.getDate()).padStart(2, '0')
     const hours = String(date.getHours()).padStart(2, '0')
     const minutes = String(date.getMinutes()).padStart(2, '0')
-    
+
     return `${year}-${month}-${day} ${hours}:${minutes}`
   }
 
@@ -105,6 +111,3 @@ export const useFlatpickrConfig = () => {
     convertFlatpickrDateTimeToISO,
   }
 }
-
-
-

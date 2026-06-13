@@ -1,0 +1,3 @@
+cd E:\AI\SGE
+npm install
+npm run build-only

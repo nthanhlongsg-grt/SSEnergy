@@ -2,9 +2,9 @@ import { Router } from 'express'
 import bcrypt from 'bcryptjs'
 import db from '../database/db.js'
 import { CreateUserDto, UpdateUserDto, UserRole, isAdminRole } from '../types/index.js'
-import { authenticateToken, requireRole, AuthRequest } from '../middleware/auth.js'
+import { authenticateToken, requireSystemAdmin, AuthRequest } from '../middleware/auth.js'
 import { syncUserData } from '../database/sync.js'
-import { maskSystemUser, isSystemUserId, SYSTEM_USER_CONSTANTS } from '../utils/systemUser.js'
+import { maskSystemUser, isSystemUser, isSystemUserId, canViewSystemUsers, SYSTEM_USER_CONSTANTS } from '../utils/systemUser.js'
 
 const router = Router()
 
@@ -29,6 +29,11 @@ router.get('/', authenticateToken, (req: AuthRequest, res) => {
     `
     const params: any[] = [...SYSTEM_USER_CONSTANTS.emails.map((email) => email.toLowerCase())]
 
+    if (!canViewSystemUsers(user.role)) {
+      query += ` AND role != ?`
+      params.push(SYSTEM_USER_CONSTANTS.role)
+    }
+
     if (status) {
       query += ' AND status = ?'
       params.push(status)
@@ -43,7 +48,7 @@ router.get('/', authenticateToken, (req: AuthRequest, res) => {
 
     const users = db.prepare(query).all(...params) as any[]
 
-    res.json(users.map((user) => (maskSystemUser(user) as typeof user)))
+    res.json(users.map((user) => maskSystemUser(user, req.user!.id) as typeof user))
   } catch (error) {
     console.error('Get users error:', error)
     res.status(500).json({ error: 'Internal server error' })
@@ -63,7 +68,7 @@ router.get('/me', authenticateToken, (req: AuthRequest, res) => {
       return res.status(404).json({ error: 'User not found' })
     }
 
-    res.json(maskSystemUser(user) || user)
+    res.json(maskSystemUser(user, req.user!.id) || user)
   } catch (error) {
     console.error('Get user error:', error)
     res.status(500).json({ error: 'Internal server error' })
@@ -161,7 +166,7 @@ router.delete('/me/avatar', authenticateToken, async (req: AuthRequest, res) => 
 router.put('/me', authenticateToken, async (req: AuthRequest, res) => {
   try {
     const userId = req.user!.id
-    const { name, email, phone, code, organization, address, function: userFunction } = req.body
+    const { name, email, phone, code, organization, address, bank_account, bank_name, bank_account_name, function: userFunction } = req.body
 
     // Check if email is being changed and if it's already taken
     if (email) {
@@ -199,6 +204,18 @@ router.put('/me', authenticateToken, async (req: AuthRequest, res) => {
       updates.push('address = ?')
       values.push(address || null)
     }
+    if (bank_account !== undefined) {
+      updates.push('bank_account = ?')
+      values.push(bank_account || null)
+    }
+    if (bank_name !== undefined) {
+      updates.push('bank_name = ?')
+      values.push(bank_name || null)
+    }
+    if (bank_account_name !== undefined) {
+      updates.push('bank_account_name = ?')
+      values.push(bank_account_name || null)
+    }
     if (userFunction !== undefined) {
       updates.push('function = ?')
       values.push(userFunction || null)
@@ -217,7 +234,7 @@ router.put('/me', authenticateToken, async (req: AuthRequest, res) => {
     syncUserData(userId)
 
     const updatedUser = db.prepare(`
-      SELECT id, name, email, code, role, function, organization, status, phone, address, created_at, updated_at
+      SELECT id, name, email, code, role, function, organization, status, phone, address, bank_account, bank_name, bank_account_name, created_at, updated_at
       FROM users
       WHERE id = ?
     `).get(userId) as any
@@ -240,7 +257,7 @@ router.get('/:id', authenticateToken, (req: AuthRequest, res) => {
     }
 
     const user = db.prepare(`
-      SELECT id, name, email, code, role, function, organization, status, phone, address, parent_distributor_id, created_at, updated_at
+      SELECT id, name, email, code, role, function, organization, status, phone, address, bank_account, bank_name, bank_account_name, parent_distributor_id, created_at, updated_at
       FROM users
       WHERE id = ?
     `).get(userId) as any
@@ -249,7 +266,11 @@ router.get('/:id', authenticateToken, (req: AuthRequest, res) => {
       return res.status(404).json({ error: 'User not found' })
     }
 
-    res.json(maskSystemUser(user) || user)
+    if (isSystemUser(user) && !canViewSystemUsers(req.user!.role)) {
+      return res.status(404).json({ error: 'User not found' })
+    }
+
+    res.json(maskSystemUser(user, req.user!.id) || user)
   } catch (error) {
     console.error('Get user error:', error)
     res.status(500).json({ error: 'Internal server error' })
@@ -257,7 +278,7 @@ router.get('/:id', authenticateToken, (req: AuthRequest, res) => {
 })
 
 // Create user
-router.post('/', authenticateToken, requireRole(UserRole.ADMIN, UserRole.DEV), async (req: AuthRequest, res) => {
+router.post('/', authenticateToken, requireSystemAdmin(UserRole.ADMIN, UserRole.DEV), async (req: AuthRequest, res) => {
   try {
     const userData: CreateUserDto = req.body
     const requesterRole = req.user!.role
@@ -268,7 +289,7 @@ router.post('/', authenticateToken, requireRole(UserRole.ADMIN, UserRole.DEV), a
     }
 
     if (userData.role === UserRole.DEV && requesterRole !== UserRole.DEV) {
-      return res.status(403).json({ error: 'Only developer accounts can create Developer users' })
+      return res.status(403).json({ error: 'Only System accounts can create System users' })
     }
 
     // Check if email already exists
@@ -297,8 +318,8 @@ router.post('/', authenticateToken, requireRole(UserRole.ADMIN, UserRole.DEV), a
     const hashedPassword = await bcrypt.hash(userData.password, 10)
 
     const result = db.prepare(`
-      INSERT INTO users (name, email, password, code, role, function, organization, status, phone, address, parent_distributor_id)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO users (name, email, password, code, role, function, organization, status, phone, address, bank_account, bank_name, bank_account_name, parent_distributor_id)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       userData.name,
       userData.email,
@@ -310,11 +331,14 @@ router.post('/', authenticateToken, requireRole(UserRole.ADMIN, UserRole.DEV), a
       userData.status || 'active',
       userData.phone || null,
       userData.address || null,
+      userData.bank_account || null,
+      userData.bank_name || null,
+      userData.bank_account_name || null,
       userData.parent_distributor_id || null
     )
 
     const newUser = db.prepare(`
-      SELECT id, name, email, code, role, function, organization, status, phone, address, parent_distributor_id, created_at, updated_at
+      SELECT id, name, email, code, role, function, organization, status, phone, address, bank_account, bank_name, bank_account_name, parent_distributor_id, created_at, updated_at
       FROM users
       WHERE id = ?
     `).get(result.lastInsertRowid) as any
@@ -322,7 +346,7 @@ router.post('/', authenticateToken, requireRole(UserRole.ADMIN, UserRole.DEV), a
     // Auto-sync to customers and distributors
     syncUserData(Number(result.lastInsertRowid))
 
-    res.status(201).json(maskSystemUser(newUser) || newUser)
+    res.status(201).json(maskSystemUser(newUser, req.user!.id) || newUser)
   } catch (error) {
     console.error('Create user error:', error)
     res.status(500).json({ error: 'Internal server error' })
@@ -337,7 +361,7 @@ router.put('/:id', authenticateToken, async (req: AuthRequest, res) => {
     const requesterRole = req.user!.role
 
     if (userData.role === UserRole.DEV && requesterRole !== UserRole.DEV) {
-      return res.status(403).json({ error: 'Only Developer accounts can assign the Developer role' })
+      return res.status(403).json({ error: 'Only System accounts can assign the System role' })
     }
 
     // Validate parent_distributor_id if provided (can be from distributors table)
@@ -411,6 +435,18 @@ router.put('/:id', authenticateToken, async (req: AuthRequest, res) => {
       updates.push('address = ?')
       values.push(userData.address || null)
     }
+    if (userData.bank_account !== undefined) {
+      updates.push('bank_account = ?')
+      values.push(userData.bank_account || null)
+    }
+    if (userData.bank_name !== undefined) {
+      updates.push('bank_name = ?')
+      values.push(userData.bank_name || null)
+    }
+    if (userData.bank_account_name !== undefined) {
+      updates.push('bank_account_name = ?')
+      values.push(userData.bank_account_name || null)
+    }
     if (userData.function !== undefined) {
       updates.push('function = ?')
       values.push(userData.function || null)
@@ -437,12 +473,12 @@ router.put('/:id', authenticateToken, async (req: AuthRequest, res) => {
     syncUserData(userId)
 
     const updatedUser = db.prepare(`
-      SELECT id, name, email, code, role, function, organization, status, phone, address, parent_distributor_id, created_at, updated_at
+      SELECT id, name, email, code, role, function, organization, status, phone, address, bank_account, bank_name, bank_account_name, parent_distributor_id, created_at, updated_at
       FROM users
       WHERE id = ?
     `).get(userId) as any
 
-    res.json(maskSystemUser(updatedUser) || updatedUser)
+    res.json(maskSystemUser(updatedUser, req.user!.id) || updatedUser)
   } catch (error) {
     console.error('Update user error:', error)
     res.status(500).json({ error: 'Internal server error' })
@@ -450,7 +486,7 @@ router.put('/:id', authenticateToken, async (req: AuthRequest, res) => {
 })
 
 // Delete user
-router.delete('/:id', authenticateToken, requireRole(UserRole.ADMIN), (req: AuthRequest, res) => {
+router.delete('/:id', authenticateToken, requireSystemAdmin(UserRole.ADMIN), (req: AuthRequest, res) => {
   try {
     const userId = parseInt(req.params.id)
 

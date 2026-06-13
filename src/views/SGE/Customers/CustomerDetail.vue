@@ -286,10 +286,15 @@
                     <span class="text-sm font-mono font-medium text-blue-600 dark:text-blue-400">{{ c.contract_number }}</span>
                     <span :class="cStatusClass(c.status)" class="px-1.5 py-0.5 text-xs rounded-full font-medium">{{ cStatusLabel(c.status) }}</span>
                   </div>
-                  <p class="text-sm text-gray-700 dark:text-gray-300 mt-0.5 truncate">{{ c.title }}</p>
+                  <p
+                    v-if="contractSubtitle(c)"
+                    class="text-sm text-gray-700 dark:text-gray-300 mt-0.5 truncate"
+                  >
+                    {{ contractSubtitle(c) }}
+                  </p>
                   <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
-                    {{ fmtDate(c.start_date) }} → {{ fmtDate(c.end_date) }}
-                    <span v-if="c.device_count" class="ml-2">· {{ c.device_count }} thiết bị</span>
+                    <span v-if="contractDateLabel(c)">{{ contractDateLabel(c) }}</span>
+                    <span v-if="c.device_count" :class="contractDateLabel(c) ? 'ml-2' : ''">· {{ c.device_count }} thiết bị</span>
                   </p>
                 </div>
                 <svg class="h-4 w-4 text-gray-400 group-hover:text-gray-600 flex-shrink-0 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -639,7 +644,33 @@ const cStatusClass = (s: string) => ({
   expired: 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-300',
   cancelled: 'bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-300',
 }[s] ?? 'bg-gray-100 text-gray-600')
-const fmtDate = (d?: string) => d ? new Date(d).toLocaleDateString('vi-VN') : '—'
+const fmtDate = (d?: string | null) => {
+  if (!d || !String(d).trim()) return null
+  const parsed = new Date(d)
+  return Number.isNaN(parsed.getTime()) ? null : parsed.toLocaleDateString('vi-VN')
+}
+
+const contractSubtitle = (c: { title?: string; contract_number?: string }) => {
+  const title = c.title?.trim()
+  if (!title || title === c.contract_number) return null
+  return title
+}
+
+const contractDateLabel = (c: {
+  start_date?: string | null
+  end_date?: string | null
+  signed_date?: string | null
+}) => {
+  const start = fmtDate(c.start_date)
+  const end = fmtDate(c.end_date)
+  if (start && end) return `${start} → ${end}`
+  const signed = fmtDate(c.signed_date)
+  if (signed && end) return `Ký ${signed} → NT ${end}`
+  if (signed) return `Ngày ký: ${signed}`
+  if (start) return `Từ ${start}`
+  if (end) return `Đến ${end}`
+  return null
+}
 
 const getTypeClass = (type: string) => {
   const classes: Record<string, string> = {

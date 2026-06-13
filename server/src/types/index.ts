@@ -7,6 +7,7 @@ export enum UserRole {
   DEALER = 'dealer',
   END_USER = 'end_user',
   WAREHOUSE = 'warehouse',
+  ACCOUNTING = 'accounting',
 }
 
 export enum UserStatus {
@@ -40,6 +41,9 @@ export interface CreateUserDto {
   status?: UserStatus
   phone?: string
   address?: string
+  bank_account?: string
+  bank_name?: string
+  bank_account_name?: string
   parent_distributor_id?: number
 }
 
@@ -53,6 +57,9 @@ export interface UpdateUserDto {
   organization?: string
   phone?: string
   address?: string
+  bank_account?: string
+  bank_name?: string
+  bank_account_name?: string
   status?: UserStatus
   parent_distributor_id?: number
 }
@@ -69,4 +76,9 @@ export interface AuthResponse {
 
 export const isAdminRole = (role?: UserRole | null): boolean => {
   return role === UserRole.ADMIN || role === UserRole.DEV
+}
+
+/** Admin/dev + kế toán — quyền vận hành gần admin, trừ cài đặt hệ thống */
+export const isStaffAdminRole = (role?: UserRole | string | null): boolean => {
+  return isAdminRole(role as UserRole) || role === UserRole.ACCOUNTING
 }

@@ -1,6 +1,6 @@
 <template>
   <admin-layout>
-    <div class="px-4 sm:px-0 space-y-4 sm:space-y-6">
+    <div class="px-4 sm:px-0 space-y-4 sm:space-y-6 overflow-x-hidden max-w-full">
       <!-- Header -->
       <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div>
@@ -52,47 +52,47 @@
       <div
         class="hidden md:block rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden"
       >
-        <div class="overflow-y-auto max-h-[600px]">
-          <table class="w-full">
-            <thead class="bg-gray-50 dark:bg-gray-700">
+        <div class="overflow-x-auto overflow-y-auto max-h-[600px] w-full">
+          <table class="w-full min-w-[960px] table-fixed">
+            <thead class="bg-gray-50 dark:bg-gray-700 sticky top-0 z-10">
               <tr>
                 <th
-                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                  class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider w-[13%]"
                 >
                   {{ t('inverters.list.table.serialNumber') }}
                 </th>
                 <th
-                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                  class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider w-[12%]"
                 >
                   {{ t('inverters.list.table.model') }}
                 </th>
                 <th
-                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                  class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider w-[8%]"
                 >
                   Hãng
                 </th>
                 <th
-                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                  class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider w-[11%]"
                 >
                   Hợp đồng
                 </th>
                 <th
-                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                  class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider w-[22%]"
                 >
                   {{ t('inverters.list.table.customer') }}
                 </th>
                 <th
-                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                  class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider w-[10%]"
                 >
                   {{ t('inverters.list.table.activationDate') }}
                 </th>
                 <th
-                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                  class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider w-[10%]"
                 >
                   {{ t('inverters.list.table.warrantyUntil') }}
                 </th>
                 <th
-                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                  class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider w-[14%]"
                 >
                   {{ t('inverters.list.table.status') }}
                 </th>
@@ -124,30 +124,50 @@
                 class="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
                 @click="inverter.id && $router.push(`/inverters/${inverter.id}`)"
               >
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <span class="font-medium text-gray-900 dark:text-white font-mono text-sm">
-                    {{ serialWithContractLabel(inverter.serial_number, inverter.contract_numbers) }}
+                <td class="px-4 py-4">
+                  <span
+                    class="block font-medium text-gray-900 dark:text-white font-mono text-sm truncate"
+                    :title="inverter.serial_number"
+                  >
+                    {{ inverter.serial_number || '—' }}
                   </span>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                  {{ inverter.model }}
+                <td class="px-4 py-4">
+                  <span
+                    class="block text-sm text-gray-500 dark:text-gray-400 truncate"
+                    :title="inverter.model"
+                  >
+                    {{ inverter.model || '—' }}
+                  </span>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                  {{ inverter.manufacturer || '—' }}
+                <td class="px-4 py-4">
+                  <span class="block text-sm text-gray-500 dark:text-gray-400 truncate">
+                    {{ inverter.manufacturer || '—' }}
+                  </span>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-blue-600 dark:text-blue-400">
-                  {{ inverter.contract_numbers || '—' }}
+                <td class="px-4 py-4">
+                  <span
+                    class="block text-sm text-blue-600 dark:text-blue-400 truncate"
+                    :title="inverter.contract_numbers"
+                  >
+                    {{ inverter.contract_numbers || '—' }}
+                  </span>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                  {{ inverter.customer_name || '—' }}
+                <td class="px-4 py-4">
+                  <span
+                    class="block text-sm text-gray-500 dark:text-gray-400 truncate"
+                    :title="inverter.customer_name"
+                  >
+                    {{ inverter.customer_name || '—' }}
+                  </span>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                   {{ formatDate(inverter.warranty_start_date) }}
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                   {{ formatDate(inverter.warranty_end_date) }}
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap">
+                <td class="px-4 py-4 whitespace-nowrap">
                   <span
                     :class="[
                       'px-2 py-1 text-xs font-semibold rounded-full',
@@ -232,12 +252,21 @@
           @click="inverter.id && $router.push(`/inverters/${inverter.id}`)"
         >
           <div class="mb-3">
-            <h3 class="font-semibold text-gray-900 dark:text-white text-base truncate font-mono">
-              {{ serialWithContractLabel(inverter.serial_number, inverter.contract_numbers) }}
+            <h3
+              class="font-semibold text-gray-900 dark:text-white text-base truncate font-mono"
+              :title="inverter.serial_number"
+            >
+              {{ inverter.serial_number || '—' }}
             </h3>
-            <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 truncate">
               {{ inverter.model || t('common.na') }}
               <span v-if="inverter.manufacturer" class="text-gray-400"> · {{ inverter.manufacturer }}</span>
+            </p>
+            <p
+              v-if="inverter.contract_numbers"
+              class="text-xs text-blue-600 dark:text-blue-400 mt-0.5 truncate"
+            >
+              {{ inverter.contract_numbers }}
             </p>
           </div>
 
@@ -421,10 +450,9 @@
                   <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     {{ t('inverters.list.modal.edit.warrantyStart') }}
                   </label>
-                  <input
+                  <AppDatePicker
                     v-model="inverterForm.warranty_start_date"
-                    type="date"
-                    class="w-full px-3 py-2.5 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white touch-manipulation min-h-[44px] sm:min-h-0 text-base sm:text-sm"
+                    input-class="w-full px-3 py-2.5 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white touch-manipulation min-h-[44px] sm:min-h-0 text-base sm:text-sm"
                   />
                 </div>
 
@@ -433,10 +461,9 @@
                   <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     {{ t('inverters.list.modal.edit.warrantyEnd') }}
                   </label>
-                  <input
+                  <AppDatePicker
                     v-model="inverterForm.warranty_end_date"
-                    type="date"
-                    class="w-full px-3 py-2.5 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white touch-manipulation min-h-[44px] sm:min-h-0 text-base sm:text-sm"
+                    input-class="w-full px-3 py-2.5 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white touch-manipulation min-h-[44px] sm:min-h-0 text-base sm:text-sm"
                   />
                 </div>
 
@@ -598,10 +625,10 @@
 import { ref, computed, onMounted, onActivated, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
+import AppDatePicker from '@/components/forms/AppDatePicker.vue'
 import { PlusIcon } from '../../../icons'
 import { apiClient } from '@/services/api'
 import { inverterService } from '@/services/inverterService'
-import { serialWithContractLabel } from '@/utils/inverterDisplay'
 
 const { t } = useI18n()
 

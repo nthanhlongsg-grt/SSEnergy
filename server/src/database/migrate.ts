@@ -184,6 +184,18 @@ const migrations: Migration[] = [
       }
     },
   },
+  {
+    version: 8,
+    name: 'Rename dev accounts to System display',
+    up: () => {
+      db.exec(`
+        UPDATE users
+        SET name = 'System',
+            code = CASE WHEN code IS NULL OR code = '' OR code = 'DEV001' THEN 'SYS001' ELSE code END
+        WHERE role = 'dev';
+      `)
+    },
+  },
 ]
 
 const runMigrations = () => {

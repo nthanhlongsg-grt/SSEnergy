@@ -46,7 +46,7 @@ router.post('/login', async (req, res) => {
 
     const response: AuthResponse = {
       token,
-      user: (maskSystemUser(userWithoutPassword) as typeof userWithoutPassword) || userWithoutPassword,
+      user: (maskSystemUser(userWithoutPassword, user.id) as typeof userWithoutPassword) || userWithoutPassword,
     }
 
     res.json(response)
@@ -59,15 +59,12 @@ router.post('/login', async (req, res) => {
 // Register (Sign up) - Public endpoint for end users only
 router.post('/register', async (req, res) => {
   try {
-    const { firstName, lastName, email, phone, address, customerType, organization, password } = req.body
+    const { firstName, lastName, email, phone, address, organization, password } = req.body
 
     // Validate required fields
     if (!firstName || !lastName || !email || !phone || !password) {
       return res.status(400).json({ error: 'Vui lòng điền đầy đủ thông tin bắt buộc' })
     }
-
-    // Determine customer type based on organization
-    const finalCustomerType = organization ? (customerType || 'enterprise') : 'residential'
 
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -100,43 +97,21 @@ router.post('/register', async (req, res) => {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10)
 
-    // Start transaction to create both user and customer
-    const createUser = db.transaction(() => {
-      // Create user with END_USER role
-      const userResult = db.prepare(`
-        INSERT INTO users (name, email, password, role, status, phone, address, organization)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-      `).run(
-        fullName,
-        email,
-        hashedPassword,
-        'end_user', // Fixed role for public registration
-        'active', // Auto-activate end user accounts
-        phone || null,
-        address || null,
-        organization || null
-      )
+    const userResult = db.prepare(`
+      INSERT INTO users (name, email, password, role, status, phone, address, organization)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      fullName,
+      email,
+      hashedPassword,
+      'end_user',
+      'active',
+      phone || null,
+      address || null,
+      organization || null,
+    )
 
-      // Create customer record linked to user
-      const customerResult = db.prepare(`
-        INSERT INTO customers (name, email, phone, address, customer_type, organization)
-        VALUES (?, ?, ?, ?, ?, ?)
-      `).run(
-        fullName,
-        email,
-        phone || null,
-        address || null,
-        finalCustomerType, // 'residential' or 'enterprise'
-        organization || null
-      )
-
-      return {
-        userId: userResult.lastInsertRowid,
-        customerId: customerResult.lastInsertRowid,
-      }
-    })
-
-    const { userId } = createUser()
+    const userId = userResult.lastInsertRowid
 
     const newUser = db.prepare(`
       SELECT id, name, email, code, role, organization, status, phone, address, created_at, updated_at
@@ -175,7 +150,7 @@ router.get('/me', authenticateToken, (req: AuthRequest, res) => {
     // Build SELECT query with only existing columns
     const selectColumns = [
       'id', 'name', 'email', 'code', 'role', 'function', 
-      'organization', 'status', 'phone', 'address', 
+      'organization', 'status', 'phone', 'address', 'bank_account', 'bank_name', 'bank_account_name',
       'parent_distributor_id', 'created_at', 'updated_at'
     ].filter(col => columnNames.includes(col))
     
@@ -190,7 +165,7 @@ router.get('/me', authenticateToken, (req: AuthRequest, res) => {
       return res.status(404).json({ error: 'User not found' })
     }
 
-    const maskedUser = maskSystemUser(user)
+    const maskedUser = maskSystemUser(user, req.user!.id)
     res.json(maskedUser || user)
   } catch (error) {
     console.error('Get user error:', error)

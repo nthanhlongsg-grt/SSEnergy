@@ -472,9 +472,6 @@ const handleSubmit = async () => {
     return
   }
 
-  // Determine customer type based on organization
-  const customerType = organization.value ? 'enterprise' : 'residential'
-
   loading.value = true
   error.value = null
 
@@ -485,7 +482,6 @@ const handleSubmit = async () => {
       email: email.value,
       phone: phone.value.replace(/\s+/g, ''),
       address: address.value || null,
-      customerType: customerType,
       organization: organization.value || null,
       password: password.value,
     })

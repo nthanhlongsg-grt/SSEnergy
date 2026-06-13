@@ -36,6 +36,8 @@ interface QuotationContract {
 export interface QuotationExportOptions {
   /** Hiển thị người liên hệ và điện thoại trên báo giá */
   showContact?: boolean
+  /** Nhân viên báo giá — người đang đăng nhập (không dùng người tạo HĐ) */
+  sellerName?: string
 }
 
 function esc(s: unknown): string {
@@ -97,7 +99,7 @@ export function buildQuotationHtml(
 
   const contractNo = contract.contract_number || ''
   const quoteNo = contractNo ? `BG${contractNo}` : ''
-  const seller = contract.created_by_name || ''
+  const seller = options.sellerName || ''
   const deliveryTime = formatDeliveryText(contract.delivery_days)
   const warrantyText = formatWarrantyText(contract.warranty_months)
 
@@ -186,8 +188,8 @@ export function buildQuotationHtml(
   .sign .col { width: 46%; position: relative; min-height: 170px; }
   .sign .role { font-weight: bold; }
   .sign .sub { font-style: italic; font-size: 12px; }
-  .sign img.stamp { position: absolute; left: 50%; transform: translateX(-50%); top: 0; height: 150px; width: auto; opacity: 0.96; }
-  .sign .director-name { margin-top: 128px; font-weight: bold; }
+  .sign img.stamp { position: absolute; left: 50%; transform: translateX(-50%); top: 40px; height: 150px; width: auto; opacity: 0.96; }
+  .sign .director-name { margin-top: 168px; font-weight: bold; }
   @page { size: A4; margin: 14mm; }
   @media print {
     html, body { background: #fff; }
@@ -305,20 +307,43 @@ export function buildQuotationHtml(
  */
 async function fetchStampDataUrl(): Promise<string> {
   const token = localStorage.getItem('token')
-  if (!token) return ''
+  if (!token) {
+    throw new Error('Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.')
+  }
   try {
     const res = await fetch(`${getApiBaseUrl()}/api/quotation/stamp`, {
       headers: { Authorization: `Bearer ${token}` },
     })
-    if (!res.ok) return ''
+    if (!res.ok) {
+      if (res.status === 404) {
+        throw new Error(
+          'Không tìm thấy file con dấu trên server. Quản trị cần deploy lại backend (npm run build) kèm stamp.png hoặc cấu hình STAMP_IMAGE_PATH.',
+        )
+      }
+      if (res.status === 403) {
+        throw new Error('Tài khoản không có quyền lấy con dấu báo giá.')
+      }
+      throw new Error(`Không thể tải con dấu (HTTP ${res.status}).`)
+    }
     const blob = await res.blob()
-    return await new Promise<string>((resolve) => {
+    if (!blob.size) {
+      throw new Error('File con dấu trống hoặc không hợp lệ.')
+    }
+    return await new Promise<string>((resolve, reject) => {
       const reader = new FileReader()
-      reader.onloadend = () => resolve(typeof reader.result === 'string' ? reader.result : '')
+      reader.onloadend = () => {
+        if (typeof reader.result === 'string' && reader.result.startsWith('data:')) {
+          resolve(reader.result)
+        } else {
+          reject(new Error('Không đọc được file con dấu.'))
+        }
+      }
+      reader.onerror = () => reject(new Error('Không đọc được file con dấu.'))
       reader.readAsDataURL(blob)
     })
-  } catch {
-    return ''
+  } catch (err) {
+    if (err instanceof Error) throw err
+    throw new Error('Không thể tải con dấu báo giá.')
   }
 }
 

@@ -9,10 +9,12 @@
   },
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "tsc",
+    "build": "tsc && node scripts/copy-build-assets.mjs",
     "start": "node dist/index.js",
     "start:prod": "NODE_ENV=production TZ=Asia/Ho_Chi_Minh node dist/index.js",
     "db:migrate": "tsx src/database/migrate.ts",
+    "db:sync": "tsx scripts/db-sync-schema.ts",
+    "db:reconcile": "tsx scripts/db-reconcile.ts",
     "db:seed": "tsx src/database/seed.ts",
     "db:seed:full": "tsx src/database/seed-full.ts",
     "db:seed:users": "tsx scripts/seed-mock-users.ts",

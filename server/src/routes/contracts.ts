@@ -242,7 +242,7 @@ router.get('/', authenticateToken, (req, res) => {
     if (user && (user.role === UserRole.TECHNICIAN || user.role === UserRole.WAREHOUSE)) {
       return res.status(403).json({ error: 'Insufficient permissions' })
     }
-    const { status, customer_id, search, unpaid, undelivered, page = '1', limit = '20' } = req.query
+    const { status, customer_id, search, unpaid, undelivered, contract_type, from, to, page = '1', limit = '20' } = req.query
 
     const pageNum = Math.max(1, parseInt(page as string))
     const limitNum = Math.min(100, Math.max(1, parseInt(limit as string)))
@@ -253,6 +253,7 @@ router.get('/', authenticateToken, (req, res) => {
 
     if (status) { where += ' AND c.status = ?'; params.push(status) }
     if (customer_id) { where += ' AND c.customer_id = ?'; params.push(customer_id) }
+    if (contract_type) { where += ' AND c.contract_type = ?'; params.push(contract_type) }
     if (search) {
       where += ' AND (c.contract_number LIKE ? OR c.title LIKE ? OR cu.name LIKE ?)'
       const like = `%${search}%`
@@ -263,6 +264,10 @@ router.get('/', authenticateToken, (req, res) => {
     }
     if (undelivered === '1' || undelivered === 'true') {
       where += ` AND ${ACTIVE_UNDELIVERED_SQL}`
+    }
+    if (from && to) {
+      where += ` AND DATE(COALESCE(c.signed_date, c.created_at)) >= DATE(?) AND DATE(COALESCE(c.signed_date, c.created_at)) <= DATE(?)`
+      params.push(from, to)
     }
 
     const scope = customerScopeClause(user!)

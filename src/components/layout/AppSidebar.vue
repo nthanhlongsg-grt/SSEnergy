@@ -298,6 +298,12 @@ const MENU_GROUPS: MenuGroupDefinition[] = [
         excludedRoles: [UserRole.TECHNICIAN, UserRole.WAREHOUSE],
       },
       {
+        icon: DocsIcon,
+        nameKey: "menu.paymentRequests",
+        path: "/payment-requests",
+        requiresPermission: "view_payment_requests",
+      },
+      {
         icon: BoxCubeIcon,
         nameKey: "menu.deviceList",
         path: "/inverters",

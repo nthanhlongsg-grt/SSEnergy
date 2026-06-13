@@ -58,6 +58,6 @@ export const getRedirectRoute = (userRole: string | null | undefined): string =>
     return '/signin'
   }
 
-  return getDefaultRouteByRole(userRole)
+  return getDefaultRouteByRole(userRole, true)
 }
 

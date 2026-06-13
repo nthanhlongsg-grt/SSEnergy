@@ -96,6 +96,37 @@ export const getVietnamMonthRange = (): { from: string; to: string } => {
   return { from, to: getVietnamDateString(now) }
 }
 
+/** Monday → Sunday of current week in Vietnam timezone */
+export const getVietnamWeekRange = (): { from: string; to: string } => {
+  const now = getVietnamNow()
+  const day = now.getDay()
+  const diff = now.getDate() - day + (day === 0 ? -6 : 1)
+  const monday = new Date(now.getFullYear(), now.getMonth(), diff)
+  const sunday = new Date(monday)
+  sunday.setDate(monday.getDate() + 6)
+  return {
+    from: getVietnamDateString(monday),
+    to: getVietnamDateString(sunday),
+  }
+}
+
+/** Full current calendar month in Vietnam timezone */
+export const getVietnamFullMonthRange = (): { from: string; to: string } => {
+  const now = getVietnamNow()
+  const firstDay = new Date(now.getFullYear(), now.getMonth(), 1)
+  const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0)
+  return {
+    from: getVietnamDateString(firstDay),
+    to: getVietnamDateString(lastDay),
+  }
+}
+
+/** Jan 1 → Dec 31 of current year in Vietnam timezone */
+export const getVietnamYearRange = (): { from: string; to: string } => {
+  const year = getVietnamNow().getFullYear()
+  return { from: `${year}-01-01`, to: `${year}-12-31` }
+}
+
 /**
  * Convert a date string to ISO string in Vietnam timezone
  * @param dateString - Date string or Date object

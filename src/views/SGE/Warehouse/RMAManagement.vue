@@ -126,10 +126,9 @@
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Ngày tạo
             </label>
-            <input
+            <AppDatePicker
               v-model="filters.dateFrom"
-              type="date"
-              class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+              input-class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
             />
           </div>
           <div class="flex items-end">
@@ -297,6 +296,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
+import AppDatePicker from '@/components/forms/AppDatePicker.vue'
 import {
   PlusIcon,
   DocsIcon,

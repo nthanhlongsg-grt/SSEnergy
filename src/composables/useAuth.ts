@@ -75,6 +75,12 @@ export enum Permission {
   VIEW_CONTRACTS = 'view_contracts',
   MANAGE_CONTRACTS = 'manage_contracts',
   VIEW_CONTRACT_FINANCE = 'view_contract_finance',
+
+  // Payment Requests
+  VIEW_PAYMENT_REQUESTS = 'view_payment_requests',
+  CREATE_PAYMENT_REQUEST = 'create_payment_request',
+  REVIEW_PAYMENT_REQUEST = 'review_payment_request',
+  DELETE_PAYMENT_REQUEST = 'delete_payment_request',
 }
 
 // Permissions kế toán không có — toàn bộ mục "Cài đặt thêm"
@@ -85,6 +91,7 @@ const ACCOUNTING_DENIED_PERMISSIONS: Permission[] = [
   Permission.EDIT_USER,
   Permission.DELETE_USER,
   Permission.VIEW_TECHNICIANS,
+  Permission.DELETE_PAYMENT_REQUEST,
 ]
 
 // Role permissions mapping
@@ -117,6 +124,8 @@ const rolePermissions: Record<UserRole, Permission[]> = {
     Permission.EXPORT_DATA,
     Permission.VIEW_CONTRACTS,
     Permission.MANAGE_CONTRACTS,
+    Permission.VIEW_PAYMENT_REQUESTS,
+    Permission.CREATE_PAYMENT_REQUEST,
   ],
   [UserRole.TECHNICIAN]: [
     Permission.VIEW_INVERTERS,
@@ -127,7 +136,8 @@ const rolePermissions: Record<UserRole, Permission[]> = {
     Permission.VIEW_REPORTS,
     Permission.CREATE_REPORT,
     Permission.EDIT_REPORT,
-    // Không có VIEW_CUSTOMERS, VIEW_CONTRACTS — chỉ thấy thiết bị và ticket
+    Permission.VIEW_PAYMENT_REQUESTS,
+    Permission.CREATE_PAYMENT_REQUEST,
   ],
   [UserRole.DISTRIBUTOR]: [
     Permission.VIEW_INVERTERS,
@@ -143,6 +153,8 @@ const rolePermissions: Record<UserRole, Permission[]> = {
     Permission.VIEW_TICKETS,
     Permission.CREATE_TICKET,
     Permission.VIEW_REPORTS,
+    Permission.VIEW_PAYMENT_REQUESTS,
+    Permission.CREATE_PAYMENT_REQUEST,
   ],
   [UserRole.END_USER]: [
     Permission.VIEW_INVERTERS,
@@ -159,7 +171,8 @@ const rolePermissions: Record<UserRole, Permission[]> = {
     Permission.EXPORT_PARTS,
     Permission.VIEW_TICKETS,
     Permission.VIEW_INVERTERS,
-    // Không có VIEW_CUSTOMERS, VIEW_CONTRACTS
+    Permission.VIEW_PAYMENT_REQUESTS,
+    Permission.CREATE_PAYMENT_REQUEST,
   ],
   [UserRole.ACCOUNTING]: Object.values(Permission).filter(
     (permission) => !ACCOUNTING_DENIED_PERMISSIONS.includes(permission),
@@ -176,6 +189,9 @@ const currentUser = ref<{
   organization?: string
   phone?: string
   address?: string
+  bank_account?: string
+  bank_name?: string
+  bank_account_name?: string
   avatar?: string
   status?: string
   permissions: Permission[]
@@ -253,6 +269,9 @@ export const login = async (
       organization: response.user.organization,
       phone: response.user.phone,
       address: response.user.address,
+      bank_account: (response.user as any).bank_account,
+      bank_name: (response.user as any).bank_name,
+      bank_account_name: (response.user as any).bank_account_name,
       avatar: response.user.avatar,
       status: response.user.status,
       permissions: rolePermissions[response.user.role] || [],
@@ -295,6 +314,9 @@ export const refreshUserInfo = async () => {
       organization: userData.organization,
       phone: userData.phone,
       address: userData.address,
+      bank_account: (userData as any).bank_account,
+      bank_name: (userData as any).bank_name,
+      bank_account_name: (userData as any).bank_account_name,
       avatar: userData.avatar,
       status: userData.status,
       permissions: rolePermissions[userData.role] || [],
@@ -369,6 +391,9 @@ export const setUser = (user: {
   organization?: string
   phone?: string
   address?: string
+  bank_account?: string
+  bank_name?: string
+  bank_account_name?: string
   avatar?: string
   status?: string
 }) => {

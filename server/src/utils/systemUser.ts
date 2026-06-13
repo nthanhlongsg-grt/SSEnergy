@@ -1,20 +1,31 @@
 import db from '../database/db.js'
+import { UserRole } from '../types/index.js'
 
 const SYSTEM_USER_EMAILS = [
   'deverloper@sgesolartech.vn',
   'deverloper@SGEvietnam.com',
   'developer@SGE.vn',
   'developer@SGEvietnam.com',
+  'developer@local.dev',
+  'system@sgesolartech.vn',
+  'system@SGE.vn',
 ]
 
 const SYSTEM_DISPLAY_NAME = 'System'
 const SYSTEM_DISPLAY_EMAIL = 'system@SGE.vn'
 
+export const isSystemRole = (role?: string | null): boolean => role === UserRole.DEV
+
+export const canViewSystemUsers = (requesterRole?: string | null): boolean =>
+  requesterRole === UserRole.DEV
+
 const loadSystemUserIds = (): Set<number> => {
-  const placeholders = SYSTEM_USER_EMAILS.map(() => '?').join(',')
+  const emailPlaceholders = SYSTEM_USER_EMAILS.map(() => '?').join(',')
   const rows = db
-    .prepare(`SELECT id FROM users WHERE LOWER(email) IN (${placeholders})`)
-    .all(...SYSTEM_USER_EMAILS.map((email) => email.toLowerCase())) as Array<{ id: number }>
+    .prepare(
+      `SELECT id FROM users WHERE role = ? OR LOWER(email) IN (${emailPlaceholders})`
+    )
+    .all(UserRole.DEV, ...SYSTEM_USER_EMAILS.map((email) => email.toLowerCase())) as Array<{ id: number }>
   return new Set(rows.map((row) => row.id))
 }
 
@@ -31,12 +42,10 @@ const ensureSystemUserIdCached = (id: number): boolean => {
   }
 
   const row = db
-    .prepare(
-      `SELECT id FROM users WHERE id = ? AND LOWER(email) IN (${SYSTEM_USER_EMAILS.map(() => '?').join(',')})`
-    )
-    .get(id, ...SYSTEM_USER_EMAILS.map((email) => email.toLowerCase())) as { id: number } | undefined
+    .prepare('SELECT id, role, email FROM users WHERE id = ?')
+    .get(id) as { id: number; role: string; email: string } | undefined
 
-  if (row?.id) {
+  if (row && (isSystemRole(row.role) || isSystemEmail(row.email))) {
     systemUserIds.add(row.id)
     return true
   }
@@ -49,15 +58,23 @@ export const isSystemUserId = (id?: number | null): boolean => {
   return ensureSystemUserIdCached(id)
 }
 
-export const isSystemUser = (user?: { id?: number; email?: string | null }): boolean => {
+export const isSystemUser = (user?: { id?: number; email?: string | null; role?: string | null }): boolean => {
   if (!user) return false
+  if (isSystemRole(user.role)) return true
   if (isSystemEmail(user.email)) return true
   if (typeof user.id === 'number' && isSystemUserId(user.id)) return true
   return false
 }
 
-export const maskSystemUser = <T extends Record<string, any>>(user: T | null | undefined): T | null | undefined => {
+export const maskSystemUser = <T extends Record<string, any>>(
+  user: T | null | undefined,
+  viewerId?: number
+): T | null | undefined => {
   if (!user || !isSystemUser(user)) {
+    return user
+  }
+
+  if (viewerId !== undefined && user.id === viewerId) {
     return user
   }
 
@@ -104,6 +121,7 @@ export const SYSTEM_USER_CONSTANTS = {
   emails: SYSTEM_USER_EMAILS,
   displayName: SYSTEM_DISPLAY_NAME,
   displayEmail: SYSTEM_DISPLAY_EMAIL,
+  role: UserRole.DEV,
 }
 
 export const refreshSystemUserCache = () => {

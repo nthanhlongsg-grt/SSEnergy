@@ -59,6 +59,32 @@
               </p>
             </div>
           </div>
+
+          <div class="mt-6 pt-5 border-t border-gray-200 dark:border-gray-800">
+            <h5 class="mb-4 text-sm font-semibold text-gray-800 dark:text-white/90">
+              {{ t('profile.personalInfo.fields.bankSection') }}
+            </h5>
+            <div class="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-7">
+              <div>
+                <p class="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">{{ t('profile.personalInfo.fields.bankAccountName') }}</p>
+                <p class="text-sm font-medium text-gray-800 dark:text-white/90">
+                  {{ (user as any)?.bank_account_name || t('profile.personalInfo.noData.noBankAccountName') }}
+                </p>
+              </div>
+              <div>
+                <p class="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">{{ t('profile.personalInfo.fields.bankAccount') }}</p>
+                <p class="text-sm font-medium text-gray-800 dark:text-white/90">
+                  {{ (user as any)?.bank_account || t('profile.personalInfo.noData.noBankAccount') }}
+                </p>
+              </div>
+              <div>
+                <p class="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">{{ t('profile.personalInfo.fields.bankName') }}</p>
+                <p class="text-sm font-medium text-gray-800 dark:text-white/90">
+                  {{ getBankLabel((user as any)?.bank_name) === '—' ? t('profile.personalInfo.noData.noBankName') : getBankLabel((user as any)?.bank_name) }}
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div class="flex gap-2">
@@ -230,6 +256,50 @@
                       :placeholder="t('profile.personalInfo.editModal.addressPlaceholder')"
                       class="dark:bg-dark-900 h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
                     />
+                  </div>
+
+                  <div class="col-span-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+                    <h6 class="mb-4 text-sm font-semibold text-gray-800 dark:text-white/90">
+                      {{ t('profile.personalInfo.editModal.bankSection') }}
+                    </h6>
+                    <div class="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2">
+                      <div class="col-span-2">
+                        <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
+                          {{ t('profile.personalInfo.editModal.bankAccountName') }}
+                        </label>
+                        <input
+                          v-model="formData.bank_account_name"
+                          type="text"
+                          :placeholder="t('profile.personalInfo.editModal.bankAccountNamePlaceholder')"
+                          class="dark:bg-dark-900 h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
+                        />
+                      </div>
+                      <div>
+                        <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
+                          {{ t('profile.personalInfo.editModal.bankAccount') }}
+                        </label>
+                        <input
+                          v-model="formData.bank_account"
+                          type="text"
+                          :placeholder="t('profile.personalInfo.editModal.bankAccountPlaceholder')"
+                          class="dark:bg-dark-900 h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
+                        />
+                      </div>
+                      <div>
+                        <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
+                          {{ t('profile.personalInfo.editModal.bankName') }}
+                        </label>
+                        <select
+                          v-model="formData.bank_name"
+                          class="dark:bg-dark-900 h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800"
+                        >
+                          <option value="">{{ t('profile.personalInfo.editModal.selectBank') }}</option>
+                          <option v-for="b in VN_BANKS" :key="b.bin" :value="b.shortName">
+                            {{ b.shortName }} ({{ b.code }})
+                          </option>
+                        </select>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -421,6 +491,7 @@ import { useRoute } from 'vue-router'
 import Modal from './Modal.vue'
 import { useAuth, UserRole } from '@/composables/useAuth'
 import { userService } from '@/services/userService'
+import { VN_BANKS, matchBankSelectValue, getBankLabel } from '@/data/vnBanks'
 
 const { t } = useI18n()
 const route = useRoute()
@@ -447,6 +518,9 @@ const formData = ref({
   phone: '',
   organization: '',
   address: '',
+  bank_account: '',
+  bank_name: '',
+  bank_account_name: '',
 })
 
 const passwordForm = ref({
@@ -490,7 +564,10 @@ const openEditModal = async () => {
       code: user.value.code || '',
       phone: user.value.phone || '',
       organization: user.value.organization || '',
-      address: user.value.address || '',
+      address: (user.value as any).address || '',
+      bank_account: (user.value as any).bank_account || '',
+      bank_name: matchBankSelectValue((user.value as any).bank_name) || '',
+      bank_account_name: (user.value as any).bank_account_name || '',
     }
   }
   
@@ -519,6 +596,9 @@ const saveProfile = async () => {
       phone: formData.value.phone || undefined,
       organization: formData.value.organization || undefined,
       address: formData.value.address || undefined,
+      bank_account: formData.value.bank_account || undefined,
+      bank_name: formData.value.bank_name || undefined,
+      bank_account_name: formData.value.bank_account_name || undefined,
     })
 
     // Refresh user info in auth

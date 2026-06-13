@@ -244,6 +244,28 @@ const router = createRouter({
         userGroup: 'management',
       },
     },
+    {
+      path: '/payment-requests',
+      name: 'PaymentRequests',
+      component: () => import('../views/SGE/PaymentRequests/PaymentRequestList.vue'),
+      meta: {
+        title: 'Chi phí',
+        requiresAuth: true,
+        requiresPermission: 'view_payment_requests',
+        userGroup: 'management',
+      },
+    },
+    {
+      path: '/payment-requests/:id',
+      name: 'PaymentRequestDetail',
+      component: () => import('../views/SGE/PaymentRequests/PaymentRequestDetail.vue'),
+      meta: {
+        title: 'Chi tiết chi phí',
+        requiresAuth: true,
+        requiresPermission: 'view_payment_requests',
+        userGroup: 'management',
+      },
+    },
     // Quản lý Người dùng & Phân quyền
     {
       path: '/users',
@@ -375,6 +397,15 @@ router.beforeEach(async (to, from, next) => {
   if (!authInitialized) {
     await initAuthPromise
   }
+
+  const redirectToDefaultRoute = (userRole: UserRole | string | null | undefined) => {
+    const defaultRoute = getDefaultRouteByRole(userRole, isAuthenticated.value)
+    if (defaultRoute === to.path) {
+      next(false)
+      return
+    }
+    next(defaultRoute)
+  }
   
   // Check authentication
   if (to.meta.requiresAuth && !isAuthenticated.value) {
@@ -384,9 +415,7 @@ router.beforeEach(async (to, from, next) => {
 
   // Nếu đã đăng nhập và vào trang signin/signup, redirect về dashboard theo group
   if ((to.path === '/signin' || to.path === '/signup') && isAuthenticated.value) {
-    const userRole = getUserRole.value
-    const defaultRoute = getDefaultRouteByRole(userRole)
-    next(defaultRoute)
+    redirectToDefaultRoute(getUserRole.value)
     return
   }
 
@@ -402,9 +431,7 @@ router.beforeEach(async (to, from, next) => {
     
     // Kiểm tra user group
     if (!canAccessRoute(to)) {
-      // Redirect về dashboard theo group
-      const defaultRoute = getDefaultRouteByRole(userRole)
-      next(defaultRoute)
+      redirectToDefaultRoute(userRole)
       return
     }
 
@@ -412,9 +439,7 @@ router.beforeEach(async (to, from, next) => {
     if (to.meta.requiresPermission) {
       const permission = to.meta.requiresPermission as string
       if (!hasPermission(permission as any)) {
-        // Redirect về dashboard theo group
-        const defaultRoute = getDefaultRouteByRole(userRole)
-        next(defaultRoute)
+        redirectToDefaultRoute(userRole)
         return
       }
     }

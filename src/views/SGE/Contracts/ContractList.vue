@@ -12,6 +12,7 @@
           </p>
         </div>
         <button
+          v-if="canManageContracts"
           @click="openCreate"
           class="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
         >
@@ -59,8 +60,9 @@
       </div>
 
       <!-- Filters -->
-      <div class="flex flex-col sm:flex-row gap-3">
-        <div class="relative flex-1">
+      <div class="grid grid-cols-2 sm:flex sm:flex-wrap xl:flex-nowrap gap-2 items-center">
+        <!-- Search: full width on mobile -->
+        <div class="col-span-2 sm:flex-1 sm:min-w-[180px] relative">
           <svg class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M17 11A6 6 0 115 11a6 6 0 0112 0z"/>
           </svg>
@@ -72,10 +74,11 @@
             class="w-full pl-9 pr-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
+        <!-- Status: half on mobile -->
         <select
           v-model="filters.status"
           @change="onStatusFilterChange"
-          class="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+          class="w-full sm:w-auto sm:shrink-0 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           <option value="">Tất cả trạng thái</option>
           <option value="draft">Bản nháp</option>
@@ -83,16 +86,62 @@
           <option value="expired">Hết hạn</option>
           <option value="cancelled">Đã hủy</option>
         </select>
+        <!-- Contract type: half on mobile -->
         <select
           v-model="filters.contract_type"
           @change="loadContracts"
-          class="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+          class="w-full sm:w-auto sm:shrink-0 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           <option value="">Tất cả loại</option>
           <option value="service">Dịch vụ</option>
           <option value="economic">Kinh tế</option>
           <option value="other">Khác</option>
         </select>
+        <!-- Date period: half on mobile -->
+        <select
+          v-model="dateReportType"
+          class="w-full sm:w-auto sm:shrink-0 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+          @change="onDateReportTypeChange"
+        >
+          <option value="">{{ t('reports.filters.types.all') }}</option>
+          <option value="week">{{ t('reports.filters.types.week') }}</option>
+          <option value="month">{{ t('reports.filters.types.month') }}</option>
+          <option value="year">{{ t('reports.filters.types.year') }}</option>
+          <option value="custom">{{ t('reports.filters.types.custom') }}</option>
+        </select>
+        <!-- Date pickers: visible only when period selected -->
+        <template v-if="dateReportType">
+          <flat-pickr
+            v-model="dateRange.from"
+            :config="datePickerConfig"
+            :disabled="!dateReportType"
+            class="w-full sm:w-[8.5rem] sm:shrink-0 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+            :placeholder="t('reports.filters.placeholders.fromDate')"
+          />
+          <flat-pickr
+            v-model="dateRange.to"
+            :config="datePickerConfig"
+            :disabled="!dateReportType"
+            class="w-full sm:w-[8.5rem] sm:shrink-0 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+            :placeholder="t('reports.filters.placeholders.toDate')"
+          />
+          <button
+            type="button"
+            :disabled="!dateReportType"
+            class="w-full sm:w-auto sm:shrink-0 px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+            @click="applyDateFilter"
+          >
+            {{ t('reports.filters.apply') }}
+          </button>
+          <button
+            v-if="dateFilterActive"
+            type="button"
+            class="w-full sm:w-auto sm:shrink-0 px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+            @click="clearDateFilter"
+          >
+            {{ t('dashboard.filters.clear') }}
+          </button>
+        </template>
       </div>
 
       <!-- Error -->
@@ -114,11 +163,10 @@
                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Số HĐ</th>
                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Khách hàng</th>
                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase hidden sm:table-cell">Người liên hệ</th>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase hidden md:table-cell">Loại</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase hidden md:table-cell whitespace-nowrap w-[5.5rem]">Loại</th>
                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase hidden lg:table-cell">Ngày ký HĐ / NT</th>
-                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase hidden lg:table-cell">Giá trị</th>
+                <th v-if="canViewContractFinance" class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase hidden lg:table-cell">Giá trị</th>
                 <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Trạng thái / Thanh toán / Giao máy</th>
-                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Thao tác</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
@@ -134,15 +182,15 @@
                   <p class="text-xs text-gray-500 dark:text-gray-400 sm:hidden">{{ (c as any).customer_contact || '—' }}</p>
                 </td>
                 <td class="px-4 py-3 hidden sm:table-cell text-gray-700 dark:text-gray-300">{{ (c as any).customer_contact || '—' }}</td>
-                <td class="px-4 py-3 hidden md:table-cell">
-                  <span :class="typeClass(c.contract_type)" class="px-2 py-0.5 rounded-full text-xs font-medium">
+                <td class="px-4 py-3 hidden md:table-cell whitespace-nowrap">
+                  <span :class="typeClass(c.contract_type)" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap">
                     {{ typeLabel(c.contract_type) }}
                   </span>
                 </td>
                 <td class="px-4 py-3 hidden lg:table-cell text-gray-600 dark:text-gray-400 text-xs">
                   {{ c.signed_date ? formatDate(c.signed_date) : '—' }} / {{ c.end_date ? formatDate(c.end_date) : '—' }}
                 </td>
-                <td class="px-4 py-3 hidden lg:table-cell text-right font-medium text-gray-900 dark:text-white">
+                <td v-if="canViewContractFinance" class="px-4 py-3 hidden lg:table-cell text-right font-medium text-gray-900 dark:text-white">
                   {{ formatCurrency(c.value) }}
                 </td>
                 <td class="px-4 py-3 text-center">
@@ -158,31 +206,9 @@
                     </span>
                   </div>
                 </td>
-                <td class="px-4 py-3 text-center" @click.stop>
-                  <div class="flex items-center justify-center gap-1">
-                    <button
-                      @click="openEdit(c)"
-                      class="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
-                      title="Chỉnh sửa"
-                    >
-                      <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536M9 13l6.536-6.536a2 2 0 012.828 0l.172.172a2 2 0 010 2.828L12 16H9v-3z"/>
-                      </svg>
-                    </button>
-                    <button
-                      @click="confirmDelete(c)"
-                      class="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
-                      title="Xóa"
-                    >
-                      <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                      </svg>
-                    </button>
-                  </div>
-                </td>
               </tr>
               <tr v-if="!loading && contracts.length === 0">
-                <td colspan="8" class="px-4 py-12 text-center text-gray-500 dark:text-gray-400">
+                <td :colspan="tableColSpan" class="px-4 py-12 text-center text-gray-500 dark:text-gray-400">
                   Không có hợp đồng nào
                 </td>
               </tr>
@@ -350,8 +376,8 @@
 
             </div>
 
-            <!-- Nội dung hợp đồng (hạng mục) -->
-            <div class="border border-gray-200 dark:border-gray-600 rounded-xl overflow-hidden">
+            <!-- Nội dung hợp đồng (hạng mục) — chỉ kế toán/admin -->
+            <div v-if="canViewContractFinance" class="border border-gray-200 dark:border-gray-600 rounded-xl overflow-hidden">
               <div class="flex items-center justify-between px-4 py-3 bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-600">
                 <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2">
                   <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -646,24 +672,6 @@
           </form>
         </div>
       </div>
-
-      <!-- Delete Confirm -->
-      <div v-if="deletingContract" class="fixed inset-0 z-[100000] flex items-center justify-center p-4 bg-black/50">
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-md p-6">
-          <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-2">Xác nhận xóa</h3>
-          <p class="text-sm text-gray-600 dark:text-gray-400 mb-6">
-            Bạn có chắc muốn xóa hợp đồng <strong>{{ deletingContract.contract_number }}</strong>?
-            Hành động này không thể hoàn tác.
-          </p>
-          <div class="flex gap-3 justify-end">
-            <button @click="deletingContract = null" class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">Hủy</button>
-            <button @click="deleteContract" :disabled="saving" class="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 disabled:opacity-50 rounded-lg flex items-center gap-2">
-              <span v-if="saving" class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-              Xóa
-            </button>
-          </div>
-        </div>
-      </div>
     </teleport>
   </admin-layout>
 </template>
@@ -680,18 +688,20 @@ import 'flatpickr/dist/flatpickr.css'
 import { useFlatpickrConfig } from '@/composables/useFlatpickr'
 import { useAuth, UserRole } from '@/composables/useAuth'
 import { isContractPaid, getPaymentStatusLabel, paymentStatusClass, isContractDeviceDelivered, getDeviceDeliveryStatusLabel, deviceDeliveryStatusClass } from '@/utils/contractPaperwork'
+import { getVietnamWeekRange, getVietnamFullMonthRange, getVietnamYearRange } from '@/utils/dateTime'
 import { useToast } from '@/composables/useToast'
 import { useI18n } from 'vue-i18n'
 
 const router = useRouter()
 const route = useRoute()
-const { getUserRole } = useAuth()
+const { getUserRole, canViewContractFinance, canManageContracts } = useAuth()
 const { t } = useI18n()
 const { showSuccess } = useToast()
 const isStaff = computed(() => getUserRole.value !== UserRole.END_USER)
+const tableColSpan = computed(() => (canViewContractFinance.value ? 7 : 6))
 
 const { dateConfig } = useFlatpickrConfig()
-const datePickerConfig = { ...dateConfig, altInputPlaceholder: 'dd/mm/yyyy' }
+const datePickerConfig = dateConfig
 
 const contracts = ref<Contract[]>([])
 const total = ref(0)
@@ -701,7 +711,6 @@ const showModal = ref(false)
 const saving = ref(false)
 const formError = ref('')
 const editingContract = ref<Contract | null>(null)
-const deletingContract = ref<Contract | null>(null)
 const stats = ref({ total: 0, draft: 0, active: 0, expired: 0, cancelled: 0, expiring_soon: 0, active_unpaid: 0 })
 const customers = ref<{ id: number; name: string; phone?: string; email?: string }[]>([])
 const availableInverters = ref<{ id: number; serial_number: string; model: string; manufacturer: string; power_rating?: string; status: string }[]>([])
@@ -720,6 +729,80 @@ const filters = reactive({
   unpaid: false,
   page: 1,
   limit: 20,
+})
+
+type DateReportType = '' | 'week' | 'month' | 'year' | 'custom'
+const dateReportType = ref<DateReportType>('')
+const dateRange = reactive({ from: '', to: '' })
+const appliedDateRange = reactive({ from: '', to: '' })
+
+const dateFilterActive = computed(() => Boolean(appliedDateRange.from && appliedDateRange.to))
+
+const initializeDateRange = () => {
+  switch (dateReportType.value) {
+    case 'week':
+      Object.assign(dateRange, getVietnamWeekRange())
+      break
+    case 'month':
+      Object.assign(dateRange, getVietnamFullMonthRange())
+      break
+    case 'year':
+      Object.assign(dateRange, getVietnamYearRange())
+      break
+    case 'custom':
+      if (!dateRange.from || !dateRange.to) {
+        Object.assign(dateRange, getVietnamYearRange())
+      }
+      return
+    default:
+      dateRange.from = ''
+      dateRange.to = ''
+  }
+}
+
+const onDateReportTypeChange = () => {
+  if (!dateReportType.value) {
+    clearDateFilter()
+    return
+  }
+  if (dateReportType.value !== 'custom') {
+    initializeDateRange()
+    applyDateFilter()
+  } else {
+    initializeDateRange()
+  }
+}
+
+const applyDateFilter = () => {
+  if (!dateReportType.value || !dateRange.from || !dateRange.to) return
+  appliedDateRange.from = dateRange.from
+  appliedDateRange.to = dateRange.to
+  filters.page = 1
+  loadContracts()
+}
+
+const clearDateFilter = () => {
+  dateReportType.value = ''
+  dateRange.from = ''
+  dateRange.to = ''
+  appliedDateRange.from = ''
+  appliedDateRange.to = ''
+  filters.page = 1
+  loadContracts()
+}
+
+watch([() => dateRange.from, () => dateRange.to], () => {
+  if (!dateReportType.value) return
+  if (dateReportType.value !== 'custom') return
+  if (dateRange.from && dateRange.to) {
+    const fromDate = new Date(`${dateRange.from}T00:00:00`)
+    const toDate = new Date(`${dateRange.to}T00:00:00`)
+    if (fromDate > toDate) {
+      const temp = dateRange.from
+      dateRange.from = dateRange.to
+      dateRange.to = temp
+    }
+  }
 })
 
 interface NewDevice {
@@ -781,7 +864,9 @@ const itemsVat = computed(() => Math.round(itemsSubtotal.value * (Number(form.va
 const itemsTotal = computed(() => itemsSubtotal.value + itemsVat.value)
 const itemsTotalInWords = computed(() => amountToVietnameseWords(itemsTotal.value))
 
-watch(itemsTotal, (v) => { form.value = v })
+watch(itemsTotal, (v) => {
+  if (canViewContractFinance.value) form.value = v
+})
 
 function addItemRow() {
   form.items.push({ description: '', unit: '', quantity: 1, unit_price: 0 })
@@ -812,8 +897,11 @@ async function loadContracts() {
   try {
     const res = await contractService.list({
       status: filters.status || undefined,
+      contract_type: filters.contract_type || undefined,
       search: filters.search || undefined,
       unpaid: filters.unpaid || undefined,
+      from: appliedDateRange.from || undefined,
+      to: appliedDateRange.to || undefined,
       page: filters.page,
       limit: filters.limit,
     })
@@ -1018,6 +1106,7 @@ function removeExistingDevice(idx: number) {
 async function saveContract() {
   saving.value = true
   formError.value = ''
+  const isCreate = !editingContract.value
   try {
     // Validate devices
     for (const d of [...form.existing_devices, ...form.new_devices]) {
@@ -1128,26 +1217,11 @@ async function saveContract() {
         : t('common.messages.contractCreated')
     )
     await Promise.all([loadContracts(), loadStats()])
+    if (isCreate && contractId) {
+      router.push(`/contracts/${contractId}`)
+    }
   } catch (e: any) {
     formError.value = e.message
-  } finally {
-    saving.value = false
-  }
-}
-
-function confirmDelete(c: Contract) {
-  deletingContract.value = c
-}
-
-async function deleteContract() {
-  if (!deletingContract.value) return
-  saving.value = true
-  try {
-    await contractService.remove(deletingContract.value.id)
-    deletingContract.value = null
-    await Promise.all([loadContracts(), loadStats()])
-  } catch (e: any) {
-    error.value = e.message
   } finally {
     saving.value = false
   }

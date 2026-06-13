@@ -1,10 +1,10 @@
 import { Router } from 'express'
 import db from '../database/db.js'
 import { authenticateToken, requireRole, AuthRequest } from '../middleware/auth.js'
-import { UserRole, isAdminRole } from '../types/index.js'
+import { UserRole, isAdminRole, isStaffAdminRole } from '../types/index.js'
 import { createNotification, notifyUsers } from '../services/notificationService.js'
 import { syncScheduleRelatedCounts } from '../database/syncCounts.js'
-import { isSystemEmail } from '../utils/systemUser.js'
+import { isSystemEmail, isSystemRole } from '../utils/systemUser.js'
 
 const router = Router()
 
@@ -13,7 +13,11 @@ const router = Router()
 router.get('/assignable-users', authenticateToken, (req, res) => {
   const user = (req as AuthRequest).user!
   // Only allow ADMIN, DEV, SERVICE_CENTER, and TECHNICIAN
-  if (user.role !== UserRole.ADMIN && user.role !== UserRole.DEV && user.role !== UserRole.SERVICE_CENTER && user.role !== UserRole.TECHNICIAN) {
+  if (
+    !isStaffAdminRole(user.role) &&
+    user.role !== UserRole.SERVICE_CENTER &&
+    user.role !== UserRole.TECHNICIAN
+  ) {
     return res.status(403).json({ error: 'Access denied' })
   }
   try {
@@ -24,17 +28,8 @@ router.get('/assignable-users', authenticateToken, (req, res) => {
       ORDER BY role, name ASC
     `).all(UserRole.ADMIN, UserRole.DEV, UserRole.TECHNICIAN) as Array<{ id: number; name: string; email: string; code: string | null; role: string; phone: string | null; status: string }>
 
-    // Filter out System users
-    const users = allUsers.filter(user => {
-      // Exclude users with "System" in name or system emails
-      if (user.name && user.name.toLowerCase().includes('system')) {
-        return false
-      }
-      if (user.email && isSystemEmail(user.email)) {
-        return false
-      }
-      return true
-    })
+    // Filter out System/dev accounts from assignment lists
+    const users = allUsers.filter((row) => !isSystemRole(row.role) && !isSystemEmail(row.email))
 
     res.json(users)
   } catch (error) {

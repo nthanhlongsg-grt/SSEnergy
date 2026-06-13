@@ -676,6 +676,7 @@
               rows="3"
               :placeholder="t('tasks.detail.actions.commentPlaceholder')"
               class="w-full px-4 py-2 pr-12 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+              @paste="handleCommentPaste"
             ></textarea>
             
             <!-- Image Upload Button - Icon only, positioned at top-right of textarea -->
@@ -871,6 +872,8 @@ import { useAuth, UserRole, hasRole } from '@/composables/useAuth'
 import { formatDate, formatDateTime } from '@/utils/dateTime'
 import flatPickr from 'vue-flatpickr-component'
 import { useFlatpickrConfig } from '@/composables/useFlatpickr'
+import { addFilesToImageList } from '@/utils/imageUpload'
+import { useImagePaste } from '@/composables/useImagePaste'
 
 const route = useRoute()
 const router = useRouter()
@@ -1174,28 +1177,23 @@ const buildActivities = () => {
 }
 
 // Handle comment image selection
-const handleCommentImageSelect = (event: Event) => {
+const pushCommentImages = async (files: File[]) => {
+  await addFilesToImageList(files, commentImageFiles.value, commentImagePreviews.value, {
+    onTooLarge: (name) => {
+      error.value = t('tasks.detail.errors.fileTooLarge', { name })
+    },
+  })
+}
+
+const handleCommentImageSelect = async (event: Event) => {
   const target = event.target as HTMLInputElement
   if (target.files) {
-    Array.from(target.files).forEach((file) => {
-      if (file.size <= 10 * 1024 * 1024) {
-        // Max 10MB
-        const reader = new FileReader()
-        reader.onload = (e) => {
-          commentImagePreviews.value.push(e.target?.result as string)
-          commentImageFiles.value.push(file)
-        }
-        reader.readAsDataURL(file)
-      } else {
-        error.value = t('tasks.detail.errors.fileTooLarge', { name: file.name })
-      }
-    })
-  }
-  // Reset input to allow selecting the same file again
-  if (target) {
+    await pushCommentImages(Array.from(target.files))
     target.value = ''
   }
 }
+
+const { handlePaste: handleCommentPaste } = useImagePaste(pushCommentImages)
 
 // Remove comment image
 const removeCommentImage = (index: number) => {

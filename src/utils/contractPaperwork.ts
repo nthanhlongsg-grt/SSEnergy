@@ -28,6 +28,19 @@ export const PAPERWORK_CHECKLIST: PaperworkCheckItem[] = [
   { id: 'verified', label: 'Ngày xác minh hợp đồng đầy đủ', shortLabel: 'Xác minh hợp đồng đầy đủ', dateField: 'verification_date', source: 'paperwork' },
 ]
 
+/** Mục giấy tờ hiển thị trên dashboard khách hàng (còn lại chỉ nội bộ) */
+export const CUSTOMER_VISIBLE_PAPERWORK_IDS = [
+  'device_delivery',
+  'payment',
+  'invoice',
+  'verified',
+] as const
+
+function customerVisiblePaperworkChecklist(): PaperworkCheckItem[] {
+  const allowed = new Set<string>(CUSTOMER_VISIBLE_PAPERWORK_IDS)
+  return PAPERWORK_CHECKLIST.filter((item) => allowed.has(item.id))
+}
+
 export function emptyPaperworkForm(): ContractPaperwork & { signed_date: string; end_date: string } {
   return {
     signed_date: '',
@@ -75,6 +88,26 @@ export function getMissingPaperworkLabels(contract: {
   )
 }
 
+/** Hoàn tất theo góc nhìn khách hàng (4 mục công khai) */
+export function isCustomerPaperworkComplete(contract: {
+  signed_date?: string | null
+  end_date?: string | null
+  paperwork?: ContractPaperwork | null
+}): boolean {
+  return customerVisiblePaperworkChecklist().every((item) => hasPaperworkDate(getPaperworkDate(contract, item)))
+}
+
+/** ID các mục thiếu giấy tờ — khách hàng được xem (dịch qua i18n ở UI) */
+export function getCustomerMissingPaperworkItemIds(contract: {
+  signed_date?: string | null
+  end_date?: string | null
+  paperwork?: ContractPaperwork | null
+}): string[] {
+  return customerVisiblePaperworkChecklist()
+    .filter((item) => !hasPaperworkDate(getPaperworkDate(contract, item)))
+    .map((item) => item.id)
+}
+
 export function isContractPaid(contract: { paperwork?: ContractPaperwork | null }): boolean {
   return hasPaperworkDate(contract.paperwork?.payment_received_date)
 }
@@ -101,4 +134,25 @@ export function deviceDeliveryStatusClass(delivered: boolean): string {
   return delivered
     ? 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300'
     : 'bg-sky-100 text-sky-800 dark:bg-sky-900/40 dark:text-sky-300'
+}
+
+/** Tổng giá trị hợp đồng — ưu tiên field value, fallback tính từ line items + VAT */
+export function getContractTotalAmount(contract: {
+  value?: number | null
+  items?: Array<{ quantity?: number; unit_price?: number }> | null
+  vat_rate?: number | null
+} | null | undefined): number {
+  if (!contract) return 0
+  const stored = Number(contract.value) || 0
+  if (stored > 0) return stored
+
+  const subtotal = (contract.items ?? []).reduce(
+    (sum, it) => sum + (Number(it.quantity) || 0) * (Number(it.unit_price) || 0),
+    0,
+  )
+  if (subtotal <= 0) return 0
+
+  const vatRate = Number(contract.vat_rate)
+  const rate = Number.isFinite(vatRate) ? vatRate : 8
+  return subtotal + Math.round(subtotal * rate / 100)
 }

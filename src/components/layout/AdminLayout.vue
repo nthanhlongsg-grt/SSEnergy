@@ -3,7 +3,7 @@
     <app-sidebar />
     <Backdrop />
     <div
-      class="flex-1 flex flex-col transition-all duration-300 ease-in-out min-h-screen"
+      class="flex-1 flex flex-col transition-all duration-300 ease-in-out min-h-screen min-w-0"
       :class="['bg-gray-50', isExpanded || isHovered ? 'lg:ml-[290px]' : 'lg:ml-[90px]']"
     >
       <app-header />

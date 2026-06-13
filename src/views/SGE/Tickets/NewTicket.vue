@@ -100,143 +100,6 @@
             </div>
 
           </div>
-
-          <!-- Checkbox: Thiết bị mới chưa đăng ký -->
-          <div class="mt-3">
-            <label class="inline-flex items-center gap-2 cursor-pointer select-none">
-              <input
-                type="checkbox"
-                v-model="isNewDevice"
-                @change="onNewDeviceToggle"
-                class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
-              />
-              <span class="text-sm text-gray-700 dark:text-gray-300 font-medium">
-                Thiết bị mới chưa đăng ký trong hệ thống
-              </span>
-            </label>
-          </div>
-
-          <!-- Inline form: nhập thiết bị mới -->
-          <transition name="slide-down">
-            <div
-              v-if="isNewDevice"
-              class="mt-3 rounded-xl border-2 border-blue-200 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/20 p-4 space-y-3"
-            >
-              <div class="flex items-center gap-2 mb-1">
-                <svg class="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                </svg>
-                <span class="text-sm font-semibold text-blue-800 dark:text-blue-300">Thông tin thiết bị mới</span>
-              </div>
-
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <!-- Serial Number (pre-filled, editable) -->
-                <div>
-                  <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
-                    Serial Number <span class="text-red-500">*</span>
-                  </label>
-                  <input
-                    v-model="newInverterForm.serial_number"
-                    type="text"
-                    required
-                    placeholder="Nhập số Serial Number"
-                    class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                  />
-                </div>
-
-                <!-- Model (searchable) -->
-                <div>
-                  <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
-                    Model
-                  </label>
-                  <div class="relative">
-                    <input
-                      v-model="modelSearchQuery"
-                      @focus="showModelDropdown = true"
-                      @blur="handleModelBlur"
-                      type="text"
-                      :placeholder="t('inverters.register.form.searchModel')"
-                      class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                    />
-                    <transition name="fade">
-                      <div
-                        v-if="showModelDropdown"
-                        class="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-48 overflow-y-auto"
-                      >
-                        <div
-                          v-if="filteredModels.length === 0"
-                          class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 text-center"
-                        >
-                          {{ t('inverters.register.form.noModelsFound') }}
-                        </div>
-                        <div
-                          v-for="model in filteredModels"
-                          :key="model.id"
-                          @mousedown.prevent="selectModel(model)"
-                          class="px-4 py-2 text-sm text-gray-900 dark:text-white cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
-                          :class="{ 'bg-blue-50 dark:bg-blue-900/20': newInverterForm.model === model.name }"
-                        >
-                          {{ model.name }} {{ model.manufacturer ? `(${model.manufacturer})` : '' }}
-                        </div>
-                        <div
-                          @mousedown.prevent="selectNewModel"
-                          class="px-4 py-2 text-sm text-blue-600 dark:text-blue-400 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 border-t border-gray-200 dark:border-gray-700"
-                        >
-                          + {{ t('tickets.new.modal.modelCreate') }}
-                        </div>
-                      </div>
-                    </transition>
-                    <div v-if="newInverterForm.model && newInverterForm.model !== '__NEW__'" class="mt-1 text-xs text-blue-700 dark:text-blue-300">
-                      Đã chọn: <span class="font-medium">{{ newInverterForm.model }}</span>
-                    </div>
-                    <input
-                      v-if="newInverterForm.model === '__NEW__'"
-                      v-model="newModelName"
-                      type="text"
-                      required
-                      :placeholder="t('tickets.new.modal.modelNewPlaceholder')"
-                      class="mt-1 w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <!-- Installation Address (optional) -->
-              <div>
-                <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
-                  Địa chỉ lắp đặt <span class="text-gray-400 font-normal">(không bắt buộc)</span>
-                </label>
-                <input
-                  v-model="newInverterForm.installation_address"
-                  type="text"
-                  :placeholder="t('tickets.new.modal.addressPlaceholder')"
-                  class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                />
-              </div>
-
-              <div class="flex items-center gap-3 pt-1">
-                <button
-                  type="button"
-                  :disabled="creatingInverter || !newInverterForm.serial_number"
-                  @click="createNewInverter"
-                  class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <svg v-if="creatingInverter" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
-                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                  </svg>
-                  {{ creatingInverter ? 'Đang tạo...' : 'Xác nhận tạo thiết bị' }}
-                </button>
-                <button
-                  type="button"
-                  @click="cancelNewDevice"
-                  class="px-3 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
-                >
-                  Hủy
-                </button>
-              </div>
-            </div>
-          </transition>
         </div>
 
         <!-- Inverter Details (read-only from contract) -->
@@ -370,13 +233,18 @@
             </span>
           </label>
           <div
-            class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 text-center"
+            ref="attachmentZoneRef"
+            class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 text-center outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400"
             :class="{ 'border-blue-400 bg-blue-50 dark:bg-blue-900/20': isDragging }"
+            tabindex="0"
+            @click="focusAttachmentZone"
             @dragover.prevent="isDragging = true"
             @dragleave.prevent="isDragging = false"
             @drop.prevent="handleDrop"
+            @paste="handleAttachmentPaste"
           >
             <input
+              ref="fileUploadInput"
               type="file"
               :multiple="form.attachments.length < 4"
               accept="image/*"
@@ -385,10 +253,12 @@
               id="file-upload"
               :disabled="form.attachments.length >= 4"
             />
-            <label
-              for="file-upload"
-              class="cursor-pointer flex flex-col items-center"
+            <button
+              type="button"
+              @click.stop="fileUploadInput?.click()"
+              class="cursor-pointer flex flex-col items-center w-full mx-auto"
               :class="{ 'cursor-not-allowed opacity-50': form.attachments.length >= 4 }"
+              :disabled="form.attachments.length >= 4"
             >
               <svg
                 class="w-12 h-12 text-gray-400 mb-2"
@@ -409,7 +279,10 @@
               <span class="text-xs text-gray-500 dark:text-gray-500 mt-1">
                 {{ t('tickets.new.attachments.help') }}
               </span>
-            </label>
+              <span class="text-xs text-gray-500 dark:text-gray-500 mt-0.5">
+                {{ t('common.imageUpload.pasteHint') }}
+              </span>
+            </button>
             <!-- Image Previews -->
             <div v-if="form.attachments.length > 0" class="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4">
               <div
@@ -599,7 +472,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import { ticketService } from '@/services/ticketService'
@@ -608,10 +481,13 @@ import { useAuth, UserRole } from '@/composables/useAuth'
 import { formatDate } from '@/utils/dateTime'
 import { serialWithContractLabel } from '@/utils/inverterDisplay'
 import { useToast } from '@/composables/useToast'
+import { compressImage, filterImageFiles, readFileAsDataUrl } from '@/utils/imageUpload'
+import { useImagePaste } from '@/composables/useImagePaste'
 
 const { showSuccess } = useToast()
 
 const router = useRouter()
+const route = useRoute()
 const { t } = useI18n()
 const { getUser } = useAuth()
 const currentUser = computed(() => getUser.value)
@@ -642,7 +518,7 @@ const compressingImages = ref(false)
 const loadingInverters = ref(false)
 const showNewInverterModal = ref(false)
 const creatingInverter = ref(false)
-const isNewDevice = ref(false)   // checkbox state
+const contractIdFromQuery = ref<number | null>(null)
 
 const newInverterForm = ref({
   serial_number: '',
@@ -655,6 +531,8 @@ const newModelName = ref<string>('')
 const loadingModels = ref(false)
 const modelSearchQuery = ref<string>('')
 const showModelDropdown = ref<boolean>(false)
+const attachmentZoneRef = ref<HTMLElement | null>(null)
+const fileUploadInput = ref<HTMLInputElement | null>(null)
 
 const ticketTypeOptions = computed(() => [
   { value: '', label: t('tickets.new.ticketInfo.typePlaceholder') },
@@ -720,7 +598,33 @@ const uniqueModels = computed(() => {
 onMounted(async () => {
   await loadAllInverters()
   await loadModels()
+  await applyRoutePrefill()
 })
+
+async function applyRoutePrefill() {
+  const q = route.query
+  if (q.customer_id) {
+    form.value.customerId = String(q.customer_id)
+  }
+  if (q.contract_id) {
+    const cid = parseInt(String(q.contract_id), 10)
+    if (!isNaN(cid) && cid > 0) contractIdFromQuery.value = cid
+  }
+  if (q.category && typeof q.category === 'string') {
+    form.value.ticketType = q.category
+  }
+  if (q.inverter_id) {
+    const invId = parseInt(String(q.inverter_id), 10)
+    if (!isNaN(invId) && invId > 0) {
+      form.value.inverterId = String(invId)
+      const inv = allInverters.value.find((i) => i.id === invId)
+      if (inv) {
+        serialNumberSearch.value = serialWithContractLabel(inv.serial_number, inv.contract_numbers)
+      }
+      await onInverterSelected()
+    }
+  }
+}
 
 const loadModels = async () => {
   loadingModels.value = true
@@ -770,34 +674,6 @@ const closeNewInverterModal = () => {
   modelSearchQuery.value = ''
   showModelDropdown.value = false
   newInverterForm.value = { serial_number: '', model: '', installation_address: '' }
-  newModelName.value = ''
-}
-
-// Checkbox toggle: pre-fill SN from search, reset inverter selection
-const onNewDeviceToggle = () => {
-  if (isNewDevice.value) {
-    // Pre-fill serial number from what user typed
-    newInverterForm.value.serial_number = serialNumberSearch.value.trim()
-    newInverterForm.value.model = ''
-    newInverterForm.value.installation_address = ''
-    modelSearchQuery.value = ''
-    newModelName.value = ''
-    // Clear any existing selection
-    form.value.inverterId = ''
-    selectedInverter.value = null
-    selectedInverterDetails.value = null
-    selectedCustomerDetails.value = null
-    showSerialDropdown.value = false
-  } else {
-    cancelNewDevice()
-  }
-}
-
-// Cancel inline new device form
-const cancelNewDevice = () => {
-  isNewDevice.value = false
-  newInverterForm.value = { serial_number: '', model: '', installation_address: '' }
-  modelSearchQuery.value = ''
   newModelName.value = ''
 }
 
@@ -872,8 +748,7 @@ const createNewInverter = async () => {
     }
   }
 
-  // Model is optional for inline creation — allow empty
-  if (!finalModel && !isNewDevice.value) {
+  if (!finalModel) {
     error.value = t('tickets.new.messages.modelRequired')
     return
   }
@@ -917,8 +792,6 @@ const createNewInverter = async () => {
       await onInverterSelected()
     }
 
-    // Close inline form + modal
-    isNewDevice.value = false
     closeNewInverterModal()
   } catch (err) {
     console.error('Error creating inverter:', err)
@@ -1070,106 +943,33 @@ const autoAssignEndUserToInverter = async () => {
   }
 }
 
-// Compress image function
-const compressImage = (file: File, maxWidth: number = 1920, maxHeight: number = 1920, quality: number = 0.8): Promise<File> => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      const img = new Image()
-      img.onload = () => {
-        const canvas = document.createElement('canvas')
-        let width = img.width
-        let height = img.height
-
-        // Calculate new dimensions
-        if (width > height) {
-          if (width > maxWidth) {
-            height = (height * maxWidth) / width
-            width = maxWidth
-          }
-      } else {
-          if (height > maxHeight) {
-            width = (width * maxHeight) / height
-            height = maxHeight
-          }
-        }
-
-        canvas.width = width
-        canvas.height = height
-
-        const ctx = canvas.getContext('2d')
-        if (!ctx) {
-          reject(new Error('Could not get canvas context'))
-          return
-        }
-
-        ctx.drawImage(img, 0, 0, width, height)
-
-        canvas.toBlob(
-          (blob) => {
-            if (!blob) {
-              reject(new Error('Failed to compress image'))
-              return
-            }
-            const compressedFile = new File([blob], file.name, {
-              type: 'image/jpeg',
-              lastModified: Date.now(),
-            })
-            resolve(compressedFile)
-          },
-          'image/jpeg',
-          quality
-        )
-      }
-      img.onerror = () => reject(new Error('Failed to load image'))
-      img.src = e.target?.result as string
-    }
-    reader.onerror = () => reject(new Error('Failed to read file'))
-    reader.readAsDataURL(file)
-  })
-}
-
-// Handle file upload
-const handleFileUpload = async (event: Event) => {
-  const target = event.target as HTMLInputElement
-  if (!target.files || target.files.length === 0) return
-
-  const files = Array.from(target.files)
-  const imageFiles = files.filter((file) => file.type.startsWith('image/'))
-
+// Add attachment files (file picker, drag-drop, clipboard)
+const addAttachmentFiles = async (files: File[]) => {
+  const imageFiles = filterImageFiles(files)
   if (imageFiles.length === 0) {
     error.value = t('tickets.new.messages.onlyImagesAllowed')
-    target.value = ''
     return
   }
 
-  // Check if adding these files would exceed the limit
   const remainingSlots = 4 - form.value.attachments.length
+  if (remainingSlots <= 0) {
+    error.value = t('tickets.new.messages.maxImagesReached', { max: 4 })
+    return
+  }
   if (imageFiles.length > remainingSlots) {
     error.value = t('tickets.new.messages.maxImagesReached', { max: 4 })
-    target.value = ''
-    return
   }
 
   compressingImages.value = true
   try {
     for (const file of imageFiles.slice(0, remainingSlots)) {
-      // Check file size (before compression)
       if (file.size > 10 * 1024 * 1024) {
         error.value = t('tickets.new.messages.fileTooLarge', { name: file.name })
         continue
       }
 
-      // Compress image
       const compressedFile = await compressImage(file)
-      
-      // Create preview
-      const preview = await new Promise<string>((resolve) => {
-        const reader = new FileReader()
-        reader.onload = (e) => resolve(e.target?.result as string)
-        reader.readAsDataURL(compressedFile)
-      })
-
+      const preview = await readFileAsDataUrl(compressedFile)
       form.value.attachments.push(compressedFile)
       form.value.attachmentPreviews.push(preview)
     }
@@ -1178,58 +978,28 @@ const handleFileUpload = async (event: Event) => {
     error.value = err instanceof Error ? err.message : t('tickets.new.messages.compressError')
   } finally {
     compressingImages.value = false
-    target.value = ''
   }
+}
+
+const { handlePaste: handleAttachmentPaste, focusZone: focusAttachmentZone } = useImagePaste(addAttachmentFiles, {
+  enabled: () => form.value.attachments.length < 4,
+  zoneRef: attachmentZoneRef,
+  globalImagePaste: true,
+})
+
+// Handle file upload
+const handleFileUpload = async (event: Event) => {
+  const target = event.target as HTMLInputElement
+  if (!target.files || target.files.length === 0) return
+  await addAttachmentFiles(Array.from(target.files))
+  target.value = ''
 }
 
 // Handle drag and drop
 const handleDrop = async (event: DragEvent) => {
   isDragging.value = false
   if (!event.dataTransfer?.files) return
-
-  const files = Array.from(event.dataTransfer.files)
-  const imageFiles = files.filter((file) => file.type.startsWith('image/'))
-
-  if (imageFiles.length === 0) {
-    error.value = t('tickets.new.messages.onlyImagesAllowed')
-    return
-  }
-
-  // Check if adding these files would exceed the limit
-  const remainingSlots = 4 - form.value.attachments.length
-  if (imageFiles.length > remainingSlots) {
-    error.value = t('tickets.new.messages.maxImagesReached', { max: 4 })
-    return
-  }
-
-  compressingImages.value = true
-  try {
-    for (const file of imageFiles.slice(0, remainingSlots)) {
-      // Check file size (before compression)
-      if (file.size > 10 * 1024 * 1024) {
-        error.value = t('tickets.new.messages.fileTooLarge', { name: file.name })
-        continue
-      }
-
-      // Compress image
-      const compressedFile = await compressImage(file)
-      
-      // Create preview
-      const preview = await new Promise<string>((resolve) => {
-        const reader = new FileReader()
-        reader.onload = (e) => resolve(e.target?.result as string)
-        reader.readAsDataURL(compressedFile)
-      })
-
-      form.value.attachments.push(compressedFile)
-      form.value.attachmentPreviews.push(preview)
-    }
-  } catch (err) {
-    console.error('Error compressing images:', err)
-    error.value = err instanceof Error ? err.message : t('tickets.new.messages.compressError')
-  } finally {
-    compressingImages.value = false
-  }
+  await addAttachmentFiles(Array.from(event.dataTransfer.files))
 }
 
 const removeFile = (index: number) => {
@@ -1270,6 +1040,10 @@ const handleSubmit = async () => {
       title: form.value.title,
       description: form.value.description,
       category: form.value.ticketType,
+    }
+
+    if (contractIdFromQuery.value) {
+      ticketData.contract_id = contractIdFromQuery.value
     }
 
     // For non-END_USER: include customer_id from inverter details or form

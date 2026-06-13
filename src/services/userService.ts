@@ -10,6 +10,9 @@ export interface User {
   organization?: string
   phone?: string
   address?: string
+  bank_account?: string
+  bank_name?: string
+  bank_account_name?: string
   avatar?: string
   status: UserStatus
   created_at: string
@@ -25,6 +28,9 @@ export interface CreateUserDto {
   organization?: string
   phone?: string
   address?: string
+  bank_account?: string
+  bank_name?: string
+  bank_account_name?: string
   status?: UserStatus
   parent_distributor_id?: number
 }
@@ -38,6 +44,9 @@ export interface UpdateUserDto {
   organization?: string
   phone?: string
   address?: string
+  bank_account?: string
+  bank_name?: string
+  bank_account_name?: string
   status?: UserStatus
   parent_distributor_id?: number
 }

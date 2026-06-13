@@ -3,6 +3,7 @@ import db from '../database/db.js'
 import { authenticateToken, requireRole, AuthRequest } from '../middleware/auth.js'
 import { UserRole } from '../types/index.js'
 import { syncInverterToTickets } from '../database/sync.js'
+import { resolveCustomerId, portalUserIdForCustomer } from '../database/dataModel.js'
 
 const router = Router()
 
@@ -514,22 +515,8 @@ router.post('/', authenticateToken, requireRole(UserRole.ADMIN, UserRole.SERVICE
       console.log(`   📌 Final customer_id:`, finalCustomerId)
     }
 
-    // Set user_id: 
-    // - For END_USER and DISTRIBUTOR: always use their own user_id
-    // - For ADMIN/SERVICE_CENTER: use customer's user_id if available, otherwise use current user's id
-    let userId: number | null = null
-    
-    if (authUser.role === UserRole.END_USER || authUser.role === UserRole.DISTRIBUTOR) {
-      userId = authUser.id
-    } else {
-      // For ADMIN/SERVICE_CENTER: use customer's user_id if available
-      if (finalCustomerId) {
-        const customerUserId = db.prepare('SELECT user_id FROM customers WHERE id = ?').get(finalCustomerId) as { user_id: number | null } | undefined
-        userId = customerUserId?.user_id || authUser.id
-      } else {
-        userId = authUser.id
-      }
-    }
+    // inverters.user_id chỉ mirror customers.user_id (portal)
+    const userId = finalCustomerId ? portalUserIdForCustomer(db, finalCustomerId) : null
     
     const result = db.prepare(`
       INSERT INTO inverters (
@@ -640,112 +627,50 @@ router.put('/:id', authenticateToken, requireRole(UserRole.ADMIN, UserRole.SERVI
     }
     
     if (finalCustomerId) {
-      // Check if this ID exists in users table (might be a user ID)
-      // Frontend loads customers from users table, so we need to check users first
-      const user = db.prepare('SELECT id, email, phone, name, organization FROM users WHERE id = ? AND role IN (?, ?, ?)').get(
-        finalCustomerId,
-        UserRole.END_USER,
-        UserRole.DISTRIBUTOR,
-        UserRole.DEALER
-      ) as { id: number; email: string; phone: string; name: string; organization: string } | undefined
-
-      if (user) {
-        console.log('👤 [PUT /inverters/:id] Found user with ID:', finalCustomerId)
-        // Tìm customer record bằng user_id
-        const matchingCustomer = db.prepare(`
-          SELECT id FROM customers 
-          WHERE user_id = ?
-          LIMIT 1
-        `).get(user.id) as { id: number } | undefined
-
-        if (matchingCustomer) {
-          finalCustomerId = matchingCustomer.id
-          console.log('✅ [PUT /inverters/:id] Found customer record with ID:', finalCustomerId)
-        } else {
-          // Tạo customer record mới với user_id
-          const customerType = user.organization ? 'enterprise' : 'residential'
-          const customerResult = db.prepare(`
-            INSERT INTO customers (name, email, phone, address, customer_type, organization, user_id)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-          `).run(
-            user.name,
-            user.email || null,
-            user.phone || null,
-            null,
-            customerType,
-            user.organization || null,
-            user.id
-          )
-          finalCustomerId = customerResult.lastInsertRowid as number
-          console.log('✅ [PUT /inverters/:id] Created customer record with ID:', finalCustomerId)
-        }
+      const resolved = resolveCustomerId(db, finalCustomerId)
+      if (resolved) {
+        finalCustomerId = resolved
       } else {
-        // Check if it's a valid customer ID in customers table
-        const customerCheck = db.prepare('SELECT id, name FROM customers WHERE id = ?').get(finalCustomerId) as { id: number; name: string } | undefined
-        if (customerCheck) {
-          console.log('✅ [PUT /inverters/:id] Valid customer ID in customers table:', finalCustomerId, 'Name:', customerCheck.name)
-        } else {
-          // If not found in customers table, check if it's a user ID (from users table)
-          // This handles the case where frontend loads customers from users table
-          const userCheck = db.prepare(`
-            SELECT id, name, email, phone, organization 
-            FROM users 
-            WHERE id = ? AND role IN (?, ?, ?) AND status = 'active'
-          `).get(
-            finalCustomerId,
-            UserRole.END_USER,
-            UserRole.DISTRIBUTOR,
-            UserRole.DEALER
-          ) as { id: number; name: string; email: string; phone: string; organization: string } | undefined
-          
-          if (userCheck) {
-            console.log('✅ [PUT /inverters/:id] Found user ID:', finalCustomerId, 'Name:', userCheck.name)
-            // Tìm customer record bằng user_id
-            const matchingCustomer = db.prepare(`
-              SELECT id FROM customers 
-              WHERE user_id = ?
-              LIMIT 1
-            `).get(userCheck.id) as { id: number } | undefined
+        const user = db.prepare(`
+          SELECT id, email, phone, name, organization FROM users
+          WHERE id = ? AND role IN (?, ?, ?) AND status = 'active'
+        `).get(
+          finalCustomerId,
+          UserRole.END_USER,
+          UserRole.DISTRIBUTOR,
+          UserRole.DEALER,
+        ) as { id: number; email: string; phone: string; name: string; organization: string } | undefined
 
-            if (matchingCustomer) {
-              finalCustomerId = matchingCustomer.id
-              console.log('✅ [PUT /inverters/:id] Found customer record with ID:', finalCustomerId, 'for user:', userCheck.name)
-            } else {
-              // Tạo customer record mới với user_id
-              const customerType = userCheck.organization ? 'enterprise' : 'residential'
-              const customerResult = db.prepare(`
-                INSERT INTO customers (name, email, phone, address, customer_type, organization, user_id)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-              `).run(
-                userCheck.name,
-                userCheck.email || null,
-                userCheck.phone || null,
-                null,
-                customerType,
-                userCheck.organization || null,
-                userCheck.id
-              )
-              finalCustomerId = customerResult.lastInsertRowid as number
-              console.log('✅ [PUT /inverters/:id] Created customer record with ID:', finalCustomerId, 'for user:', userCheck.name)
-            }
+        if (user) {
+          const matchingCustomer = db.prepare(
+            'SELECT id FROM customers WHERE user_id = ? LIMIT 1',
+          ).get(user.id) as { id: number } | undefined
+
+          if (matchingCustomer) {
+            finalCustomerId = matchingCustomer.id
           } else {
-            // Invalid customer ID, set to null
-            console.log('❌ [PUT /inverters/:id] Invalid customer ID:', finalCustomerId, '- Not found in customers or users table')
-            console.log('🔍 [PUT /inverters/:id] Checking all customers in database...')
-            const allCustomers = db.prepare('SELECT id, name FROM customers').all() as Array<{ id: number; name: string }>
-            console.log('📋 [PUT /inverters/:id] Available customers:', allCustomers)
-            const allUsers = db.prepare(`
-              SELECT id, name FROM users 
-              WHERE role IN (?, ?, ?) AND status = 'active'
-            `).all(UserRole.END_USER, UserRole.DISTRIBUTOR, UserRole.DEALER) as Array<{ id: number; name: string }>
-            console.log('📋 [PUT /inverters/:id] Available users (customers):', allUsers)
-            finalCustomerId = null
+            const customerType = user.organization ? 'enterprise' : 'residential'
+            const customerResult = db.prepare(`
+              INSERT INTO customers (name, email, phone, address, customer_type, organization, user_id)
+              VALUES (?, ?, ?, ?, ?, ?, ?)
+            `).run(
+              user.name,
+              user.email || null,
+              user.phone || null,
+              null,
+              customerType,
+              user.organization || null,
+              user.id,
+            )
+            finalCustomerId = customerResult.lastInsertRowid as number
           }
+        } else {
+          finalCustomerId = null
         }
       }
     }
-    
-    console.log('📤 [PUT /inverters/:id] Final customer_id to update:', finalCustomerId)
+
+    const portalUserId = finalCustomerId ? portalUserIdForCustomer(db, finalCustomerId) : null
 
     const normalizedWarrantyMonths =
       warranty_months !== undefined && warranty_months !== null && warranty_months !== ''
@@ -771,6 +696,7 @@ router.put('/:id', authenticateToken, requireRole(UserRole.ADMIN, UserRole.SERVI
           location_lng = COALESCE(?, location_lng),
           status = COALESCE(?, status),
           notes = COALESCE(?, notes),
+          user_id = ?,
           updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
     `).run(
@@ -791,6 +717,7 @@ router.put('/:id', authenticateToken, requireRole(UserRole.ADMIN, UserRole.SERVI
       location_lng || null,
       status || null,
       notes || null,
+      portalUserId,
       inverterId
     )
 

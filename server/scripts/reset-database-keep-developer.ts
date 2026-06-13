@@ -6,17 +6,17 @@ const resetDatabase = async () => {
   try {
     const devPassword = requireSeedPassword()
     const DEVELOPER_ACCOUNT = {
-      name: 'developer',
-      email: process.env.DEV_SEED_EMAIL || 'developer@local.dev',
+      name: 'System',
+      email: process.env.DEV_SEED_EMAIL || 'system@sgesolartech.vn',
       password: devPassword,
-      code: 'DEV001',
+      code: 'SYS001',
       role: 'dev',
-      organization: 'SGE Development',
+      organization: 'SGE',
       phone: '0900000000',
     }
 
     console.log('🔄 Bắt đầu reset database...')
-    console.log('📋 Giữ lại tài khoản developer...\n')
+    console.log('📋 Giữ lại tài khoản System...\n')
 
     // Lưu thông tin developer account hiện tại (nếu có)
     const existingDeveloper = db.prepare('SELECT * FROM users WHERE email = ?').get(DEVELOPER_ACCOUNT.email) as any
@@ -155,7 +155,7 @@ const resetDatabase = async () => {
       // Commit transaction
       db.exec('COMMIT')
       console.log('\n✅ Reset database thành công!')
-      console.log('\n📝 Thông tin tài khoản developer:')
+      console.log('\n📝 Thông tin tài khoản System:')
       console.log(`   Email: ${DEVELOPER_ACCOUNT.email}`)
       console.log(`   Role: ${DEVELOPER_ACCOUNT.role}`)
       console.log(`   Password: (giá trị DEV_SEED_PASSWORD bạn vừa set)`)

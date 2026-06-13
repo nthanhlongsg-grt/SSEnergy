@@ -72,96 +72,28 @@
       </div>
 
       <!-- Stats Cards -->
-      <div v-if="!loading || tickets.length > 0" class="hidden md:grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-2 lg:grid-cols-5">
-        <!-- Stats Card Components -->
+      <div v-if="!loading || tickets.length > 0" class="hidden md:grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 xl:grid-cols-7">
         <div
-          @click="filters.status = 'initialized'"
+          v-for="item in statusMetricItems"
+          :key="item.value"
+          @click="filters.status = item.value"
           :class="[
             'rounded-lg p-3 sm:p-4 border cursor-pointer transition-colors touch-manipulation active:scale-95',
-            filters.status === 'initialized'
-              ? 'bg-blue-50 border-blue-200 dark:bg-blue-900/20 dark:border-blue-800'
+            filters.status === item.value
+              ? item.theme.active
               : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700',
           ]"
         >
           <div class="flex items-center justify-between">
             <div class="flex-1 min-w-0">
-              <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 truncate">{{ t('tickets.list.metrics.initialized') }}</p>
+              <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 truncate">{{ item.label }}</p>
               <p class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mt-1">
-                {{ stats.initialized }}
+                {{ stats[item.value] ?? 0 }}
               </p>
             </div>
-            <div class="h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center flex-shrink-0 ml-2">
-              <span class="text-blue-600 dark:text-blue-400 text-xs sm:text-sm font-bold">
-                {{ t('tickets.list.metrics.badges.initialized') }}
-              </span>
-            </div>
-          </div>
-        </div>
-        <div
-          @click="filters.status = 'in_progress'"
-          :class="[
-            'rounded-lg p-3 sm:p-4 border cursor-pointer transition-colors touch-manipulation active:scale-95',
-            filters.status === 'in_progress'
-              ? 'bg-purple-50 border-purple-200 dark:bg-purple-900/20 dark:border-purple-800'
-              : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700',
-          ]"
-        >
-          <div class="flex items-center justify-between">
-            <div class="flex-1 min-w-0">
-              <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 truncate">{{ t('tickets.list.metrics.inProgress') }}</p>
-              <p class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mt-1">
-                {{ stats.in_progress }}
-              </p>
-            </div>
-            <div class="h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-purple-100 dark:bg-purple-900 flex items-center justify-center flex-shrink-0 ml-2">
-              <span class="text-purple-600 dark:text-purple-400 text-xs sm:text-sm font-bold">
-                {{ t('tickets.list.metrics.badges.inProgress') }}
-              </span>
-            </div>
-          </div>
-        </div>
-        <div
-          @click="filters.status = 'pending'"
-          :class="[
-            'rounded-lg p-3 sm:p-4 border cursor-pointer transition-colors touch-manipulation active:scale-95',
-            filters.status === 'pending'
-              ? 'bg-yellow-50 border-yellow-200 dark:bg-yellow-900/20 dark:border-yellow-800'
-              : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700',
-          ]"
-        >
-          <div class="flex items-center justify-between">
-            <div class="flex-1 min-w-0">
-              <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 truncate">{{ t('tickets.list.metrics.pending') }}</p>
-              <p class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mt-1">
-                {{ stats.pending }}
-              </p>
-            </div>
-            <div class="h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-yellow-100 dark:bg-yellow-900 flex items-center justify-center flex-shrink-0 ml-2">
-              <span class="text-yellow-600 dark:text-yellow-400 text-xs sm:text-sm font-bold">
-                {{ t('tickets.list.metrics.badges.pending') }}
-              </span>
-            </div>
-          </div>
-        </div>
-        <div
-          @click="filters.status = 'closed'"
-          :class="[
-            'rounded-lg p-3 sm:p-4 border cursor-pointer transition-colors touch-manipulation active:scale-95',
-            filters.status === 'closed'
-              ? 'bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-800'
-              : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700',
-          ]"
-        >
-          <div class="flex items-center justify-between">
-            <div class="flex-1 min-w-0">
-              <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 truncate">{{ t('tickets.list.metrics.closed') }}</p>
-              <p class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mt-1">
-                {{ stats.closed }}
-              </p>
-            </div>
-            <div class="h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center flex-shrink-0 ml-2">
-              <span class="text-green-600 dark:text-green-400 text-xs sm:text-sm font-bold">
-                {{ t('tickets.list.metrics.badges.closed') }}
+            <div :class="['h-8 w-8 sm:h-10 sm:w-10 rounded-full flex items-center justify-center flex-shrink-0 ml-2', item.theme.badge]">
+              <span :class="['text-xs sm:text-sm font-bold', item.theme.text]">
+                {{ item.badge }}
               </span>
             </div>
           </div>
@@ -712,6 +644,15 @@ import { ticketService } from '@/services/ticketService'
 import { useAuth, UserRole } from '@/composables/useAuth'
 import { useSlaSettings } from '@/composables/useSlaSettings'
 import { formatDate, formatDateTime } from '@/utils/dateTime'
+import { useTicketStatus } from '@/composables/useTicketStatus'
+import {
+  TICKET_STATUS_I18N_KEY,
+  TICKET_STATUS_METRIC_BADGE,
+  TICKET_STATUS_METRIC_THEME,
+  TICKET_STATUS_ORDER,
+  isTicketClosed,
+  type TicketStatusValue,
+} from '@/constants/ticketStatus'
 
 const filters = ref({
   search: '',
@@ -736,19 +677,26 @@ const router = useRouter()
 const { t } = useI18n()
 const { hasRole } = useAuth()
 
-const stats = ref<{
-  total: number
-  initialized: number
-  in_progress: number
-  pending: number
-  closed: number
-}>({
+const { getStatusLabel, getStatusClass, statusFilterOptions } = useTicketStatus()
+
+const stats = ref<Record<string, number>>({
   total: 0,
-  initialized: 0,
+  new: 0,
+  machine_received: 0,
   in_progress: 0,
-  pending: 0,
+  waiting_delivery: 0,
+  delivered: 0,
   closed: 0,
 })
+
+const statusMetricItems = computed(() =>
+  TICKET_STATUS_ORDER.map((value) => ({
+    value,
+    label: t(TICKET_STATUS_I18N_KEY[value]),
+    badge: TICKET_STATUS_METRIC_BADGE[value],
+    theme: TICKET_STATUS_METRIC_THEME[value],
+  })),
+)
 
 const tickets = ref<any[]>([])
 const currentPage = ref(1)
@@ -849,9 +797,11 @@ const fetchStats = async () => {
     // Map API response to expected stats structure
     stats.value = {
       total: statsData.total || 0,
-      initialized: statsData.new || 0,
+      new: statsData.new || 0,
+      machine_received: statsData.machine_received || 0,
       in_progress: statsData.in_progress || 0,
-      pending: statsData.assigned || 0, // Use 'assigned' as pending
+      waiting_delivery: statsData.waiting_delivery || 0,
+      delivered: statsData.delivered || 0,
       closed: statsData.closed || 0,
     }
   } catch (err) {
@@ -935,45 +885,12 @@ const deleteTicket = async (ticket: any) => {
   }
 }
 
-const getStatusClass = (status: string) => {
-  const classes = {
-    initialized: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
-    in_progress: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
-    pending: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
-    closed: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
-    // Support old statuses for backward compatibility
-    new: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
-    assigned: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
-    waiting_parts: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
-    completed: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
-  }
-  return classes[status as keyof typeof classes] || classes.initialized
-}
-
-const STATUS_LABEL_KEYS: Record<string, string> = {
-  initialized: 'tickets.list.statusLabels.initialized',
-  in_progress: 'tickets.list.statusLabels.in_progress',
-  pending: 'tickets.list.statusLabels.pending',
-  closed: 'tickets.list.statusLabels.closed',
-  new: 'tickets.list.statusLabels.new',
-  assigned: 'tickets.list.statusLabels.in_progress', // Map assigned to in_progress
-  waiting_parts: 'tickets.list.statusLabels.in_progress', // Map waiting_parts to in_progress
-  completed: 'tickets.list.statusLabels.closed', // Map completed to closed
-}
-
 const PRIORITY_LABEL_KEYS: Record<string, string> = {
   high: 'tickets.list.priorityLabels.high',
   medium: 'tickets.list.priorityLabels.medium',
   low: 'tickets.list.priorityLabels.low',
 }
 
-const statusFilterOptions = computed(() => [
-  { value: '', label: t('tickets.list.filters.all') },
-  { value: 'initialized', label: t('tickets.list.statusOptions.initialized') },
-  { value: 'in_progress', label: t('tickets.list.statusOptions.in_progress') },
-  { value: 'pending', label: t('tickets.list.statusOptions.pending') },
-  { value: 'closed', label: t('tickets.list.statusOptions.closed') },
-])
 
 const priorityFilterOptions = computed(() => [
   { value: '', label: t('tickets.list.filters.all') },
@@ -989,10 +906,6 @@ const slaStatusFilterOptions = computed(() => [
   { value: 'completed', label: t('tickets.list.filters.slaStatus.completed') },
 ])
 
-const getStatusLabel = (status: string) => {
-  const key = STATUS_LABEL_KEYS[status] || STATUS_LABEL_KEYS.initialized
-  return t(key)
-}
 
 const getPriorityClass = (priority: string) => {
   const classes: Record<string, string> = {
@@ -1019,12 +932,12 @@ const getSLAStatusClass = (ticket: any) => {
   const diffHours = diffMs / (1000 * 60 * 60)
 
   // Quá hạn
-  if (diffMs < 0 && ticket.status !== 'closed' && ticket.status !== 'completed') {
+  if (diffMs < 0 && !isTicketClosed(ticket.status)) {
     return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
   }
 
   // Đã đóng hoặc hoàn thành
-  if (ticket.status === 'closed' || ticket.status === 'completed') {
+  if (isTicketClosed(ticket.status)) {
     return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
   }
 
@@ -1051,7 +964,7 @@ const getSLAStatusLabel = (ticket: any) => {
   const diffHours = diffMs / (1000 * 60 * 60)
 
   // Quá hạn
-  if (diffMs < 0 && ticket.status !== 'closed' && ticket.status !== 'completed') {
+  if (diffMs < 0 && !isTicketClosed(ticket.status)) {
     const overdueHours = Math.abs(diffHours)
     if (overdueHours < 24) {
       return t('dashboard.sla.overdueHours', { value: Math.round(overdueHours) })
@@ -1060,7 +973,7 @@ const getSLAStatusLabel = (ticket: any) => {
   }
 
   // Đã đóng hoặc hoàn thành
-  if (ticket.status === 'closed' || ticket.status === 'completed') {
+  if (isTicketClosed(ticket.status)) {
     return t('dashboard.sla.completed')
   }
 
@@ -1114,7 +1027,7 @@ const getSLACategory = (ticket: any): 'overdue' | 'remaining' | 'completed' | 'n
   }
   
   // Đã đóng hoặc hoàn thành
-  if (ticket.status === 'closed' || ticket.status === 'completed') {
+  if (isTicketClosed(ticket.status)) {
     return 'completed'
   }
   

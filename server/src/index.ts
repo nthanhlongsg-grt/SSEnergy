@@ -20,6 +20,7 @@ import slaSettingsRoutes from './routes/sla-settings.js'
 import autoAssignSettingsRoutes from './routes/auto-assign-settings.js'
 import contractRoutes from './routes/contracts.js'
 import quotationRoutes from './routes/quotation.js'
+import paymentRequestRoutes from './routes/payment-requests.js'
 import { formatTimestampsInResponse } from './utils/dateTime.js'
 import { maskSystemData } from './utils/systemUser.js'
 import './database/db.js' // Initialize database
@@ -141,6 +142,7 @@ app.use('/api/sla-settings', slaSettingsRoutes)
 app.use('/api/auto-assign-settings', autoAssignSettingsRoutes)
 app.use('/api/contracts', contractRoutes)
 app.use('/api/quotation', quotationRoutes)
+app.use('/api/payment-requests', paymentRequestRoutes)
 
 // Error handling middleware
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {

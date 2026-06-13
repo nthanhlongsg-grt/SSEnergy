@@ -91,14 +91,14 @@
 import { ref, computed, reactive, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
-import { useAuth, UserRole } from '@/composables/useAuth'
+import { useAuth, Permission } from '@/composables/useAuth'
 import { autoAssignService } from '@/services/autoAssignService'
 import { apiClient } from '@/services/api'
 
 const { t } = useI18n()
-const { hasRole } = useAuth()
+const { hasPermission } = useAuth()
 
-const canManage = computed(() => hasRole(UserRole.ADMIN) || hasRole(UserRole.DEV))
+const canManage = computed(() => hasPermission(Permission.MANAGE_ROLES))
 
 const loading = ref(true)
 const saving = ref(false)

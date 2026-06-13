@@ -235,6 +235,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useAutoRefresh } from '@/composables/useAutoRefresh'
+import { useChangeDetection } from '@/composables/useChangeDetection'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
@@ -326,7 +327,13 @@ onMounted(() => {
   loadTickets()
 })
 
-// Auto-refresh every 30 seconds
+useChangeDetection({
+  onTicketChange: async () => {
+    if (!loading.value) await loadTickets()
+  },
+})
+
+// Fallback polling every 30s
 const { stop: stopAutoRefresh } = useAutoRefresh({
   interval: 30000,
   fetchFn: async () => {

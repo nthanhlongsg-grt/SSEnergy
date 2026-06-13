@@ -1,6 +1,8 @@
 import Database from 'better-sqlite3'
 import path from 'path'
 import { fileURLToPath } from 'url'
+import fs from 'fs'
+import { applySchemaSync } from './schemaSync.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -10,8 +12,6 @@ const dbPath = process.env.DATABASE_PATH
   ? path.resolve(process.env.DATABASE_PATH)
   : path.resolve(__dirname, '../../database/SGE.db')
 
-// Ensure database directory exists
-import fs from 'fs'
 const dbDir = path.dirname(dbPath)
 if (!fs.existsSync(dbDir)) {
   fs.mkdirSync(dbDir, { recursive: true })
@@ -801,6 +801,16 @@ try {
   }
 } catch (err: any) {
   console.log('ℹ️  ticket_comments is_internal migration:', err.message)
+}
+
+// Full schema sync (idempotent — adds any columns/tables missing vs current code)
+try {
+  const added = applySchemaSync(db)
+  if (added.length > 0) {
+    console.log(`✅ Schema sync applied ${added.length} column(s): ${added.join(', ')}`)
+  }
+} catch (err: any) {
+  console.error('⚠️  Schema sync error:', err.message)
 }
 
 export default db

@@ -327,81 +327,29 @@
             </div>
           </div>
 
-          <!-- Type and Source -->
-          <div class="mb-3 flex items-center gap-2 flex-wrap">
-            <span
-              :class="[
-                'px-2 py-1 text-xs font-semibold rounded-full',
-                getSourceClass(customer.source || 'customer'),
-              ]"
-            >
-              {{ getSourceLabel(customer.source || 'customer') }}
-            </span>
-            <span
-              :class="[
-                'px-2 py-1 text-xs font-semibold rounded-full',
-                customer.type === 'distributor'
-                  ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200'
-                  : customer.type === 'end_user'
-                  ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
-                  : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200',
-              ]"
-            >
-              {{ getTypeLabel(customer.type) }}
-            </span>
-          </div>
+          <!-- MST -->
+          <p v-if="customer.tax_code" class="text-xs text-gray-500 dark:text-gray-400 mb-2">
+            MST: <span class="font-mono text-gray-700 dark:text-gray-300">{{ customer.tax_code }}</span>
+          </p>
 
-          <!-- Contact Info -->
-          <div class="mb-3 flex items-center gap-2">
-            <svg class="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-            </svg>
-            <p class="text-xs text-gray-500 dark:text-gray-400 truncate flex-1">
-              {{ customer.phone || t('common.na') }}
-            </p>
-          </div>
+          <!-- Địa chỉ -->
+          <p v-if="customer.address" class="text-xs text-gray-500 dark:text-gray-400 mb-2 line-clamp-2">{{ customer.address }}</p>
 
-          <!-- Address -->
-          <div v-if="customer.address" class="mb-3 flex items-start gap-2">
-            <svg class="w-4 h-4 text-gray-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-            <p class="text-xs text-gray-500 dark:text-gray-400 line-clamp-2 flex-1">
-              {{ customer.address }}
-            </p>
-          </div>
+          <!-- Người liên hệ -->
+          <p v-if="customer.contact_name || customer.contact_person" class="text-xs text-gray-500 dark:text-gray-400 mb-2">
+            Liên hệ: <span class="text-gray-700 dark:text-gray-300">{{ customer.contact_name || customer.contact_person }}</span>
+            <span v-if="customer.contact_phone" class="ml-1">· {{ customer.contact_phone }}</span>
+          </p>
 
-          <!-- Distributor Info -->
-          <div v-if="customer.type === 'end_user' && customer.distributor_name" class="mb-3 flex items-center gap-2">
-            <svg class="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-            </svg>
-            <div class="min-w-0 flex-1">
-              <p class="text-xs text-gray-500 dark:text-gray-400">{{ t('customers.list.table.distributor') }}</p>
-              <p class="text-xs text-gray-900 dark:text-white truncate">{{ customer.distributor_name }}</p>
-              <p v-if="customer.distributor_code" class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ customer.distributor_code }}</p>
-            </div>
-          </div>
-
-          <!-- Footer: Projects, Devices, View -->
-          <div class="flex items-center justify-between gap-2 pt-3 border-t border-gray-200 dark:border-gray-700">
-            <div class="flex items-center gap-3 flex-1">
-              <div class="text-center">
-                <p class="text-xs text-gray-500 dark:text-gray-400">{{ t('customers.list.table.projects') }}</p>
-                <p class="text-sm font-medium text-gray-900 dark:text-white">{{ customer.projectCount || 0 }}</p>
-              </div>
-              <div class="text-center">
-                <p class="text-xs text-gray-500 dark:text-gray-400">{{ t('customers.list.table.devices') }}</p>
-                <p class="text-sm font-medium text-gray-900 dark:text-white">{{ customer.inverterCount || 0 }}</p>
-              </div>
-            </div>
+          <!-- Footer -->
+          <div class="flex items-center justify-between pt-3 border-t border-gray-200 dark:border-gray-700">
+            <p class="text-xs text-gray-400">{{ customer.email || '—' }}</p>
             <router-link
               :to="`/customers/${customer.id}`"
               @click.stop
-              class="px-3 py-1.5 text-xs font-medium text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 touch-manipulation min-h-[32px] flex items-center"
+              class="px-3 py-1.5 text-xs font-medium text-blue-600 hover:text-blue-900 dark:text-blue-400 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 touch-manipulation min-h-[32px] flex items-center"
             >
-              {{ t('customers.list.table.view') }}
+              Xem chi tiết
             </router-link>
           </div>
         </div>
@@ -1160,7 +1108,7 @@ const visiblePages = computed(() => {
 })
 
 // Reset to page 1 when filters change
-watch([() => filters.value.search, () => filters.value.type, () => filters.value.province], () => {
+watch([() => filters.value.search, () => filters.value.tax_code, () => filters.value.contact], () => {
   currentPage.value = 1
 })
 
@@ -1204,7 +1152,6 @@ const clearFilters = () => {
 // Load customers on mount
 onMounted(() => {
   fetchCustomers()
-  fetchDistributors()
   loadAllUsers()
   if (route.query.new) {
     showAddModal.value = true
@@ -1218,6 +1165,5 @@ onMounted(() => {
 // Refresh when component is activated
 onActivated(() => {
   fetchCustomers()
-  fetchDistributors()
 })
 </script>

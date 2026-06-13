@@ -220,20 +220,21 @@
                 <p class="text-sm italic text-gray-400 dark:text-gray-500 mt-1">{{ formatDate(comment.created_at) }}</p>
               </div>
             </div>
-            <p class="mt-2 text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{{ comment.comment }}</p>
+            <p v-if="getCommentText(comment.comment)" class="mt-2 text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{{ getCommentText(comment.comment) }}</p>
             
             <!-- Display images if available -->
-            <div v-if="comment.images && comment.images.length > 0" class="mt-3 grid grid-cols-4 gap-2">
+            <div v-if="comment.images && comment.images.length > 0" class="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-2">
               <div
                 v-for="(imageSrc, imgIndex) in comment.images"
                 :key="imgIndex"
                 class="relative group"
               >
                 <img 
-                  :src="imageSrc" 
+                  :src="getCommentImageSrc(imageSrc)" 
                   alt="Comment image" 
                   class="w-full h-24 object-cover rounded border border-gray-300 dark:border-gray-600 cursor-pointer hover:opacity-80 transition-opacity"
-                  @click="openImageModal({ file_path: imageSrc, filename: `image-${imgIndex + 1}.jpg` })"
+                  @error="handleImageError"
+                  @click="openImageFromComment(getCommentImageSrc(imageSrc))"
                 />
               </div>
             </div>
@@ -254,6 +255,7 @@
               rows="3"
               :placeholder="t('customers.tickets.detail.comments.placeholder')"
               class="w-full px-4 py-2 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+              @paste="handleCommentPaste"
             ></textarea>
             <!-- Image Upload Icon -->
             <input
@@ -365,11 +367,16 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { useAutoRefresh } from '@/composables/useAutoRefresh'
+import { useChangeDetection } from '@/composables/useChangeDetection'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import { ticketService } from '@/services/ticketService'
 import { getApiBaseUrlWithoutApi } from '@/utils/apiUrl'
+import { filterImageFiles, readFileAsDataUrl } from '@/utils/imageUpload'
+import { useImagePaste } from '@/composables/useImagePaste'
+import { useTicketStatus } from '@/composables/useTicketStatus'
+import { isTicketClosed } from '@/constants/ticketStatus'
 
 const { t } = useI18n()
 
@@ -421,38 +428,40 @@ const allImages = computed(() => {
   return images
 })
 
-// Filter out internal comments for customer view and add images
+// Filter out internal comments for customer view and attach images from API
 const publicComments = computed(() => {
   if (!ticket.value?.comments) return []
   const filtered = ticket.value.comments.filter((comment: any) => {
-    // Filter out comments where is_internal is true or 1
     return !comment.is_internal && comment.is_internal !== 1
   })
-  
-  // Add images from sessionStorage for comments with image markers
+
   return filtered.map((comment: any) => {
     const commentText = comment.comment || comment.content || ''
-    let images: string[] = []
-    
-    // Check if comment has image marker
-    if (commentText.includes('📷') && commentText.includes('Đã đính kèm')) {
+    let images: string[] = Array.isArray(comment.images) ? [...comment.images] : []
+
+    // Legacy fallback: sessionStorage (comments before server upload was added)
+    if (
+      images.length === 0 &&
+      commentText.includes('📷') &&
+      commentText.includes('Đã đính kèm')
+    ) {
       try {
-        const storedImagesData = sessionStorage.getItem(`ticket_${ticket.value.id}_images`)
+        const storedImagesData = sessionStorage.getItem(`ticket_${ticket.value!.id}_images`)
         if (storedImagesData) {
           const imagesArray = JSON.parse(storedImagesData)
           const commentTime = new Date(comment.created_at).getTime()
-          
-          // Find images that match this comment's timestamp (within 30 seconds)
           const sortedImages = imagesArray
-            .filter((imgData: any) => imgData.ticketId === ticket.value.id)
-            .sort((a: any, b: any) => Math.abs(a.commentTimestamp - commentTime) - Math.abs(b.commentTimestamp - commentTime))
-          
+            .filter((imgData: any) => imgData.ticketId === ticket.value!.id)
+            .sort(
+              (a: any, b: any) =>
+                Math.abs(a.commentTimestamp - commentTime) -
+                Math.abs(b.commentTimestamp - commentTime),
+            )
           const matchedImages = sortedImages.find((imgData: any) => {
             const imgTime = imgData.commentTimestamp || imgData.timestamp
-            return Math.abs(imgTime - commentTime) < 30000 // Within 30 seconds
+            return Math.abs(imgTime - commentTime) < 30000
           })
-          
-          if (matchedImages && matchedImages.images) {
+          if (matchedImages?.images) {
             images = matchedImages.images
           }
         }
@@ -460,13 +469,24 @@ const publicComments = computed(() => {
         console.warn('Failed to parse stored images:', e)
       }
     }
-    
-    return {
-      ...comment,
-      images
-    }
+
+    return { ...comment, images }
   })
 })
+
+const getCommentText = (text: string): string => {
+  if (!text) return ''
+  return text.replace(/\n*📷 Đã đính kèm \d+ hình ảnh\s*$/u, '').trimEnd()
+}
+
+const getCommentImageSrc = (imageSrc: string): string => {
+  if (!imageSrc) return ''
+  if (imageSrc.startsWith('data:') || imageSrc.startsWith('http')) return imageSrc
+  if (imageSrc.length > 100 && !imageSrc.includes('/') && !imageSrc.includes('\\')) {
+    return `data:image/jpeg;base64,${imageSrc}`
+  }
+  return imageSrc
+}
 
 const loadTicket = async () => {
   try {
@@ -488,28 +508,22 @@ const loadTicket = async () => {
   }
 }
 
-const handleFileSelect = (event: Event) => {
+const pushCommentImages = async (files: File[]) => {
+  for (const file of filterImageFiles(files)) {
+    const preview = await readFileAsDataUrl(file)
+    selectedImages.value.push({ file, preview, name: file.name })
+  }
+}
+
+const handleFileSelect = async (event: Event) => {
   const target = event.target as HTMLInputElement
   if (target.files && target.files.length > 0) {
-    Array.from(target.files).forEach((file) => {
-      if (file.type.startsWith('image/')) {
-        const reader = new FileReader()
-        reader.onload = (e) => {
-          selectedImages.value.push({
-            file,
-            preview: e.target?.result as string,
-            name: file.name,
-          })
-        }
-        reader.readAsDataURL(file)
-      }
-    })
-  }
-  // Reset input
-  if (target) {
+    await pushCommentImages(Array.from(target.files))
     target.value = ''
   }
 }
+
+const { handlePaste: handleCommentPaste } = useImagePaste(pushCommentImages)
 
 const removeImage = (index: number) => {
   selectedImages.value.splice(index, 1)
@@ -604,12 +618,12 @@ const openImageModal = (attachment: any) => {
 
 // Open image from comment (sessionStorage base64)
 const openImageFromComment = (imageSrc: string) => {
-  // Find index in allImages
-  const index = allImages.value.findIndex(img => img.file_path === imageSrc)
+  const resolved = getCommentImageSrc(imageSrc)
+  const index = allImages.value.findIndex((img) => img.file_path === resolved || img.file_path === imageSrc)
   
   currentImageIndex.value = index >= 0 ? index : -1
   selectedImageModal.value = {
-    file_path: imageSrc,
+    file_path: resolved,
     filename: 'comment-image.jpg'
   }
   
@@ -753,45 +767,48 @@ const addComment = async () => {
     submittingComment.value = true
     const id = parseInt(route.params.id as string)
     const commentText = newComment.value.trim()
-    const imagesToSave = [...selectedImages.value.map(img => img.preview)] // Save preview URLs
-    const imageFilesToSave = [...selectedImages.value] // Save files for upload
-    
-    // Build comment text with image marker
+    const imageFilesToSave = [...selectedImages.value]
+
     let finalCommentText = commentText
     if (imageFilesToSave.length > 0) {
-      if (finalCommentText) {
-        finalCommentText += '\n\n📷 Đã đính kèm ' + imageFilesToSave.length + ' hình ảnh'
-      } else {
-        finalCommentText = '📷 Đã đính kèm ' + imageFilesToSave.length + ' hình ảnh'
+      const marker = `📷 Đã đính kèm ${imageFilesToSave.length} hình ảnh`
+      finalCommentText = finalCommentText ? `${finalCommentText}\n\n${marker}` : marker
+    }
+
+    const newCommentData = await ticketService.addComment(
+      id,
+      finalCommentText || t('customers.tickets.detail.comments.defaultMessage'),
+    )
+    const commentId = newCommentData?.id || newCommentData?.data?.id
+
+    if (imageFilesToSave.length > 0 && commentId) {
+      for (const imageItem of imageFilesToSave) {
+        try {
+          const base64 = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader()
+            reader.onload = () => {
+              const result = reader.result as string
+              resolve(result.includes(',') ? result.split(',')[1] : result)
+            }
+            reader.onerror = reject
+            reader.readAsDataURL(imageItem.file)
+          })
+
+          await ticketService.uploadAttachment(id, {
+            file: base64,
+            filename: imageItem.file.name,
+            mime_type: imageItem.file.type,
+            file_size: imageItem.file.size,
+            comment_id: commentId,
+          })
+        } catch (uploadErr) {
+          console.error('Error uploading comment image:', uploadErr)
+        }
       }
     }
-    
-    // Add comment first
-    await ticketService.addComment(id, finalCommentText || t('customers.tickets.detail.comments.defaultMessage'))
-    
-    // Store images in sessionStorage for display in comments only
-    // Note: Images from comments are NOT uploaded to server attachments
-    // They are only stored in sessionStorage for display in the comment section
-    if (imagesToSave.length > 0) {
-      const timestamp = Date.now()
-      const imagesData = {
-        ticketId: id,
-        images: imagesToSave,
-        timestamp: timestamp,
-        commentTimestamp: timestamp
-      }
-      
-      const existingImages = JSON.parse(sessionStorage.getItem(`ticket_${id}_images`) || '[]')
-      existingImages.push(imagesData)
-      const recentImages = existingImages.slice(-50) // Keep last 50 entries
-      sessionStorage.setItem(`ticket_${id}_images`, JSON.stringify(recentImages))
-    }
-    
-    // Reset form
+
     newComment.value = ''
     selectedImages.value = []
-    
-    // Reload ticket to show new comment and images
     await loadTicket()
   } catch (err: any) {
     console.error('Error adding comment:', err)
@@ -801,25 +818,9 @@ const addComment = async () => {
   }
 }
 
-const getStatusColor = (status: string) => {
-  const colors: Record<string, string> = {
-    initialized: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
-    in_progress: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
-    completed: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
-    closed: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200',
-  }
-  return colors[status] || 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
-}
+const { getStatusLabel, getStatusClass } = useTicketStatus()
 
-const getStatusLabel = (status: string) => {
-  const labels: Record<string, string> = {
-    initialized: t('customers.tickets.detail.status.initialized'),
-    in_progress: t('customers.tickets.detail.status.in_progress'),
-    completed: t('customers.tickets.detail.status.completed'),
-    closed: t('customers.tickets.detail.status.closed'),
-  }
-  return labels[status] || status
-}
+const getStatusColor = getStatusClass
 
 const getPriorityColor = (priority: string) => {
   const colors: Record<string, string> = {
@@ -885,9 +886,17 @@ onMounted(() => {
   loadTicket()
 })
 
-// Auto-refresh every 15 seconds to pick up new comments/status changes
+// Auto-refresh when DB changes (comments, status, attachments)
+useChangeDetection({
+  ticketId: route.params.id,
+  onTicketChange: async () => {
+    if (!loading.value) await loadTicket()
+  },
+})
+
+// Fallback polling every 30s
 const { stop: stopAutoRefresh } = useAutoRefresh({
-  interval: 15000,
+  interval: 30000,
   fetchFn: async () => {
     if (!loading.value) await loadTicket()
   },

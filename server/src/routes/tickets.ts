@@ -1,7 +1,7 @@
 import { Router } from 'express'
 import db from '../database/db.js'
 import { authenticateToken, requireRole, AuthRequest } from '../middleware/auth.js'
-import { UserRole, isAdminRole } from '../types/index.js'
+import { UserRole, isStaffAdminRole } from '../types/index.js'
 import { syncTicketData } from '../database/sync.js'
 import { createNotification, notifyUsersByRoles } from '../services/notificationService.js'
 import { syncTicketRelatedCounts } from '../database/syncCounts.js'
@@ -12,6 +12,29 @@ import { generateReportHTML } from '../templates/report-template.js'
 import { AUTO_ASSIGN_KEYS } from './auto-assign-settings.js'
 import { resolveStaffFunction, AUTO_ASSIGN_STAFF_ROLES } from '../utils/staffFunction.js'
 import { generateLegacyTicketNumber, generateTicketNumber } from '../utils/ticketNumber.js'
+import {
+  TicketStatus,
+  TICKET_STATUS_ORDER,
+  expandStatusFilter,
+  getTicketStatusLabel,
+  isTicketClosed,
+  isValidTicketStatus,
+  normalizeTicketStatus,
+  type TicketStatusValue,
+} from '../constants/ticketStatus.js'
+
+const CLOSED_DB_STATUSES = expandStatusFilter(TicketStatus.CLOSED)
+const CLOSED_DB_STATUSES_SQL = CLOSED_DB_STATUSES.map((s) => `'${s}'`).join(', ')
+
+function appendTicketStatusFilter(query: string, params: any[], status: string): string {
+  const values = expandStatusFilter(status)
+  if (values.length === 1) {
+    params.push(values[0])
+    return `${query} AND t.status = ?`
+  }
+  params.push(...values)
+  return `${query} AND t.status IN (${values.map(() => '?').join(', ')})`
+}
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -99,27 +122,21 @@ router.get('/stats', authenticateToken, (req, res) => {
 
     const statusCounts = db.prepare(query).all(...params) as Array<{ status: string; count: number }>
     
-    const stats = {
+    const stats: Record<string, number> = {
       total: 0,
-      initialized: 0,
+      new: 0,
+      machine_received: 0,
       in_progress: 0,
-      pending: 0,
+      waiting_delivery: 0,
+      delivered: 0,
       closed: 0,
     }
 
     statusCounts.forEach((row) => {
       stats.total += row.count
-      
-      // Map old statuses to new ones
-      if (row.status === 'initialized' || row.status === 'new') {
-        stats.initialized += row.count
-      } else if (row.status === 'in_progress' || row.status === 'assigned' || row.status === 'waiting_parts') {
-        stats.in_progress += row.count
-      } else if (row.status === 'pending') {
-        // Pending status is separate
-        stats.pending = (stats.pending || 0) + row.count
-      } else if (row.status === 'closed' || row.status === 'completed') {
-        stats.closed += row.count
+      const normalized = normalizeTicketStatus(row.status) as TicketStatusValue
+      if (normalized in stats) {
+        stats[normalized] += row.count
       }
     })
 
@@ -177,13 +194,7 @@ router.get('/', authenticateToken, (req, res) => {
     }
 
     if (status) {
-      // Map status filter: 'in_progress' should include 'assigned' and 'waiting_parts'
-      if (status === 'in_progress') {
-        query += " AND t.status IN ('in_progress', 'assigned', 'waiting_parts')"
-      } else {
-      query += ' AND t.status = ?'
-      params.push(status)
-      }
+      query = appendTicketStatusFilter(query, params, status as string)
     }
 
     if (priority) {
@@ -215,22 +226,22 @@ router.get('/', authenticateToken, (req, res) => {
     if (sla_status) {
       if (sla_status === 'completed') {
         // Tickets that are closed or completed
-        query += " AND (t.status = 'closed' OR t.status = 'completed')"
+        query += ` AND t.status IN (${CLOSED_DB_STATUSES_SQL})`
       } else if (sla_status === 'overdue') {
-        // Tickets with SLA deadline passed and not closed/completed
-        query += " AND t.sla_deadline IS NOT NULL AND datetime(t.sla_deadline) < datetime('now') AND t.status NOT IN ('closed', 'completed')"
+        // Tickets with SLA deadline passed and not closed
+        query += ` AND t.sla_deadline IS NOT NULL AND datetime(t.sla_deadline) < datetime('now') AND t.status NOT IN (${CLOSED_DB_STATUSES_SQL})`
       } else if (sla_status === 'on_time') {
-        // Tickets with SLA deadline not passed and not closed/completed
-        query += " AND t.sla_deadline IS NOT NULL AND datetime(t.sla_deadline) >= datetime('now') AND t.status NOT IN ('closed', 'completed')"
+        // Tickets with SLA deadline not passed and not closed
+        query += ` AND t.sla_deadline IS NOT NULL AND datetime(t.sla_deadline) >= datetime('now') AND t.status NOT IN (${CLOSED_DB_STATUSES_SQL})`
       }
     }
 
     // Filter by date range (based on updated_at for completed/closed tickets, or created_at for others)
     if (from && to) {
       query += ` AND (
-        (t.status IN ('completed', 'closed') AND t.updated_at IS NOT NULL AND t.updated_at >= ? AND t.updated_at <= ?)
+        (t.status IN (${CLOSED_DB_STATUSES_SQL}) AND t.updated_at IS NOT NULL AND t.updated_at >= ? AND t.updated_at <= ?)
         OR
-        (t.status NOT IN ('completed', 'closed') AND t.created_at >= ? AND t.created_at <= ?)
+        (t.status NOT IN (${CLOSED_DB_STATUSES_SQL}) AND t.created_at >= ? AND t.created_at <= ?)
       )`
       params.push(`${from} 00:00:00`, `${to} 23:59:59`, `${from} 00:00:00`, `${to} 23:59:59`)
     }
@@ -242,7 +253,10 @@ router.get('/', authenticateToken, (req, res) => {
     }
     
     // ADMIN, DEV, SERVICE_CENTER, and TECHNICIAN can see all tickets
-    const canSeeAllTickets = user.role === UserRole.ADMIN || user.role === UserRole.DEV || user.role === UserRole.SERVICE_CENTER || user.role === UserRole.TECHNICIAN
+    const canSeeAllTickets =
+      isStaffAdminRole(user.role) ||
+      user.role === UserRole.SERVICE_CENTER ||
+      user.role === UserRole.TECHNICIAN
     
     if (!canSeeAllTickets) {
       if (user.role === UserRole.END_USER) {
@@ -298,13 +312,7 @@ router.get('/', authenticateToken, (req, res) => {
     }
 
     if (status) {
-      // Map status filter: 'in_progress' should include 'assigned' and 'waiting_parts'
-      if (status === 'in_progress') {
-        countQuery += " AND t.status IN ('in_progress', 'assigned', 'waiting_parts')"
-      } else {
-      countQuery += ' AND t.status = ?'
-      countParams.push(status)
-      }
+      countQuery = appendTicketStatusFilter(countQuery, countParams, status as string)
     }
 
     if (priority) {
@@ -336,19 +344,20 @@ router.get('/', authenticateToken, (req, res) => {
     if (sla_status) {
       if (sla_status === 'completed') {
         // Tickets that are closed or completed
-        countQuery += " AND (t.status = 'closed' OR t.status = 'completed')"
+        countQuery += ` AND t.status IN (${CLOSED_DB_STATUSES_SQL})`
       } else if (sla_status === 'overdue') {
-        // Tickets with SLA deadline passed and not closed/completed
-        countQuery += " AND t.sla_deadline IS NOT NULL AND datetime(t.sla_deadline) < datetime('now') AND t.status NOT IN ('closed', 'completed')"
+        countQuery += ` AND t.sla_deadline IS NOT NULL AND datetime(t.sla_deadline) < datetime('now') AND t.status NOT IN (${CLOSED_DB_STATUSES_SQL})`
       } else if (sla_status === 'on_time') {
-        // Tickets with SLA deadline not passed and not closed/completed
-        countQuery += " AND t.sla_deadline IS NOT NULL AND datetime(t.sla_deadline) >= datetime('now') AND t.status NOT IN ('closed', 'completed')"
+        countQuery += ` AND t.sla_deadline IS NOT NULL AND datetime(t.sla_deadline) >= datetime('now') AND t.status NOT IN (${CLOSED_DB_STATUSES_SQL})`
       }
     }
 
     // Apply role-based filtering to count query - MUST match main query
     // ADMIN, DEV, SERVICE_CENTER, and TECHNICIAN can see all tickets
-    const canSeeAllTicketsCount = user?.role === UserRole.ADMIN || user?.role === UserRole.DEV || user?.role === UserRole.SERVICE_CENTER || user?.role === UserRole.TECHNICIAN
+    const canSeeAllTicketsCount =
+      isStaffAdminRole(user?.role) ||
+      user?.role === UserRole.SERVICE_CENTER ||
+      user?.role === UserRole.TECHNICIAN
     
     if (!canSeeAllTicketsCount) {
       if (user?.role === UserRole.END_USER) {
@@ -541,7 +550,8 @@ router.get('/:id', authenticateToken, (req, res) => {
     // TECHNICIAN can now see all tickets (no access restriction)
 
     // Get comments - filter internal comments based on user role
-    const canViewInternal = user?.role === UserRole.ADMIN || user?.role === UserRole.DEV || user?.role === UserRole.TECHNICIAN
+    const canViewInternal =
+      isStaffAdminRole(user?.role) || user?.role === UserRole.TECHNICIAN
     let commentsQuery = `
       SELECT tc.*, u.name as user_name, u.email as user_email, u.phone as user_phone
       FROM ticket_comments tc
@@ -635,6 +645,7 @@ router.post('/', authenticateToken, (req: AuthRequest, res) => {
     const {
       inverter_id,
       customer_id,
+      contract_id,
       title,
       description,
       priority = 'medium',
@@ -701,6 +712,33 @@ router.post('/', authenticateToken, (req: AuthRequest, res) => {
 
     if (!finalCustomerId) {
       return res.status(400).json({ error: 'Không xác định được khách hàng. Thiết bị cần thuộc hợp đồng có khách hàng.' })
+    }
+
+    let finalContractId: number | null = null
+    if (contract_id !== undefined && contract_id !== null && contract_id !== '') {
+      const parsed = Number(contract_id)
+      if (!isNaN(parsed) && parsed > 0) {
+        const contractRow = db.prepare('SELECT id, customer_id FROM contracts WHERE id = ?').get(parsed) as
+          | { id: number; customer_id: number | null }
+          | undefined
+        if (contractRow) {
+          finalContractId = contractRow.id
+          if (contractRow.customer_id && contractRow.customer_id !== finalCustomerId) {
+            return res.status(400).json({ error: 'Hợp đồng không thuộc khách hàng của ticket' })
+          }
+        }
+      }
+    }
+
+    if (!finalContractId && inverter_id) {
+      const linked = db.prepare(`
+        SELECT ct.id FROM contract_inverters ci
+        INNER JOIN contracts ct ON ct.id = ci.contract_id
+        WHERE ci.inverter_id = ?
+        ORDER BY ct.updated_at DESC, ci.contract_id DESC
+        LIMIT 1
+      `).get(Number(inverter_id)) as { id: number } | undefined
+      if (linked) finalContractId = linked.id
     }
 
     let ticketNumber: string
@@ -777,19 +815,19 @@ router.post('/', authenticateToken, (req: AuthRequest, res) => {
       }
     }
 
-    // Set status based on whether technician is assigned
-    const initialStatus = assignedTechnicianId ? 'assigned' : 'initialized'
+    const initialStatus = TicketStatus.NEW
 
     const result = db.prepare(`
       INSERT INTO tickets (
-        ticket_number, inverter_id, customer_id, title, description,
+        ticket_number, inverter_id, customer_id, contract_id, title, description,
         priority, status, category, assigned_to, created_by, sla_deadline
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       ticketNumber,
       inverter_id || null,
       finalCustomerId,
+      finalContractId,
       title,
       description || null,
       priority,
@@ -928,6 +966,14 @@ router.put('/:id', authenticateToken, (req, res) => {
     const user = (req as AuthRequest).user!
     const { title, description, priority, status, assigned_to, category, customer_id, inverter_id, created_at } = req.body
 
+    let normalizedStatus: string | undefined = status
+    if (status !== undefined && status !== null && status !== '') {
+      if (!isValidTicketStatus(status)) {
+        return res.status(400).json({ error: 'Trạng thái ticket không hợp lệ' })
+      }
+      normalizedStatus = normalizeTicketStatus(status) as string
+    }
+
     let normalizedAssignedTo = assigned_to
     if (assigned_to !== undefined && assigned_to !== null) {
       const parsed = Number(assigned_to)
@@ -937,7 +983,7 @@ router.put('/:id', authenticateToken, (req, res) => {
       normalizedAssignedTo = parsed
     }
 
-    const isAdminLike = isAdminRole(user.role) || user.role === UserRole.SERVICE_CENTER
+    const isAdminLike = isStaffAdminRole(user.role) || user.role === UserRole.SERVICE_CENTER
     const isDev = user.role === UserRole.DEV
     const isTechnician = user.role === UserRole.TECHNICIAN
     const isCreator = ticket.created_by === user.id
@@ -985,8 +1031,8 @@ router.put('/:id', authenticateToken, (req, res) => {
     const canChangeAssignee = isAdminLike || isTechnician
     if (normalizedAssignedTo !== undefined && canChangeAssignee) {
       // Allow changing assignee for non-closed tickets
-      if (ticket.status === 'closed' || ticket.status === 'completed') {
-        return res.status(400).json({ error: 'Cannot change assignee for closed or completed tickets' })
+      if (isTicketClosed(ticket.status)) {
+        return res.status(400).json({ error: 'Cannot change assignee for closed tickets' })
       }
     }
 
@@ -1012,15 +1058,9 @@ router.put('/:id', authenticateToken, (req, res) => {
       assignedAt = new Date().toISOString()
     }
 
-    // Update resolved_at if status is completed
-    let resolvedAt = ticket.resolved_at
-    if (status === 'completed' && ticket.status !== 'completed') {
-      resolvedAt = new Date().toISOString()
-    }
-
-    // Update closed_at if status is closed
+    // Update closed_at when ticket is closed
     let closedAt = ticket.closed_at
-    if (status === 'closed' && ticket.status !== 'closed') {
+    if (normalizedStatus === TicketStatus.CLOSED && !isTicketClosed(ticket.status)) {
       closedAt = new Date().toISOString()
     }
 
@@ -1068,6 +1108,10 @@ router.put('/:id', authenticateToken, (req, res) => {
       normalizedCreatedAt = parsedDate.toISOString()
     }
 
+    const resolvedAt = ticket.resolved_at
+
+    const assignmentChanged = normalizedAssignedTo !== undefined
+
     db.prepare(`
       UPDATE tickets
       SET title = COALESCE(?, title),
@@ -1075,6 +1119,7 @@ router.put('/:id', authenticateToken, (req, res) => {
           priority = COALESCE(?, priority),
           status = COALESCE(?, status),
           assigned_to = COALESCE(?, assigned_to),
+          assigned_at = CASE WHEN ? THEN ? ELSE assigned_at END,
           category = COALESCE(?, category),
           customer_id = COALESCE(?, customer_id),
           inverter_id = COALESCE(?, inverter_id),
@@ -1087,8 +1132,10 @@ router.put('/:id', authenticateToken, (req, res) => {
       title || null,
       description || null,
       priority || null,
-      status || null,
+      normalizedStatus || null,
       normalizedAssignedTo !== undefined ? normalizedAssignedTo : null,
+      assignmentChanged ? 1 : 0,
+      assignedAt,
       category || null,
       normalizedCustomerId !== undefined ? normalizedCustomerId : null,
       normalizedInverterId !== undefined ? normalizedInverterId : null,
@@ -1114,17 +1161,8 @@ router.put('/:id', authenticateToken, (req, res) => {
     `).get(updatedTicket.created_by) as { id: number; name: string; role: string; parent_distributor_id: number | null } | undefined
 
     // Notify about status change
-    if (status && status !== ticket.status) {
-      const statusLabels: Record<string, string> = {
-        initialized: 'Khởi tạo',
-        assigned: 'Đã phân công',
-        in_progress: 'Đang xử lý',
-        waiting_parts: 'Chờ phụ tùng',
-        completed: 'Hoàn thành',
-        closed: 'Đã đóng',
-      }
-      
-      const statusLabel = statusLabels[status] || status
+    if (normalizedStatus && normalizedStatus !== ticket.status) {
+      const statusLabel = getTicketStatusLabel(normalizedStatus)
 
       // Notify customer about status change - link bằng user_id từ customer record
       let customerUserId: number | null = null
@@ -1145,7 +1183,7 @@ router.put('/:id', authenticateToken, (req, res) => {
           data: {
             ticket_number: updatedTicket.ticket_number,
             old_status: ticket.status,
-            new_status: status,
+            new_status: normalizedStatus,
           },
         })
       }
@@ -1161,7 +1199,7 @@ router.put('/:id', authenticateToken, (req, res) => {
           data: {
             ticket_number: updatedTicket.ticket_number,
             old_status: ticket.status,
-            new_status: status,
+            new_status: normalizedStatus,
           },
         })
       }
@@ -1247,7 +1285,7 @@ router.post('/:id/comments', authenticateToken, (req, res) => {
     const user = (req as AuthRequest).user!
 
     // Only ADMIN, DEV, TECHNICIAN can create internal comments
-    const canCreateInternal = user.role === UserRole.ADMIN || user.role === UserRole.DEV || user.role === UserRole.TECHNICIAN
+    const canCreateInternal = isStaffAdminRole(user.role) || user.role === UserRole.TECHNICIAN
     const isInternal = canCreateInternal && is_internal === true ? 1 : 0
 
     // Check if is_internal column exists
@@ -1387,7 +1425,7 @@ router.put('/:id/comments/:commentId', authenticateToken, (req, res) => {
     const user = (req as AuthRequest).user!
 
     // Only TECHNICIAN, ADMIN, and DEV can edit comments
-    if (user.role !== UserRole.TECHNICIAN && user.role !== UserRole.ADMIN && user.role !== UserRole.DEV) {
+    if (user.role !== UserRole.TECHNICIAN && !isStaffAdminRole(user.role)) {
       return res.status(403).json({ error: 'Only technicians, admins, and developers can edit comments' })
     }
 
@@ -1452,7 +1490,7 @@ router.delete('/:id/comments/:commentId', authenticateToken, (req, res) => {
     const user = (req as AuthRequest).user!
 
     // Only TECHNICIAN, ADMIN, and DEV can delete/recall comments
-    if (user.role !== UserRole.TECHNICIAN && user.role !== UserRole.ADMIN && user.role !== UserRole.DEV) {
+    if (user.role !== UserRole.TECHNICIAN && !isStaffAdminRole(user.role)) {
       return res.status(403).json({ error: 'Only technicians, admins, and developers can recall comments' })
     }
 
@@ -1736,11 +1774,10 @@ router.delete('/:id/watchers/:watcherId', authenticateToken, (req: AuthRequest, 
       return res.status(404).json({ error: 'Ticket not found' })
     }
 
-    const canRemove = 
-      watcher.user_id === currentUser.id || // Can remove themselves
-      currentUser.role === UserRole.ADMIN ||
-      currentUser.role === UserRole.DEV ||
-      currentUser.role === UserRole.TECHNICIAN // Technicians can remove watchers from any ticket
+    const canRemove =
+      watcher.user_id === currentUser.id ||
+      isStaffAdminRole(currentUser.role) ||
+      currentUser.role === UserRole.TECHNICIAN
 
     if (!canRemove) {
       return res.status(403).json({ error: 'Access denied' })
@@ -1851,7 +1888,7 @@ router.post('/import', authenticateToken, async (req, res) => {
             ticket_number, inverter_id, customer_id, title, description,
             priority, status, category, created_by, sla_deadline
           )
-          VALUES (?, ?, ?, ?, ?, ?, 'initialized', ?, ?, ?)
+          VALUES (?, ?, ?, ?, ?, ?, 'new', ?, ?, ?)
         `).run(
           ticketNumber,
           inverterId || null,

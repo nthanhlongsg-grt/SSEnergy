@@ -3,18 +3,18 @@ import db from './db.js'
 import { requireSeedPassword } from '../utils/seedPassword.js'
 
 // Minimal seed — developer account email only; password from DEV_SEED_PASSWORD env.
-const DEV_EMAIL = process.env.DEV_SEED_EMAIL || 'developer@local.dev'
+const DEV_EMAIL = process.env.DEV_SEED_EMAIL || 'system@sgesolartech.vn'
 
 const seedUsers = async () => {
   const plainPassword = requireSeedPassword()
-  console.log('🌱 Seeding developer user...')
+  console.log('🌱 Seeding system user...')
 
   const hashedPassword = await bcrypt.hash(plainPassword, 10)
   const user = {
-    name: 'Developer',
+    name: 'System',
     email: DEV_EMAIL,
     password: hashedPassword,
-    code: 'DEV001',
+    code: 'SYS001',
     role: 'dev',
     organization: 'SGE',
     phone: '0900000000',

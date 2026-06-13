@@ -167,7 +167,7 @@
               </td>
               <td class="px-6 py-4">
                 <span class="text-sm text-amber-700 dark:text-amber-300">
-                  {{ getMissingPaperworkLabels(contract).join(', ') }}
+                  {{ customerMissingPaperworkText(contract) }}
                 </span>
               </td>
             </tr>
@@ -202,7 +202,7 @@
           </div>
           <p class="text-xs text-amber-700 dark:text-amber-300 leading-relaxed">
             <span class="font-medium text-gray-500 dark:text-gray-400">{{ t('customers.dashboard.incompletePaperwork.columns.missingItems') }}:</span>
-            {{ getMissingPaperworkLabels(contract).join(', ') }}
+            {{ customerMissingPaperworkText(contract) }}
           </p>
         </div>
       </div>
@@ -379,6 +379,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { useChangeDetection } from '@/composables/useChangeDetection'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
@@ -390,7 +391,9 @@ import PlusIcon from '@/icons/PlusIcon.vue'
 import { ticketService } from '@/services/ticketService'
 import { inverterService } from '@/services/inverterService'
 import { contractService, type Contract } from '@/services/contractService'
-import { isPaperworkComplete, getMissingPaperworkLabels } from '@/utils/contractPaperwork'
+import { isTicketActive, isTicketClosed } from '@/constants/ticketStatus'
+import { useTicketStatus } from '@/composables/useTicketStatus'
+import { isCustomerPaperworkComplete, getCustomerMissingPaperworkItemIds } from '@/utils/contractPaperwork'
 
 const { t } = useI18n()
 
@@ -422,24 +425,19 @@ const loadDashboardData = async () => {
     const tickets = ticketsResponse.data || []
     
     metrics.value.totalTickets = tickets.length
-    metrics.value.activeTickets = tickets.filter((t: any) => 
-      ['initialized', 'in_progress', 'assigned'].includes(t.status)
+    metrics.value.activeTickets = tickets.filter((t: any) => isTicketActive(t.status)).length
+    metrics.value.pendingTickets = tickets.filter((t: any) =>
+      ['new', 'initialized', 'machine_received', 'assigned'].includes(t.status),
     ).length
-    metrics.value.pendingTickets = tickets.filter((t: any) => 
-      ['initialized', 'assigned'].includes(t.status)
-    ).length
-    metrics.value.completedTickets = tickets.filter((t: any) => 
-      ['completed', 'closed'].includes(t.status)
-    ).length
+    metrics.value.completedTickets = tickets.filter((t: any) => isTicketClosed(t.status)).length
 
-    // Recent tickets (last 5, excluding closed tickets)
-    const openTickets = tickets.filter((t: any) => t.status !== 'closed')
+    const openTickets = tickets.filter((t: any) => !isTicketClosed(t.status))
     recentTickets.value = openTickets.slice(0, 5)
 
     // Contracts chưa hoàn tất giấy tờ
     const contractsResponse = await contractService.list({ limit: 100, page: 1 })
     incompletePaperworkContracts.value = (contractsResponse.contracts || []).filter(
-      (c) => c.status !== 'cancelled' && !isPaperworkComplete(c)
+      (c) => c.status !== 'cancelled' && !isCustomerPaperworkComplete(c)
     )
   } catch (err: any) {
     console.error('Error loading dashboard:', err)
@@ -449,25 +447,8 @@ const loadDashboardData = async () => {
   }
 }
 
-const getStatusColor = (status: string) => {
-  const colors: Record<string, string> = {
-    initialized: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
-    in_progress: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
-    completed: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
-    closed: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200',
-  }
-  return colors[status] || 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
-}
-
-const getStatusLabel = (status: string) => {
-  const labels: Record<string, string> = {
-    initialized: t('customers.dashboard.recentTickets.status.initialized'),
-    in_progress: t('customers.dashboard.recentTickets.status.in_progress'),
-    completed: t('customers.dashboard.recentTickets.status.completed'),
-    closed: t('customers.dashboard.recentTickets.status.closed'),
-  }
-  return labels[status] || status
-}
+const { getStatusLabel, getStatusClass } = useTicketStatus()
+const getStatusColor = getStatusClass
 
 const getPriorityColor = (priority: string) => {
   const colors: Record<string, string> = {
@@ -498,6 +479,11 @@ const formatDate = (dateString: string) => {
 const contractStatusLabel = (status: string) =>
   t(`customers.dashboard.incompletePaperwork.contractStatus.${status}`) || status
 
+const customerMissingPaperworkText = (contract: Contract) =>
+  getCustomerMissingPaperworkItemIds(contract)
+    .map((id) => t(`customers.dashboard.incompletePaperwork.items.${id}`))
+    .join(', ')
+
 const contractStatusClass = (status: string) => {
   const map: Record<string, string> = {
     draft: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300',
@@ -522,6 +508,10 @@ const contractTypeClass = (type: string) => {
 
 onMounted(() => {
   loadDashboardData()
+})
+
+useChangeDetection({
+  onTicketChange: () => loadDashboardData(),
 })
 </script>
 

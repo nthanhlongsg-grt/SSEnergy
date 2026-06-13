@@ -45,6 +45,7 @@ copySafe(path.join(backendRoot, 'package-lock.json'), path.join(backendTarget, '
 copySafe(path.join(backendRoot, 'env.example.txt'), path.join(backendTarget, '.env.example'))
 copySafe(path.join(backendRoot, 'database'), path.join(backendTarget, 'database'))
 copySafe(path.join(backendRoot, 'reports'), path.join(backendTarget, 'reports'))
+copySafe(path.join(backendRoot, 'private'), path.join(backendTarget, 'private'))
 
 const readmePath = path.join(deployDir, 'README-UPLOAD.txt')
 const readme = [

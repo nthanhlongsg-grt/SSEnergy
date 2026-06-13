@@ -90,13 +90,14 @@ const menuItems = [
 const getRoleLabel = (role: UserRole | string) => {
   const labels: Record<string, string> = {
     [UserRole.ADMIN]: 'Admin',
-    [UserRole.DEV]: 'Developer',
+    [UserRole.DEV]: 'System',
     [UserRole.SERVICE_CENTER]: 'Service Center',
     [UserRole.TECHNICIAN]: 'Kỹ thuật viên',
     [UserRole.DISTRIBUTOR]: 'Đại lý',
     [UserRole.DEALER]: 'Nhà phân phối',
     [UserRole.END_USER]: 'Khách hàng cuối',
     [UserRole.WAREHOUSE]: 'Kho',
+    [UserRole.ACCOUNTING]: 'Kế toán',
   }
   return labels[role] || role
 }

@@ -126,6 +126,15 @@ const rolePermissions: Record<string, string[]> = {
     'export_parts',
     'view_tickets',
   ],
+  accounting: [
+    'view_contracts',
+    'view_contract_finance',
+    'manage_contracts',
+    'view_customers',
+    'view_reports',
+    'view_analytics',
+    'export_data',
+  ],
 }
 
 console.log('🔍 Checking user permissions in database...\n')

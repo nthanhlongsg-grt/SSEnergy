@@ -34,6 +34,7 @@ export const MANAGEMENT_ROLES: UserRole[] = [
   UserRole.TECHNICIAN,
   UserRole.WAREHOUSE,
   UserRole.DEALER,
+  UserRole.ACCOUNTING,
 ]
 
 /**
@@ -72,23 +73,26 @@ export const getUserGroup = (role: UserRole | string | null | undefined): UserGr
 /**
  * Lấy base route theo user group
  */
-export const getDefaultRouteByGroup = (group: UserGroup | null): string => {
+export const getDefaultRouteByGroup = (group: UserGroup | null, authenticated = false): string => {
   switch (group) {
     case UserGroup.CUSTOMER:
       return '/customer/dashboard'
     case UserGroup.MANAGEMENT:
       return '/'
     default:
-      return '/signin'
+      return authenticated ? '/' : '/signin'
   }
 }
 
 /**
  * Lấy default route theo role
  */
-export const getDefaultRouteByRole = (role: UserRole | string | null | undefined): string => {
+export const getDefaultRouteByRole = (
+  role: UserRole | string | null | undefined,
+  authenticated = false,
+): string => {
   const group = getUserGroup(role)
-  return getDefaultRouteByGroup(group)
+  return getDefaultRouteByGroup(group, authenticated)
 }
 
 /**
@@ -112,6 +116,8 @@ export const getLayoutByRole = (role: UserRole | string | null | undefined): str
       return 'ServiceCenterLayout'
     case UserRole.DEALER:
       return 'DealerLayout'
+    case UserRole.ACCOUNTING:
+      return 'AdminLayout'
     default:
       return 'AdminLayout' // Default layout
   }

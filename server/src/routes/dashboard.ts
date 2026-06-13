@@ -1,7 +1,24 @@
 import { Router } from 'express'
 import db from '../database/db.js'
 import { authenticateToken, AuthRequest } from '../middleware/auth.js'
-import { UserRole } from '../types/index.js'
+import { UserRole, isStaffAdminRole } from '../types/index.js'
+import {
+  TicketStatus,
+  TICKET_STATUS_ORDER,
+  expandStatusFilter,
+  isTicketClosed,
+} from '../constants/ticketStatus.js'
+
+const CLOSED_DB_STATUSES_SQL = expandStatusFilter(TicketStatus.CLOSED)
+  .map((s) => `'${s}'`)
+  .join(', ')
+const ACTIVE_DB_STATUSES_SQL = TICKET_STATUS_ORDER.filter((s) => s !== TicketStatus.CLOSED)
+  .flatMap((s) => expandStatusFilter(s))
+  .map((s) => `'${s}'`)
+  .join(', ')
+const NEW_DB_STATUSES_SQL = expandStatusFilter(TicketStatus.NEW)
+  .map((s) => `'${s}'`)
+  .join(', ')
 
 const router = Router()
 
@@ -91,9 +108,9 @@ router.get('/stats', authenticateToken, (req, res) => {
     let ticketDateParams: any[] = []
     if (from && to) {
       ticketDateFilter = ` AND (
-        (t.status IN ('completed', 'closed') AND t.updated_at IS NOT NULL AND t.updated_at >= ? AND t.updated_at <= ?)
+        (t.status IN (${CLOSED_DB_STATUSES_SQL}) AND t.updated_at IS NOT NULL AND t.updated_at >= ? AND t.updated_at <= ?)
         OR
-        (t.status NOT IN ('completed', 'closed') AND t.created_at >= ? AND t.created_at <= ?)
+        (t.status NOT IN (${CLOSED_DB_STATUSES_SQL}) AND t.created_at >= ? AND t.created_at <= ?)
       )`
       ticketDateParams = [`${from} 00:00:00`, `${to} 23:59:59`, `${from} 00:00:00`, `${to} 23:59:59`]
     }
@@ -112,16 +129,16 @@ router.get('/stats', authenticateToken, (req, res) => {
       ? `SELECT 
           COALESCE(category, 'N/A') as category,
           COUNT(*) as count,
-          COUNT(CASE WHEN status IN ('completed', 'closed') THEN 1 END) as completed_count,
-          COUNT(CASE WHEN status IN ('in_progress', 'assigned', 'waiting_parts') THEN 1 END) as active_count,
-          COUNT(CASE WHEN status = 'new' THEN 1 END) as new_count
+          COUNT(CASE WHEN status IN (${CLOSED_DB_STATUSES_SQL}) THEN 1 END) as completed_count,
+          COUNT(CASE WHEN status IN (${ACTIVE_DB_STATUSES_SQL}) THEN 1 END) as active_count,
+          COUNT(CASE WHEN status IN (${NEW_DB_STATUSES_SQL}) THEN 1 END) as new_count
         FROM tickets t ${combinedTicketWhere} GROUP BY category ORDER BY count DESC`
       : `SELECT 
           COALESCE(category, 'N/A') as category,
           COUNT(*) as count,
-          COUNT(CASE WHEN status IN ('completed', 'closed') THEN 1 END) as completed_count,
-          COUNT(CASE WHEN status IN ('in_progress', 'assigned', 'waiting_parts') THEN 1 END) as active_count,
-          COUNT(CASE WHEN status = 'new' THEN 1 END) as new_count
+          COUNT(CASE WHEN status IN (${CLOSED_DB_STATUSES_SQL}) THEN 1 END) as completed_count,
+          COUNT(CASE WHEN status IN (${ACTIVE_DB_STATUSES_SQL}) THEN 1 END) as active_count,
+          COUNT(CASE WHEN status IN (${NEW_DB_STATUSES_SQL}) THEN 1 END) as new_count
         FROM tickets GROUP BY category ORDER BY count DESC`
     const ticketsByCategory = combinedTicketWhere
       ? db.prepare(ticketsByCategoryQuery).all(...combinedTicketParams) as Array<{ 
@@ -149,7 +166,7 @@ router.get('/stats', authenticateToken, (req, res) => {
 
     // Low stock parts (only for admin/technician roles)
     let lowStockParts: any[] = []
-    if (user.role === UserRole.ADMIN || user.role === UserRole.DEV || user.role === UserRole.TECHNICIAN || user.role === UserRole.SERVICE_CENTER) {
+    if (isStaffAdminRole(user.role) || user.role === UserRole.TECHNICIAN || user.role === UserRole.SERVICE_CENTER) {
       lowStockParts = db.prepare(`
         SELECT * FROM warehouse_parts
         WHERE quantity <= min_quantity AND status = 'active'
@@ -176,23 +193,23 @@ router.get('/stats', authenticateToken, (req, res) => {
     // Only show customers and service reports for admin/technician roles
     let totalCustomers = { count: 0 }
     let totalServiceReports = { count: 0 }
-    if (user.role === UserRole.ADMIN || user.role === UserRole.DEV || user.role === UserRole.TECHNICIAN || user.role === UserRole.SERVICE_CENTER) {
+    if (isStaffAdminRole(user.role) || user.role === UserRole.TECHNICIAN || user.role === UserRole.SERVICE_CENTER) {
       totalCustomers = db.prepare('SELECT COUNT(*) as count FROM customers').get() as { count: number }
       totalServiceReports = db.prepare('SELECT COUNT(*) as count FROM service_reports').get() as { count: number }
     }
 
     // Active tickets (in_progress, assigned, waiting_parts, initialized, new)
     const activeTicketsWhere = combinedTicketWhere 
-      ? `${combinedTicketWhere} AND t.status IN ('in_progress', 'assigned', 'waiting_parts', 'initialized', 'new')`
-      : `WHERE t.status IN ('in_progress', 'assigned', 'waiting_parts', 'initialized', 'new')`
+      ? `${combinedTicketWhere} AND t.status IN (${ACTIVE_DB_STATUSES_SQL})`
+      : `WHERE t.status IN (${ACTIVE_DB_STATUSES_SQL})`
     const activeTickets = combinedTicketWhere
       ? db.prepare(`SELECT COUNT(*) as count FROM tickets t ${activeTicketsWhere}`).get(...combinedTicketParams) as { count: number }
       : db.prepare(`SELECT COUNT(*) as count FROM tickets t ${activeTicketsWhere}`).get() as { count: number }
 
     // Pending tickets (initialized, new)
     const pendingTicketsWhere = combinedTicketWhere
-      ? `${combinedTicketWhere} AND t.status IN ('initialized', 'new')`
-      : `WHERE t.status IN ('initialized', 'new')`
+      ? `${combinedTicketWhere} AND t.status IN (${NEW_DB_STATUSES_SQL})`
+      : `WHERE t.status IN (${NEW_DB_STATUSES_SQL})`
     const pendingTickets = combinedTicketWhere
       ? db.prepare(`SELECT COUNT(*) as count FROM tickets t ${pendingTicketsWhere}`).get(...combinedTicketParams) as { count: number }
       : db.prepare(`SELECT COUNT(*) as count FROM tickets t ${pendingTicketsWhere}`).get() as { count: number }
@@ -209,7 +226,7 @@ router.get('/stats', authenticateToken, (req, res) => {
     let totalTechnicians = { count: 0 }
     let activeTechnicians = { count: 0 }
     let techniciansOnsite = { count: 0 }
-    if (user.role === UserRole.ADMIN || user.role === UserRole.DEV || user.role === UserRole.TECHNICIAN || user.role === UserRole.SERVICE_CENTER) {
+    if (isStaffAdminRole(user.role) || user.role === UserRole.TECHNICIAN || user.role === UserRole.SERVICE_CENTER) {
       totalTechnicians = db.prepare(`
         SELECT COUNT(*) as count
         FROM users
@@ -217,8 +234,8 @@ router.get('/stats', authenticateToken, (req, res) => {
       `).get() as { count: number }
 
       const activeTechniciansWhere = combinedTicketWhere
-        ? `${combinedTicketWhere} AND t.assigned_to IS NOT NULL AND t.status IN ('initialized', 'in_progress', 'new', 'assigned', 'waiting_parts')`
-        : `WHERE t.assigned_to IS NOT NULL AND t.status IN ('initialized', 'in_progress', 'new', 'assigned', 'waiting_parts')`
+        ? `${combinedTicketWhere} AND t.assigned_to IS NOT NULL AND t.status IN (${ACTIVE_DB_STATUSES_SQL})`
+        : `WHERE t.assigned_to IS NOT NULL AND t.status IN (${ACTIVE_DB_STATUSES_SQL})`
       activeTechnicians = combinedTicketWhere
         ? db.prepare(`SELECT COUNT(DISTINCT assigned_to) as count FROM tickets t ${activeTechniciansWhere}`).get(...combinedTicketParams) as { count: number }
         : db.prepare(`SELECT COUNT(DISTINCT assigned_to) as count FROM tickets t ${activeTechniciansWhere}`).get() as { count: number }
@@ -278,7 +295,7 @@ router.get('/stats', authenticateToken, (req, res) => {
       const result = { ...ticket }
       
       // Check if ticket is approaching deadline (less than 2 days remaining)
-      if (ticket.sla_deadline && ticket.status !== 'completed' && ticket.status !== 'closed') {
+      if (ticket.sla_deadline && !isTicketClosed(ticket.status)) {
         const deadline = new Date(ticket.sla_deadline)
         const now = new Date()
         const diffMs = deadline.getTime() - now.getTime()

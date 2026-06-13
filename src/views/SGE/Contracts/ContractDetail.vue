@@ -35,7 +35,7 @@
             {{ getDeviceDeliveryStatusLabel(contract) }}
           </span>
           <span
-            v-if="paperworkComplete"
+            v-if="isStaff && paperworkComplete"
             class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300"
           >
             Hoàn thành giấy tờ
@@ -43,7 +43,7 @@
         </div>
 
         <div
-          v-if="contract && !paperworkComplete"
+          v-if="isStaff && contract && !paperworkComplete"
           class="flex items-start gap-1.5 rounded-lg border border-amber-200 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 px-3 py-2 text-xs text-amber-800 dark:text-amber-200"
         >
           <svg class="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -55,8 +55,12 @@
           </span>
         </div>
 
-        <div v-if="contract && isStaff" class="grid grid-cols-2 gap-2 sm:flex sm:justify-end">
+        <div
+          v-if="contract && (canViewContractFinance || canManageContracts || canCreateTicket || canCreatePaymentRequest)"
+          class="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:justify-end"
+        >
           <button
+            v-if="canViewContractFinance"
             @click="showExportModal = true"
             class="inline-flex items-center justify-center gap-1.5 px-3 py-2.5 text-sm bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white rounded-lg transition-colors touch-manipulation min-h-[44px]"
           >
@@ -66,10 +70,42 @@
             <span class="truncate">Xuất báo giá</span>
           </button>
           <button
+            v-if="canCreatePaymentRequest"
+            type="button"
+            @click="goCreatePaymentRequest"
+            class="inline-flex items-center justify-center gap-1.5 px-3 py-2.5 text-sm bg-amber-600 hover:bg-amber-700 active:bg-amber-800 text-white rounded-lg transition-colors touch-manipulation min-h-[44px]"
+          >
+            <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/>
+            </svg>
+            <span class="truncate">Chi phí</span>
+          </button>
+          <router-link
+            v-if="canCreateTicket"
+            :to="createTicketPath"
+            class="inline-flex items-center justify-center gap-1.5 px-3 py-2.5 text-sm bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white rounded-lg transition-colors touch-manipulation min-h-[44px]"
+          >
+            <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
+            <span class="truncate">Tạo ticket</span>
+          </router-link>
+          <button
+            v-if="canManageContracts"
             @click="openEdit"
             class="px-3 py-2.5 text-sm border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 active:bg-gray-100 dark:active:bg-gray-600 transition-colors touch-manipulation min-h-[44px]"
           >
             Chỉnh sửa
+          </button>
+          <button
+            v-if="isDev"
+            @click="showDeleteConfirm = true"
+            class="inline-flex items-center justify-center gap-1.5 px-3 py-2.5 text-sm border border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 active:bg-red-100 dark:active:bg-red-900/30 transition-colors touch-manipulation min-h-[44px]"
+          >
+            <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+            </svg>
+            Xóa hợp đồng
           </button>
         </div>
       </div>
@@ -128,7 +164,7 @@
                     </span>
                   </dd>
                 </div>
-                <div>
+                <div v-if="canViewContractFinance">
                   <dt class="text-xs text-gray-400 dark:text-gray-500">Giá trị hợp đồng</dt>
                   <dd class="text-base font-bold text-blue-600 dark:text-blue-400">{{ fmtCurrency(contract.value) }}</dd>
                 </div>
@@ -232,7 +268,7 @@
           <!-- RIGHT: Contract content + Device list -->
           <div class="lg:col-span-2 space-y-6">
             <!-- Nội dung hợp đồng -->
-            <div v-if="contract.items && contract.items.length" class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <div v-if="canViewContractFinance && contract.items && contract.items.length" class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
               <div class="px-4 sm:px-5 py-3 sm:py-4 border-b border-gray-200 dark:border-gray-700">
                 <h2 class="font-semibold text-gray-900 dark:text-white">Nội dung hợp đồng</h2>
               </div>
@@ -400,8 +436,8 @@
 
         </div>
 
-        <!-- Checklist hồ sơ giấy tờ -->
-        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 sm:p-5">
+        <!-- Checklist hồ sơ giấy tờ — chỉ nội bộ -->
+        <div v-if="isStaff" class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 sm:p-5">
           <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
             <h2 class="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Hồ sơ giấy tờ</h2>
             <span
@@ -435,17 +471,13 @@
               </div>
 
               <template v-if="isStaff">
-                <input
+                <AppDatePicker
                   v-if="item.source === 'contract'"
                   v-model="paperworkForm[item.dateField as 'signed_date' | 'end_date']"
-                  type="date"
-                  class="w-full px-2.5 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
-                <input
+                <AppDatePicker
                   v-else
                   v-model="paperworkForm[item.dateField as keyof typeof paperworkForm]"
-                  type="date"
-                  class="w-full px-2.5 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
                 <div v-if="item.id === 'paper_sent'" class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <input
@@ -559,6 +591,38 @@
           </div>
         </div>
       </div>
+
+      <!-- Xác nhận xóa hợp đồng (dev only) -->
+      <div v-if="showDeleteConfirm" class="fixed inset-0 z-[100000] flex items-center justify-center p-4 bg-black/50">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-md p-6">
+          <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-2">Xác nhận xóa</h3>
+          <p class="text-sm text-gray-600 dark:text-gray-400 mb-6">
+            Bạn có chắc muốn xóa hợp đồng
+            <strong>{{ contract?.contract_number }}</strong>?
+            Hành động này không thể hoàn tác.
+          </p>
+          <p v-if="deleteError" class="mb-4 text-sm text-red-600 dark:text-red-400">{{ deleteError }}</p>
+          <div class="flex gap-3 justify-end">
+            <button
+              type="button"
+              @click="showDeleteConfirm = false; deleteError = ''"
+              :disabled="deleting"
+              class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50"
+            >
+              Hủy
+            </button>
+            <button
+              type="button"
+              @click="deleteContract"
+              :disabled="deleting"
+              class="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 disabled:opacity-50 rounded-lg flex items-center gap-2"
+            >
+              <span v-if="deleting" class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+              {{ deleting ? 'Đang xóa...' : 'Xóa hợp đồng' }}
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   </admin-layout>
 </template>
@@ -567,11 +631,12 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
+import AppDatePicker from '@/components/forms/AppDatePicker.vue'
 import { contractService, type Contract } from '@/services/contractService'
 import { amountToVietnameseWords } from '@/utils/numberToWords'
 import { exportQuotation } from '@/utils/quotation'
 import { zaloChatUrl } from '@/utils/zalo'
-import { useAuth, UserRole } from '@/composables/useAuth'
+import { useAuth, UserRole, Permission } from '@/composables/useAuth'
 import {
   PAPERWORK_CHECKLIST,
   emptyPaperworkForm,
@@ -579,6 +644,7 @@ import {
   hasPaperworkDate,
   isPaperworkComplete,
   getMissingPaperworkLabels,
+  getContractTotalAmount,
   isContractPaid,
   getPaymentStatusLabel,
   paymentStatusClass,
@@ -590,12 +656,18 @@ import {
 
 const route = useRoute()
 const router = useRouter()
-const { getUserRole } = useAuth()
+const { getUserRole, getUser, canViewContractFinance, canManageContracts, hasPermission } = useAuth()
+const canCreateTicket = computed(() => hasPermission(Permission.CREATE_TICKET))
+const canCreatePaymentRequest = computed(() => hasPermission(Permission.CREATE_PAYMENT_REQUEST))
 const isStaff = computed(() => getUserRole.value !== UserRole.END_USER && getUserRole.value !== UserRole.DISTRIBUTOR)
+const isDev = computed(() => getUserRole.value === UserRole.DEV)
 const contract = ref<any>(null)
 const loading = ref(true)
 const error = ref('')
 const showExportModal = ref(false)
+const showDeleteConfirm = ref(false)
+const deleting = ref(false)
+const deleteError = ref('')
 const showStatusModal = ref(false)
 const exportShowContact = ref(true)
 const statusForm = ref<Contract['status']>('draft')
@@ -682,6 +754,51 @@ function ticketDetailPath(ticketId: number) {
   return isStaff.value ? `/tickets/${ticketId}` : `/customer/tickets/${ticketId}`
 }
 
+const createTicketPath = computed(() => {
+  if (!contract.value?.id) return '/tickets/new'
+  const q = new URLSearchParams({
+    contract_id: String(contract.value.id),
+    category: 'repair',
+  })
+  if (contract.value.customer_id) {
+    q.set('customer_id', String(contract.value.customer_id))
+  }
+  const firstInverter = contract.value.inverters?.[0]
+  if (firstInverter?.id) {
+    q.set('inverter_id', String(firstInverter.id))
+  }
+  return `/tickets/new?${q.toString()}`
+})
+
+function goCreatePaymentRequest() {
+  if (!contract.value?.id) {
+    router.push('/payment-requests?create=1')
+    return
+  }
+  const q = new URLSearchParams({
+    create: '1',
+    contract_id: String(contract.value.id),
+  })
+  const amount = getContractTotalAmount(contract.value)
+  if (amount > 0) {
+    q.set('amount', String(amount))
+  }
+  router.push(`/payment-requests?${q.toString()}`)
+}
+
+const createPaymentRequestPath = computed(() => {
+  if (!contract.value?.id) return '/payment-requests?create=1'
+  const q = new URLSearchParams({
+    create: '1',
+    contract_id: String(contract.value.id),
+  })
+  const amount = getContractTotalAmount(contract.value)
+  if (amount > 0) {
+    q.set('amount', String(amount))
+  }
+  return `/payment-requests?${q.toString()}`
+})
+
 function inverterDetailPath(inverterId: number) {
   const base = isStaff.value ? `/inverters/${inverterId}` : `/customer/inverters/${inverterId}`
   if (contract.value?.id) {
@@ -754,9 +871,27 @@ function openEdit() {
   router.push({ path: '/contracts', query: { edit: contract.value.id } })
 }
 
+async function deleteContract() {
+  if (!contract.value) return
+  deleting.value = true
+  deleteError.value = ''
+  try {
+    await contractService.remove(contract.value.id)
+    showDeleteConfirm.value = false
+    router.push('/contracts')
+  } catch (e: any) {
+    deleteError.value = e.message || 'Không thể xóa hợp đồng'
+  } finally {
+    deleting.value = false
+  }
+}
+
 function exportQuote() {
   if (!contract.value) return
-  exportQuotation(contract.value, { showContact: exportShowContact.value }).catch(() => {
+  exportQuotation(contract.value, {
+    showContact: exportShowContact.value,
+    sellerName: getUser.value?.name || '',
+  }).catch(() => {
     alert('Không thể tải con dấu báo giá. Vui lòng đăng nhập lại hoặc thử sau.')
   })
   showExportModal.value = false
@@ -767,9 +902,9 @@ function fmt(d?: string) {
   return new Date(d).toLocaleDateString('vi-VN')
 }
 
-function fmtCurrency(v: number) {
-  if (!v) return '—'
-  return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(v)
+function fmtCurrency(v: number | null | undefined) {
+  if (v === null || v === undefined || Number.isNaN(Number(v))) return '—'
+  return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(Number(v))
 }
 
 function isExpired(d?: string) {

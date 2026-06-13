@@ -127,9 +127,10 @@
             >
               <option value="">{{ t('users.management.filters.all') }}</option>
               <option value="admin">{{ t('users.management.roleOptions.admin') }}</option>
-              <option value="dev">{{ t('users.management.roleOptions.dev') }}</option>
+              <option v-if="isDevUser" value="dev">{{ t('users.management.roleOptions.dev') }}</option>
               <option value="service_center">{{ t('users.management.roleOptions.serviceCenter') }}</option>
               <option value="technician">{{ t('users.management.roleOptions.technician') }}</option>
+              <option value="accounting">{{ t('users.management.roleOptions.accounting') }}</option>
               <option value="distributor">{{ t('users.management.roleOptions.distributor') }}</option>
               <option value="end_user">{{ t('users.management.roleOptions.endUser') }}</option>
             </select>
@@ -458,6 +459,7 @@
                     </option>
                     <option value="service_center">{{ t('users.management.roleOptions.serviceCenter') }}</option>
                     <option value="technician">{{ t('users.management.roleOptions.technician') }}</option>
+                    <option value="accounting">{{ t('users.management.roleOptions.accounting') }}</option>
                     <option value="distributor">{{ t('users.management.roleOptions.distributor') }}</option>
                     <option value="end_user">{{ t('users.management.roleOptions.endUser') }}</option>
                   </select>
@@ -509,6 +511,50 @@
                     :placeholder="t('users.management.modal.addressPlaceholder')"
                     class="w-full px-4 py-2.5 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white touch-manipulation min-h-[44px] sm:min-h-0 text-base sm:text-sm"
                   />
+                </div>
+
+                <div class="md:col-span-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+                  <p class="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-3">
+                    {{ t('users.management.modal.bankSection') }}
+                  </p>
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+                    <div class="md:col-span-2">
+                      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        {{ t('users.management.modal.bankAccountName') }}
+                      </label>
+                      <input
+                        v-model="userForm.bank_account_name"
+                        type="text"
+                        :placeholder="t('users.management.modal.bankAccountNamePlaceholder')"
+                        class="w-full px-4 py-2.5 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white touch-manipulation min-h-[44px] sm:min-h-0 text-base sm:text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        {{ t('users.management.modal.bankAccount') }}
+                      </label>
+                      <input
+                        v-model="userForm.bank_account"
+                        type="text"
+                        :placeholder="t('users.management.modal.bankAccountPlaceholder')"
+                        class="w-full px-4 py-2.5 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white touch-manipulation min-h-[44px] sm:min-h-0 text-base sm:text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        {{ t('users.management.modal.bankName') }}
+                      </label>
+                      <select
+                        v-model="userForm.bank_name"
+                        class="w-full px-4 py-2.5 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white touch-manipulation min-h-[44px] sm:min-h-0 text-base sm:text-sm"
+                      >
+                        <option value="">{{ t('users.management.modal.selectBank') }}</option>
+                        <option v-for="b in VN_BANKS" :key="b.bin" :value="b.shortName">
+                          {{ b.shortName }} ({{ b.code }})
+                        </option>
+                      </select>
+                    </div>
+                  </div>
                 </div>
               </div>
               <div class="flex flex-col sm:flex-row justify-end gap-3 mt-6">
@@ -613,6 +659,7 @@ import AdminLayout from '@/components/layout/AdminLayout.vue'
 import { PlusIcon, UserGroupIcon, UserCircleIcon } from '../../../icons'
 import { useAuth, UserRole, UserStatus, Permission } from '@/composables/useAuth'
 import { userService, type User } from '@/services/userService'
+import { VN_BANKS, matchBankSelectValue, getBankLabel } from '@/data/vnBanks'
 import { useToast } from '@/composables/useToast'
 
 const { showSuccess } = useToast()
@@ -643,6 +690,9 @@ type UserFormState = {
   organization: string
   phone: string
   address: string
+  bank_account: string
+  bank_name: string
+  bank_account_name: string
   password: string
   status: UserStatus
 }
@@ -667,6 +717,9 @@ const createEmptyUserForm = (): UserFormState => ({
   organization: '',
   phone: '',
   address: '',
+  bank_account: '',
+  bank_name: '',
+  bank_account_name: '',
   password: '',
   status: UserStatus.ACTIVE,
 })
@@ -715,6 +768,10 @@ onMounted(() => {
 const filteredUsers = computed(() => {
   let result = users.value
 
+  if (!isDevUser.value) {
+    result = result.filter((u) => u.role !== UserRole.DEV)
+  }
+
   if (filters.value.search) {
     const search = filters.value.search.toLowerCase()
     result = result.filter(
@@ -744,6 +801,8 @@ const getRoleClass = (role: UserRole) => {
       'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
     [UserRole.TECHNICIAN]:
       'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+    [UserRole.ACCOUNTING]:
+      'bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-200',
     [UserRole.DISTRIBUTOR]:
       'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
     [UserRole.END_USER]:
@@ -758,6 +817,7 @@ const getRoleLabel = (role: UserRole | string) => {
     [UserRole.DEV]: t('users.management.roleOptions.dev'),
     [UserRole.SERVICE_CENTER]: t('users.management.roleOptions.serviceCenter'),
     [UserRole.TECHNICIAN]: t('users.management.roleOptions.technician'),
+    [UserRole.ACCOUNTING]: t('users.management.roleOptions.accounting'),
     [UserRole.DISTRIBUTOR]: t('users.management.roleOptions.distributor'),
     [UserRole.END_USER]: t('users.management.roleOptions.endUser'),
   }
@@ -770,6 +830,7 @@ const getRoleColor = (role: UserRole) => {
     [UserRole.DEV]: 'text-indigo-500',
     [UserRole.SERVICE_CENTER]: 'text-blue-500',
     [UserRole.TECHNICIAN]: 'text-green-500',
+    [UserRole.ACCOUNTING]: 'text-teal-500',
     [UserRole.DISTRIBUTOR]: 'text-yellow-500',
     [UserRole.END_USER]: 'text-gray-500',
   }
@@ -829,6 +890,9 @@ const editUser = async (userId: number) => {
     organization: user.organization || '',
     phone: user.phone || '',
     address: user.address || '',
+    bank_account: user.bank_account || '',
+    bank_name: matchBankSelectValue(user.bank_name) || '',
+    bank_account_name: user.bank_account_name || '',
     password: '',
     status: user.status,
   }
@@ -877,6 +941,15 @@ const saveUser = async () => {
       if (userForm.value.address !== undefined) {
         updateData.address = userForm.value.address || null
       }
+      if (userForm.value.bank_account !== undefined) {
+        updateData.bank_account = userForm.value.bank_account || null
+      }
+      if (userForm.value.bank_name !== undefined) {
+        updateData.bank_name = userForm.value.bank_name || null
+      }
+      if (userForm.value.bank_account_name !== undefined) {
+        updateData.bank_account_name = userForm.value.bank_account_name || null
+      }
       
       if (userForm.value.password) {
         updateData.password = userForm.value.password
@@ -912,6 +985,9 @@ const saveUser = async () => {
         organization: userForm.value.organization || undefined,
         phone: userForm.value.phone || undefined,
         address: userForm.value.address || undefined,
+        bank_account: userForm.value.bank_account || undefined,
+        bank_name: userForm.value.bank_name || undefined,
+        bank_account_name: userForm.value.bank_account_name || undefined,
         status: userForm.value.status,
       })
       

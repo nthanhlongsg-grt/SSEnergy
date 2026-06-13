@@ -42,7 +42,7 @@
             <span class="hidden sm:inline">Đang cập nhật...</span>
           </div>
           <button
-            v-if="canViewReport && ticket?.status === 'closed'"
+            v-if="canViewReport && isTicketClosed(ticket?.status)"
             @click="viewReport"
             class="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
           >
@@ -429,7 +429,7 @@
 
       <!-- Attachments - Full Width -->
       <div
-        v-if="(ticketAttachments.length > 0) || (canViewReport && ticket?.status === 'closed')"
+        v-if="(ticketAttachments.length > 0) || (canViewReport && isTicketClosed(ticket?.status))"
         class="rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-6 shadow-sm"
       >
         <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
@@ -437,7 +437,7 @@
         </h2>
         
         <!-- Report Button -->
-        <div v-if="canViewReport && ticket?.status === 'closed'" class="mb-4">
+        <div v-if="canViewReport && isTicketClosed(ticket?.status)" class="mb-4">
           <button
             @click="viewReport"
             class="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
@@ -668,6 +668,7 @@
                   rows="3"
                   :placeholder="t('tickets.detail.actions.commentPlaceholder')"
                   class="w-full px-4 py-2 pr-12 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                  @paste="handleCommentPaste"
                 ></textarea>
                 
                 <!-- Image Upload Button - Icon only, positioned at top-right of textarea -->
@@ -901,6 +902,7 @@
                   rows="3"
                   :placeholder="t('tickets.detail.actions.commentPlaceholder')"
                   class="w-full px-4 py-2 pr-12 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 dark:bg-gray-700 dark:text-white"
+                  @paste="handleInternalCommentPaste"
                 ></textarea>
                 
                 <!-- Image Upload Button - Icon only, positioned at top-right of textarea -->
@@ -1062,7 +1064,13 @@
                 class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
                 :disabled="updatingStatus"
               >
-                <option value="closed">{{ t('tickets.detail.statusModal.completed') }}</option>
+                <option
+                  v-for="option in statusOptions"
+                  :key="option.value"
+                  :value="option.value"
+                >
+                  {{ option.label }}
+                </option>
               </select>
             </div>
 
@@ -1265,7 +1273,13 @@
                 <h5 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">{{ t('tickets.detail.statusModal.images') }}</h5>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <!-- Before Images -->
-                  <div>
+                  <div
+                    ref="beforeImagesZoneRef"
+                    class="outline-none focus-within:ring-2 focus-within:ring-blue-400 rounded-lg p-1 -m-1"
+                    tabindex="0"
+                    @click="focusBeforeImagesZone"
+                    @paste="handleBeforeImagesPaste"
+                  >
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       {{ t('tickets.detail.statusModal.beforeRepair') }}
                     </label>
@@ -1292,10 +1306,17 @@
                       </div>
                     </div>
                     <p v-else class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ t('tickets.detail.statusModal.noImages') }}</p>
+                    <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">{{ t('common.imageUpload.pasteHint') }}</p>
                   </div>
 
                   <!-- After Images -->
-                  <div>
+                  <div
+                    ref="afterImagesZoneRef"
+                    class="outline-none focus-within:ring-2 focus-within:ring-blue-400 rounded-lg p-1 -m-1"
+                    tabindex="0"
+                    @click="focusAfterImagesZone"
+                    @paste="handleAfterImagesPaste"
+                  >
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       {{ t('tickets.detail.statusModal.afterRepair') }}
                     </label>
@@ -1322,6 +1343,7 @@
                       </div>
                     </div>
                     <p v-else class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ t('tickets.detail.statusModal.noImages') }}</p>
+                    <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">{{ t('common.imageUpload.pasteHint') }}</p>
                   </div>
                 </div>
               </div>
@@ -1381,7 +1403,7 @@
               </button>
               <button
                 @click="updateTicketStatus"
-                :disabled="!selectedStatus || updatingStatus || (selectedStatus === 'closed' && !technicianSignatureAgreed)"
+                :disabled="!selectedStatus || updatingStatus || (selectedStatus === TicketStatus.CLOSED && !technicianSignatureAgreed)"
                 class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {{ updatingStatus ? t('tickets.detail.statusModal.updating') : t('tickets.detail.statusModal.update') }}
@@ -1516,6 +1538,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import { useAutoRefresh } from '@/composables/useAutoRefresh'
+import { useChangeDetection } from '@/composables/useChangeDetection'
 import { WarningIcon } from '../../../icons'
 import { ticketService } from '@/services/ticketService'
 import { useAuth, UserRole } from '@/composables/useAuth'
@@ -1526,10 +1549,16 @@ import { emptyReplacementPartRow, serializeReplacementParts, type ReplacementPar
 import { getApiBaseUrlWithoutApi } from '@/utils/apiUrl'
 import flatPickr from 'vue-flatpickr-component'
 import 'flatpickr/dist/flatpickr.css'
+import { useFlatpickrConfig } from '@/composables/useFlatpickr'
+import { addFilesToImageList } from '@/utils/imageUpload'
+import { useImagePaste } from '@/composables/useImagePaste'
+import { useTicketStatus } from '@/composables/useTicketStatus'
+import { isTicketClosed, TicketStatus } from '@/constants/ticketStatus'
 
 const route = useRoute()
 const router = useRouter()
 const { t } = useI18n()
+const { getStatusLabel, getStatusClass, statusOptions } = useTicketStatus()
 const { getSlaHoursByPriority } = useSlaSettings()
 const { hasRole, getUser } = useAuth()
 const currentUser = getUser
@@ -1608,6 +1637,8 @@ const canSignTechnician = computed(() => {
 
 // Image upload refs
 const beforeImagesInput = ref<HTMLInputElement | null>(null)
+const beforeImagesZoneRef = ref<HTMLElement | null>(null)
+const afterImagesZoneRef = ref<HTMLElement | null>(null)
 const afterImagesInput = ref<HTMLInputElement | null>(null)
 const beforeImagePreviews = ref<string[]>([])
 const afterImagePreviews = ref<string[]>([])
@@ -1760,34 +1791,40 @@ const generateTechnicianSignature = async () => {
 }
 
 // Handle before images selection
-const handleBeforeImagesSelect = (event: Event) => {
+const pushBeforeImages = async (files: File[]) => {
+  await addFilesToImageList(files, beforeImageFiles.value, beforeImagePreviews.value)
+}
+
+const handleBeforeImagesSelect = async (event: Event) => {
   const target = event.target as HTMLInputElement
   if (target.files) {
-    Array.from(target.files).forEach((file) => {
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        beforeImagePreviews.value.push(e.target?.result as string)
-        beforeImageFiles.value.push(file)
-      }
-      reader.readAsDataURL(file)
-    })
+    await pushBeforeImages(Array.from(target.files))
+    target.value = ''
   }
 }
 
+const { handlePaste: handleBeforeImagesPaste, focusZone: focusBeforeImagesZone } = useImagePaste(pushBeforeImages, {
+  enabled: () => !updatingStatus.value,
+  zoneRef: beforeImagesZoneRef,
+})
+
 // Handle after images selection
-const handleAfterImagesSelect = (event: Event) => {
+const pushAfterImages = async (files: File[]) => {
+  await addFilesToImageList(files, afterImageFiles.value, afterImagePreviews.value)
+}
+
+const handleAfterImagesSelect = async (event: Event) => {
   const target = event.target as HTMLInputElement
   if (target.files) {
-    Array.from(target.files).forEach((file) => {
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        afterImagePreviews.value.push(e.target?.result as string)
-        afterImageFiles.value.push(file)
-      }
-      reader.readAsDataURL(file)
-    })
+    await pushAfterImages(Array.from(target.files))
+    target.value = ''
   }
 }
+
+const { handlePaste: handleAfterImagesPaste, focusZone: focusAfterImagesZone } = useImagePaste(pushAfterImages, {
+  enabled: () => !updatingStatus.value,
+  zoneRef: afterImagesZoneRef,
+})
 
 // Remove before image
 const removeBeforeImage = (index: number) => {
@@ -1862,12 +1899,10 @@ const canViewReport = computed(() => {
 })
 
 const canAssign = computed(() => {
-  // Admin and Technician can assign/reassign technicians (except for closed tickets)
   if (hasRole(UserRole.ADMIN) || hasRole(UserRole.TECHNICIAN)) {
-    return ticket.value?.status !== 'closed' && ticket.value?.status !== 'completed'
+    return !isTicketClosed(ticket.value?.status)
   }
-  // Other users can only assign when ticket is initialized or new
-  return ticket.value?.status === 'initialized' || ticket.value?.status === 'new' || ticket.value?.status === 'assigned'
+  return ticket.value?.status === TicketStatus.NEW || ticket.value?.status === 'initialized'
 })
 
 const canUseQuickComments = computed(() => {
@@ -1927,8 +1962,7 @@ const isSLAOverdue = computed(() => {
     : ticket.value.sla_deadline
   return (
     new Date() > deadline &&
-    ticket.value.status !== 'completed' &&
-    ticket.value.status !== 'closed'
+    !isTicketClosed(ticket.value.status)
   )
 })
 
@@ -1977,33 +2011,6 @@ const allImages = computed(() => {
   return images
 })
 
-const getStatusClass = (status: string) => {
-  const classes = {
-    initialized: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
-    in_progress: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
-    closed: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
-    // Support old statuses for backward compatibility
-    new: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
-    assigned: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
-    waiting_parts: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
-    completed: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
-  }
-  return classes[status as keyof typeof classes] || classes.initialized
-}
-
-const getStatusLabel = (status: string) => {
-  const labels: Record<string, string> = {
-    initialized: t('tickets.detail.labels.status.initialized'),
-    in_progress: t('tickets.detail.labels.status.inProgress'),
-    closed: t('tickets.detail.labels.status.closed'),
-    // Support old statuses for backward compatibility
-    new: t('tickets.detail.labels.status.initialized'),
-    assigned: t('tickets.detail.labels.status.inProgress'),
-    waiting_parts: t('tickets.detail.labels.status.inProgress'),
-    completed: t('tickets.detail.labels.status.closed'),
-  }
-  return labels[status] || status
-}
 
 const getPriorityClass = (priority: string) => {
   const classes: Record<string, string> = {
@@ -2133,28 +2140,23 @@ const getSLATime = (priority?: string) => {
 }
 
 // Handle comment image selection
-const handleCommentImageSelect = (event: Event) => {
+const pushCommentImages = async (files: File[]) => {
+  await addFilesToImageList(files, commentImageFiles.value, commentImagePreviews.value, {
+    onTooLarge: (name) => {
+      error.value = t('tickets.new.messages.fileTooLarge', { name })
+    },
+  })
+}
+
+const handleCommentImageSelect = async (event: Event) => {
   const target = event.target as HTMLInputElement
   if (target.files) {
-    Array.from(target.files).forEach((file) => {
-      if (file.size <= 10 * 1024 * 1024) {
-        // Max 10MB
-        const reader = new FileReader()
-        reader.onload = (e) => {
-          commentImagePreviews.value.push(e.target?.result as string)
-          commentImageFiles.value.push(file)
-        }
-        reader.readAsDataURL(file)
-      } else {
-        error.value = t('tickets.new.messages.fileTooLarge', { name: file.name })
-      }
-    })
-  }
-  // Reset input to allow selecting the same file again
-  if (target) {
+    await pushCommentImages(Array.from(target.files))
     target.value = ''
   }
 }
+
+const { handlePaste: handleCommentPaste } = useImagePaste(pushCommentImages)
 
 // Remove comment image
 const removeCommentImage = (index: number) => {
@@ -2163,28 +2165,23 @@ const removeCommentImage = (index: number) => {
 }
 
 // Handle internal comment image select
-const handleInternalCommentImageSelect = (event: Event) => {
+const pushInternalCommentImages = async (files: File[]) => {
+  await addFilesToImageList(files, internalCommentImageFiles.value, internalCommentImagePreviews.value, {
+    onTooLarge: (name) => {
+      error.value = t('tickets.new.messages.fileTooLarge', { name })
+    },
+  })
+}
+
+const handleInternalCommentImageSelect = async (event: Event) => {
   const target = event.target as HTMLInputElement
   if (target.files) {
-    Array.from(target.files).forEach((file) => {
-      if (file.size <= 10 * 1024 * 1024) {
-        // Max 10MB
-        const reader = new FileReader()
-        reader.onload = (e) => {
-          internalCommentImagePreviews.value.push(e.target?.result as string)
-          internalCommentImageFiles.value.push(file)
-        }
-        reader.readAsDataURL(file)
-      } else {
-        error.value = t('tickets.new.messages.fileTooLarge', { name: file.name })
-      }
-    })
-  }
-  // Reset input to allow selecting the same file again
-  if (target) {
+    await pushInternalCommentImages(Array.from(target.files))
     target.value = ''
   }
 }
+
+const { handlePaste: handleInternalCommentPaste } = useImagePaste(pushInternalCommentImages)
 
 // Remove internal comment image
 const removeInternalCommentImage = (index: number) => {
@@ -2420,7 +2417,7 @@ const viewReport = async () => {
   // Kiểm tra trong state trước
   if (reportUrl.value && ticket.value?.id) {
     urlToOpen = reportUrl.value
-  } else if (ticket.value?.status === 'closed' && ticket.value?.id) {
+  } else if (isTicketClosed(ticket.value?.status) && ticket.value?.id) {
     // Thử load từ sessionStorage
     try {
       const savedReport = sessionStorage.getItem(`ticket_${ticket.value.id}_report`)
@@ -2635,7 +2632,7 @@ const loadTicket = async () => {
     watchers.value = (ticketData as any).watchers || []
     
     // Load report info from sessionStorage if ticket is closed
-    if (ticket.value?.status === 'closed') {
+    if (isTicketClosed(ticket.value?.status)) {
       try {
         const savedReport = sessionStorage.getItem(`ticket_${ticketId}_report`)
         if (savedReport) {
@@ -2683,9 +2680,17 @@ const loadTicket = async () => {
   }
 }
 
-// Auto-refresh ticket data every 10 seconds
+// Change detection: refresh within ~5s when ticket/comments change
+useChangeDetection({
+  ticketId: route.params.id,
+  onTicketChange: async () => {
+    if (!loading.value) await loadTicket()
+  },
+})
+
+// Auto-refresh ticket data every 30 seconds (fallback)
 const { isRefreshing: isAutoRefreshing, lastRefreshTime } = useAutoRefresh({
-  interval: 10000, // 10 seconds
+  interval: 30000, // 10 seconds
   fetchFn: async () => {
     // Only refresh if not currently loading manually
     if (!loading.value) {
@@ -2850,9 +2855,9 @@ const buildActivities = () => {
     })
   }
   
-  // Sort by timestamp (newest first)
+  // Sort by timestamp (oldest first)
   activities.value.sort((a, b) => {
-    return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    return new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
   })
 }
 
@@ -2876,7 +2881,7 @@ watch(showAssignModal, async (isOpen) => {
 // Watch status modal
 watch(showStatusModal, async (isOpen) => {
   if (isOpen && ticket.value) {
-    selectedStatus.value = 'closed'
+    selectedStatus.value = ticket.value.status || TicketStatus.NEW
     
     // Ngày bắt đầu = ngày tạo ticket
     const ticketCreatedDate = ticket.value.created_at ? formatDateForInput(ticket.value.created_at) : formatDateForInput(new Date())
@@ -3012,13 +3017,13 @@ const closeStatusModal = () => {
 const updateTicketStatus = async () => {
   if (!selectedStatus.value || !ticket.value) return
 
-  if (selectedStatus.value === 'closed' && !serviceReportForm.value.service_date) {
+  if (selectedStatus.value === TicketStatus.CLOSED && !serviceReportForm.value.service_date) {
     error.value = t('tickets.detail.messages.fillServiceReportRequired')
     return
   }
 
   // Yêu cầu checkbox đồng ý khi close ticket
-  if (selectedStatus.value === 'closed' && !technicianSignatureAgreed.value) {
+  if (selectedStatus.value === TicketStatus.CLOSED && !technicianSignatureAgreed.value) {
     error.value = 'Vui lòng tích vào ô "Tôi đồng ý và xác nhận" để đóng ticket'
     return
   }
@@ -3034,7 +3039,7 @@ const updateTicketStatus = async () => {
     await ticketService.updateTicketStatus(ticket.value.id, payload)
     
     // Generate HTML report nếu hoàn thành (không lưu vào DB)
-    if (selectedStatus.value === 'closed') {
+    if (selectedStatus.value === TicketStatus.CLOSED) {
       try {
         const beforeImages = await convertImagesToBase64(beforeImageFiles.value)
         const afterImages = await convertImagesToBase64(afterImageFiles.value)
@@ -3126,15 +3131,7 @@ const deleteTicket = async () => {
   }
 }
 
-// Flatpickr config for date picker (date only)
-const flatpickrDateConfig = {
-  dateFormat: 'Y-m-d',
-  altInput: true,
-  altFormat: 'd/m/Y',
-  locale: {
-    firstDayOfWeek: 1, // Monday
-  },
-}
+const { dateConfig: flatpickrDateConfig } = useFlatpickrConfig()
 
 // Load available users for watcher selection (only ADMIN and TECHNICIAN)
 const loadAvailableUsers = async () => {

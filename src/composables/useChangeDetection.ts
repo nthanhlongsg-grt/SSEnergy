@@ -5,37 +5,33 @@
  * The endpoint returns MAX(updated_at) timestamps and counts for key entities.
  * When a value changes the corresponding callback fires, then the caller
  * can re-fetch only the data it needs.
- *
- * Much more efficient than polling full data every 10 seconds:
- * - /api/sync/changes: ~1ms query (just MAX on indexed column)
- * - Full data fetch: only triggered when something actually changed
- *
- * @example
- * ```ts
- * useChangeDetection({
- *   onTicketChange: () => loadTickets(),
- *   onUserChange:   () => loadTechnicians(),
- * })
- * ```
  */
 import { onMounted, onUnmounted } from 'vue'
 import { apiClient } from '@/services/api'
 
 export interface ChangeSnapshot {
-  tickets:       string | null   // MAX(updated_at) of visible tickets
-  users:         string | null   // MAX(updated_at) of active users (admin/dev only)
-  notifications: number          // unread notification count
+  tickets: string | null
+  users: string | null
+  profile: string | null
+  notifications: number
+  tasks: string | null
 }
 
 export interface ChangeDetectionOptions {
   /** Poll interval in ms. Default: 5000 */
   interval?: number
+  /** When set, server tracks a specific ticket (comments + updated_at). */
+  ticketId?: number | string | null
   /** Called when any ticket is created/updated */
   onTicketChange?: () => void
   /** Called when any user is created/updated (admin/dev only) */
   onUserChange?: () => void
+  /** Called when the signed-in user's profile/role may have changed */
+  onProfileChange?: () => void
   /** Called when unread notification count changes */
   onNotificationChange?: (count: number) => void
+  /** Called when tasks/schedules change */
+  onTaskChange?: () => void
   /** Called when anything changes */
   onAnyChange?: () => void
   /** Start immediately on mount. Default: true */
@@ -44,12 +40,15 @@ export interface ChangeDetectionOptions {
 
 export function useChangeDetection(options: ChangeDetectionOptions = {}) {
   const {
-    interval       = 5000,
+    interval = 5000,
+    ticketId = null,
     onTicketChange,
     onUserChange,
+    onProfileChange,
     onNotificationChange,
+    onTaskChange,
     onAnyChange,
-    autoStart      = true,
+    autoStart = true,
   } = options
 
   let previous: ChangeSnapshot | null = null
@@ -58,7 +57,11 @@ export function useChangeDetection(options: ChangeDetectionOptions = {}) {
 
   const check = async () => {
     try {
-      const res = await apiClient.get<ChangeSnapshot>('/sync/changes')
+      const query =
+        ticketId !== null && ticketId !== undefined && ticketId !== ''
+          ? `?ticket_id=${encodeURIComponent(String(ticketId))}`
+          : ''
+      const res = await apiClient.get<ChangeSnapshot>(`/sync/changes${query}`)
       if (!res.data) return
 
       const current = res.data
@@ -76,8 +79,18 @@ export function useChangeDetection(options: ChangeDetectionOptions = {}) {
           anyChanged = true
         }
 
+        if (current.profile !== null && current.profile !== previous.profile) {
+          onProfileChange?.()
+          anyChanged = true
+        }
+
         if (current.notifications !== previous.notifications) {
           onNotificationChange?.(current.notifications)
+          anyChanged = true
+        }
+
+        if (current.tasks !== null && current.tasks !== previous.tasks) {
+          onTaskChange?.()
           anyChanged = true
         }
 
@@ -95,7 +108,7 @@ export function useChangeDetection(options: ChangeDetectionOptions = {}) {
   const start = () => {
     if (running) return
     running = true
-    check() // immediate first check
+    check()
     timer = setInterval(check, interval)
   }
 
@@ -107,12 +120,11 @@ export function useChangeDetection(options: ChangeDetectionOptions = {}) {
     running = false
   }
 
-  // Pause when tab is hidden, resume when visible
   const handleVisibility = () => {
     if (document.hidden) {
       stop()
     } else {
-      previous = null // force re-baseline on resume
+      previous = null
       start()
     }
   }

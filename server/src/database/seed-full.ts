@@ -2,18 +2,18 @@ import bcrypt from 'bcryptjs'
 import db from './db.js'
 import { requireSeedPassword } from '../utils/seedPassword.js'
 
-const DEV_EMAIL = process.env.DEV_SEED_EMAIL || 'developer@local.dev'
+const DEV_EMAIL = process.env.DEV_SEED_EMAIL || 'system@sgesolartech.vn'
 
 const seedUsers = async () => {
   const plainPassword = requireSeedPassword()
-  console.log('🌱 Seeding developer user...')
+  console.log('🌱 Seeding system user...')
 
   const MOCK_USERS = [
     {
-      name: 'SGE Developer',
+      name: 'System',
       email: DEV_EMAIL,
       password: await bcrypt.hash(plainPassword, 10),
-      code: 'DEV001',
+      code: 'SYS001',
       role: 'dev',
       organization: 'SGE Vietnam',
       phone: '0900000000',

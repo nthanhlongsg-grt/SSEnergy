@@ -63,11 +63,9 @@
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Ngày thực hiện <span class="text-red-500">*</span>
                 </label>
-                <input
+                <AppDatePicker
                   v-model="form.serviceDate"
-                  type="date"
-                  required
-                  class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                  input-class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
                 />
               </div>
               <div>
@@ -224,7 +222,9 @@
                   Ảnh trước khi sửa
                 </label>
                 <div
-                  class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-4 text-center"
+                  class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-4 text-center outline-none focus:ring-2 focus:ring-blue-400"
+                  tabindex="0"
+                  @paste="handleBeforePhotosPaste"
                 >
                   <input
                     type="file"
@@ -253,6 +253,9 @@
                     </svg>
                     <span class="text-sm text-gray-600 dark:text-gray-400">
                       Nhấn để chọn ảnh
+                    </span>
+                    <span class="text-xs text-gray-500 dark:text-gray-500 mt-1 block">
+                      Hoặc dán từ clipboard (Ctrl+V)
                     </span>
                   </label>
                   <div v-if="form.beforePhotos.length > 0" class="mt-4 grid grid-cols-2 gap-2">
@@ -283,7 +286,9 @@
                   Ảnh sau khi sửa
                 </label>
                 <div
-                  class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-4 text-center"
+                  class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-4 text-center outline-none focus:ring-2 focus:ring-blue-400"
+                  tabindex="0"
+                  @paste="handleAfterPhotosPaste"
                 >
                   <input
                     type="file"
@@ -312,6 +317,9 @@
                     </svg>
                     <span class="text-sm text-gray-600 dark:text-gray-400">
                       Nhấn để chọn ảnh
+                    </span>
+                    <span class="text-xs text-gray-500 dark:text-gray-500 mt-1 block">
+                      Hoặc dán từ clipboard (Ctrl+V)
                     </span>
                   </label>
                   <div v-if="form.afterPhotos.length > 0" class="mt-4 grid grid-cols-2 gap-2">
@@ -511,6 +519,9 @@
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
+import AppDatePicker from '@/components/forms/AppDatePicker.vue'
+import { addFilesToImageList, readFileAsDataUrl } from '@/utils/imageUpload'
+import { useImagePaste } from '@/composables/useImagePaste'
 
 const route = useRoute()
 
@@ -570,37 +581,39 @@ const removePart = (index: number) => {
   form.value.partsReplaced.splice(index, 1)
 }
 
-const handleBeforePhotos = (event: Event) => {
-  const target = event.target as HTMLInputElement
-  if (target.files) {
-    Array.from(target.files).forEach((file) => {
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        form.value.beforePhotos.push({
-          file,
-          preview: e.target?.result as string,
-        })
-      }
-      reader.readAsDataURL(file)
-    })
+const pushBeforePhotos = async (files: File[]) => {
+  for (const file of files.filter((f) => f.type.startsWith('image/'))) {
+    const preview = await readFileAsDataUrl(file)
+    form.value.beforePhotos.push({ file, preview })
   }
 }
 
-const handleAfterPhotos = (event: Event) => {
+const handleBeforePhotos = async (event: Event) => {
   const target = event.target as HTMLInputElement
   if (target.files) {
-    Array.from(target.files).forEach((file) => {
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        form.value.afterPhotos.push({
-          file,
-          preview: e.target?.result as string,
-        })
-      }
-      reader.readAsDataURL(file)
-    })
+    await pushBeforePhotos(Array.from(target.files))
+    target.value = ''
   }
 }
+
+const { handlePaste: handleBeforePhotosPaste } = useImagePaste(pushBeforePhotos)
+
+const pushAfterPhotos = async (files: File[]) => {
+  for (const file of files.filter((f) => f.type.startsWith('image/'))) {
+    const preview = await readFileAsDataUrl(file)
+    form.value.afterPhotos.push({ file, preview })
+  }
+}
+
+const handleAfterPhotos = async (event: Event) => {
+  const target = event.target as HTMLInputElement
+  if (target.files) {
+    await pushAfterPhotos(Array.from(target.files))
+    target.value = ''
+  }
+}
+
+const { handlePaste: handleAfterPhotosPaste } = useImagePaste(pushAfterPhotos)
 
 const removeBeforePhoto = (index: number) => {
   form.value.beforePhotos.splice(index, 1)

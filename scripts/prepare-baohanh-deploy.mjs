@@ -41,6 +41,7 @@ copySafe(path.join(backendRoot, 'env.example.txt'), path.join(apiApp, '.env.exam
 copySafe(path.join(backendRoot, 'ecosystem.config.cjs'), path.join(apiApp, 'ecosystem.config.cjs'))
 copySafe(path.join(backendRoot, 'database'), path.join(apiApp, 'database'))
 copySafe(path.join(backendRoot, 'reports'), path.join(apiApp, 'reports'))
+copySafe(path.join(backendRoot, 'private'), path.join(apiApp, 'private'))
 
 const readme = [
   'DEPLOY PACKAGE — https://baohanh.sgesolartech.vn/',
@@ -58,6 +59,7 @@ const readme = [
   '  CORS_ORIGIN=https://baohanh.sgesolartech.vn',
   '  DATABASE_PATH=./database/SGE.db',
   '  TZ=Asia/Ho_Chi_Minh',
+  '  STAMP_IMAGE_PATH=./private/stamp.png   # con dấu báo giá (hoặc ./dist/private/stamp.png)',
   '',
   'Linux (PM2):',
   '  cd api-server && npm ci --omit=dev',

@@ -71,8 +71,11 @@ export interface ContractListParams {
   status?: string
   customer_id?: number
   search?: string
+  contract_type?: string
   unpaid?: boolean
   undelivered?: boolean
+  from?: string
+  to?: string
   page?: number
   limit?: number
 }
@@ -81,10 +84,13 @@ export const contractService = {
   async list(params: ContractListParams = {}) {
     const query = new URLSearchParams()
     if (params.status) query.set('status', params.status)
+    if (params.contract_type) query.set('contract_type', params.contract_type)
     if (params.customer_id) query.set('customer_id', String(params.customer_id))
     if (params.search) query.set('search', params.search)
     if (params.unpaid) query.set('unpaid', '1')
     if (params.undelivered) query.set('undelivered', '1')
+    if (params.from) query.set('from', params.from)
+    if (params.to) query.set('to', params.to)
     if (params.page) query.set('page', String(params.page))
     if (params.limit) query.set('limit', String(params.limit))
 

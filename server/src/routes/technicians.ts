@@ -3,16 +3,25 @@ import db from '../database/db.js'
 import { authenticateToken, AuthRequest } from '../middleware/auth.js'
 import { UserRole } from '../types/index.js'
 import { AUTO_ASSIGN_STAFF_ROLES } from '../utils/staffFunction.js'
+import { canViewSystemUsers } from '../utils/systemUser.js'
 
 const router = Router()
 
+const staffRolesForRequester = (includeAdmins: boolean, requesterRole?: string) => {
+  const roles = includeAdmins
+    ? [...AUTO_ASSIGN_STAFF_ROLES]
+    : [UserRole.TECHNICIAN, UserRole.SERVICE_CENTER]
+  if (!canViewSystemUsers(requesterRole)) {
+    return roles.filter((role) => role !== UserRole.DEV)
+  }
+  return roles
+}
+
 // Get all technicians
-router.get('/', authenticateToken, (req, res) => {
+router.get('/', authenticateToken, (req: AuthRequest, res) => {
   try {
     const includeAdmins = req.query.includeAdmins === 'true'
-    const roles = includeAdmins
-      ? [...AUTO_ASSIGN_STAFF_ROLES]
-      : [UserRole.TECHNICIAN, UserRole.SERVICE_CENTER]
+    const roles = staffRolesForRequester(includeAdmins, req.user?.role)
     const rolePlaceholders = roles.map(() => '?').join(', ')
 
     const technicians = db.prepare(`
@@ -42,12 +51,10 @@ router.get('/', authenticateToken, (req, res) => {
 })
 
 // Get technician stats
-router.get('/stats', authenticateToken, (req, res) => {
+router.get('/stats', authenticateToken, (req: AuthRequest, res) => {
   try {
     const includeAdmins = req.query.includeAdmins === 'true'
-    const roles = includeAdmins
-      ? [...AUTO_ASSIGN_STAFF_ROLES]
-      : [UserRole.TECHNICIAN, UserRole.SERVICE_CENTER]
+    const roles = staffRolesForRequester(includeAdmins, req.user?.role)
     const rolePlaceholders = roles.map(() => '?').join(', ')
 
     const totalTechnicians = db.prepare(`
