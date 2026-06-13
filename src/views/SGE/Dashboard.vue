@@ -851,12 +851,7 @@ const loadDashboardData = async () => {
       }
     }
 
-    // Auto-filter tickets và tasks cho TECHNICIAN / WAREHOUSE — chỉ của mình
-    const currentUser = getUser.value
-    if (currentUser && isLimitedStaff.value) {
-      ticketFilters.value.technicianId = currentUser.id.toString()
-      taskFilters.value.technicianId = currentUser.id.toString()
-    }
+    // Limited staff thấy tất cả ticket/task — không auto-filter theo user
 
     // Load statistics data for summary cards
     await loadStatistics()
@@ -1315,21 +1310,10 @@ const statisticsData = ref({
 // Load statistics data (all tickets and tasks with high limit)
 const loadStatistics = async () => {
   try {
-    const currentUser = getUser.value
-    const statsParams: any = { limit: 500, page: 1 }
-    // Limited staff chỉ thống kê ticket/task của chính mình
-    if (isLimitedStaff.value && currentUser) {
-      statsParams.assigned_to = currentUser.id.toString()
-    }
-
-    const ticketsResponse = await ticketService.getAllTickets(statsParams)
+    const ticketsResponse = await ticketService.getAllTickets({ limit: 500, page: 1 })
     statisticsData.value.allTickets = ticketsResponse.data || []
     
-    const taskStatsParams: any = { limit: 500, page: 1 }
-    if (isLimitedStaff.value && currentUser) {
-      taskStatsParams.technician_id = currentUser.id.toString()
-    }
-    const tasksResponse = await scheduleService.getSchedules(taskStatsParams)
+    const tasksResponse = await scheduleService.getSchedules({ limit: 500, page: 1 })
     statisticsData.value.allTasks = tasksResponse.data || []
   } catch (err) {
     console.error('Error loading statistics:', err)
