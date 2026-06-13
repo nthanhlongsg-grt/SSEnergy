@@ -68,8 +68,11 @@
                 <div class="flex items-center justify-between gap-2">
                   <div class="min-w-0">
                     <p class="text-xs text-gray-500 dark:text-gray-400">{{ t('dashboard.contracts.unpaidDebt') }}</p>
-                    <p class="mt-1 text-lg sm:text-xl font-bold text-red-600 dark:text-red-400 truncate">
+                    <p v-if="canViewContractFinance" class="mt-1 text-lg sm:text-xl font-bold text-red-600 dark:text-red-400 truncate">
                       {{ formatContractCurrency(contractMetrics.totalDebt) }}
+                    </p>
+                    <p v-else class="mt-1 text-lg sm:text-xl font-bold text-red-600 dark:text-red-400">
+                      {{ contractMetrics.unpaidCount }}
                     </p>
                     <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
                       {{ t('dashboard.contracts.contractCount', { count: contractMetrics.unpaidCount }) }}
@@ -176,7 +179,7 @@
                   <tr>
                     <th class="px-4 py-2.5 text-left text-xs font-medium text-gray-500 dark:text-gray-400">{{ t('dashboard.contracts.columns.number') }}</th>
                     <th class="px-4 py-2.5 text-left text-xs font-medium text-gray-500 dark:text-gray-400">{{ t('dashboard.contracts.columns.customer') }}</th>
-                    <th class="px-4 py-2.5 text-right text-xs font-medium text-gray-500 dark:text-gray-400">{{ t('dashboard.contracts.columns.value') }}</th>
+                    <th v-if="canViewContractFinance" class="px-4 py-2.5 text-right text-xs font-medium text-gray-500 dark:text-gray-400">{{ t('dashboard.contracts.columns.value') }}</th>
                     <th class="px-4 py-2.5 text-left text-xs font-medium text-gray-500 dark:text-gray-400">{{ activeContractDateLabel }}</th>
                   </tr>
                 </thead>
@@ -189,11 +192,11 @@
                   >
                     <td class="px-4 py-2.5 font-mono text-blue-600 dark:text-blue-400">{{ contract.contract_number }}</td>
                     <td class="px-4 py-2.5 text-gray-900 dark:text-white truncate max-w-[200px]">{{ contract.customer_name || '—' }}</td>
-                    <td class="px-4 py-2.5 text-right font-medium text-gray-900 dark:text-white whitespace-nowrap">{{ formatContractCurrency(contract.value) }}</td>
+                    <td v-if="canViewContractFinance" class="px-4 py-2.5 text-right font-medium text-gray-900 dark:text-white whitespace-nowrap">{{ formatContractCurrency(contract.value) }}</td>
                     <td class="px-4 py-2.5 text-gray-500 dark:text-gray-400 whitespace-nowrap">{{ contractDateForRow(contract) }}</td>
                   </tr>
                   <tr v-if="activeContractList.length === 0">
-                    <td colspan="4" class="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
+                    <td :colspan="canViewContractFinance ? 4 : 3" class="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
                       {{ activeContractEmptyText }}
                     </td>
                   </tr>
@@ -203,8 +206,8 @@
           </template>
         </section>
 
-        <!-- SLA Summary -->
-        <section class="space-y-3">
+        <!-- SLA Summary — chỉ hiển thị với role quản lý -->
+        <section v-if="!isLimitedStaff" class="space-y-3">
           <h2 class="text-sm font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
             {{ t('dashboard.sections.actionRequired') }}
           </h2>
@@ -567,6 +570,14 @@ import {
 } from '../../icons'
 import { apiClient } from '@/services/api'
 import { formatDateTime } from '@/utils/dateTime'
+import {
+  TICKET_STATUS_I18N_KEY,
+  TICKET_STATUS_ORDER,
+  isTicketClosed,
+  normalizeTicketStatus,
+} from '@/constants/ticketStatus'
+import { useTicketStatus } from '@/composables/useTicketStatus'
+import { useChangeDetection } from '@/composables/useChangeDetection'
 import { ticketService } from '@/services/ticketService'
 import { scheduleService } from '@/services/scheduleService'
 import { contractService, type Contract } from '@/services/contractService'
@@ -585,8 +596,20 @@ const error = ref('')
 
 const showContractSection = computed(() => {
   const user = getUser.value
-  return user != null && user.role !== UserRole.END_USER && user.role !== UserRole.DISTRIBUTOR
+  if (!user) return false
+  if (user.role === UserRole.END_USER || user.role === UserRole.DISTRIBUTOR) return false
+  // Technician và Warehouse chỉ thấy ticket/task của mình
+  if (user.role === UserRole.TECHNICIAN || user.role === UserRole.WAREHOUSE) return false
+  return true
 })
+
+/** Nhân viên giới hạn — chỉ thấy ticket/task liên quan đến mình */
+const isLimitedStaff = computed(() => {
+  const role = getUser.value?.role
+  return role === UserRole.TECHNICIAN || role === UserRole.WAREHOUSE
+})
+
+const canViewContractFinance = computed(() => hasPermission(Permission.VIEW_CONTRACT_FINANCE))
 
 const contractLoading = ref(false)
 const contractMetrics = ref({
@@ -636,7 +659,7 @@ const formatContractCurrency = (value: number) => {
 }
 
 const formatContractDate = (value?: string | null) => {
-  if (!value) return 'â€”'
+  if (!value) return '—'
   return formatDateTime(value, false)
 }
 
@@ -743,15 +766,7 @@ const ticketsByStatus = ref<Array<{ status: string; count: number }>>([])
 const ticketStatusSeries = ref<number[]>([])
 const ticketStatusLabels = ref<string[]>([])
 
-const STATUS_LABEL_KEYS: Record<string, string> = {
-  initialized: 'dashboard.statusLabels.initialized',
-  new: 'dashboard.statusLabels.new',
-  assigned: 'dashboard.statusLabels.assigned',
-  in_progress: 'dashboard.statusLabels.in_progress',
-  waiting_parts: 'dashboard.statusLabels.waiting_parts',
-  completed: 'dashboard.statusLabels.completed',
-  closed: 'dashboard.statusLabels.closed',
-}
+const { getStatusLabel, getStatusClass, statusFilterOptions } = useTicketStatus()
 
 const PRIORITY_LABEL_KEYS: Record<string, string> = {
   high: 'dashboard.priorityLabels.high',
@@ -759,12 +774,6 @@ const PRIORITY_LABEL_KEYS: Record<string, string> = {
   low: 'dashboard.priorityLabels.low',
 }
 
-const statusFilterOptions = computed(() => [
-  { value: '', label: t('dashboard.filters.statusAll') },
-  { value: 'initialized', label: t('dashboard.statusLabels.initialized') },
-  { value: 'in_progress', label: t('dashboard.statusLabels.in_progress') },
-  { value: 'closed', label: t('dashboard.statusLabels.closed') },
-])
 
 const priorityFilterOptions = computed(() => [
   { value: '', label: t('dashboard.filters.priorityAll') },
@@ -796,25 +805,6 @@ const taskStatusFilterOptions = computed(() => [
   { value: 'completed', label: t('technicians.schedule.statusOptions.completed') },
   { value: 'cancelled', label: t('technicians.schedule.statusOptions.cancelled') },
 ])
-
-const getStatusClass = (status: string) => {
-  const classes: Record<string, string> = {
-    initialized: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
-    new: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
-    assigned: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
-    in_progress: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
-    waiting_parts:
-      'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200',
-    completed: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
-    closed: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200',
-  }
-  return classes[status] || classes.initialized
-}
-
-const getStatusLabel = (status: string) => {
-  const key = STATUS_LABEL_KEYS[status]
-  return key ? t(key) : status
-}
 
 const formatDate = (dateString: string | Date) => {
   return formatDateTime(dateString, false)
@@ -861,10 +851,11 @@ const loadDashboardData = async () => {
       }
     }
 
-    // Auto-filter tickets for TECHNICIAN role
+    // Auto-filter tickets for TECHNICIAN / WAREHOUSE — chỉ ticket được giao cho mình
     const currentUser = getUser.value
-    if (currentUser && currentUser.role === UserRole.TECHNICIAN) {
-      // Automatically filter tickets to show only those assigned to this technician
+    if (currentUser && isLimitedStaff.value) {
+      ticketFilters.value.technicianId = currentUser.id.toString()
+    } else if (currentUser && currentUser.role === UserRole.TECHNICIAN) {
       ticketFilters.value.technicianId = currentUser.id.toString()
     }
 
@@ -1143,7 +1134,7 @@ const getDaysRemainingText = (task: any): string => {
 
 const isSLAOverdue = (ticket: any) => {
   if (!ticket.sla_deadline) return false
-  return new Date() > new Date(ticket.sla_deadline) && ticket.status !== 'closed' && ticket.status !== 'completed'
+  return new Date() > new Date(ticket.sla_deadline) && !isTicketClosed(ticket.status)
 }
 
 const isApproachingDeadline = (ticket: any) => {
@@ -1154,7 +1145,7 @@ const isApproachingDeadline = (ticket: any) => {
   
   // Calculate locally if backend flag not available
   if (!ticket.sla_deadline) return false
-  if (ticket.status === 'closed' || ticket.status === 'completed') return false
+  if (isTicketClosed(ticket.status)) return false
   
   const deadline = new Date(ticket.sla_deadline)
   const now = new Date()
@@ -1175,12 +1166,12 @@ const getSLAStatusClass = (ticket: any) => {
   const diffMs = deadline.getTime() - now.getTime()
 
   // QuÃ¡ háº¡n
-  if (diffMs < 0 && ticket.status !== 'closed' && ticket.status !== 'completed') {
+  if (diffMs < 0 && !isTicketClosed(ticket.status)) {
     return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
   }
 
   // ÄÃ£ Ä‘Ã³ng hoáº·c hoÃ n thÃ nh
-  if (ticket.status === 'closed' || ticket.status === 'completed') {
+  if (isTicketClosed(ticket.status)) {
     return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
   }
 
@@ -1208,7 +1199,7 @@ const getSLAStatusLabel = (ticket: any) => {
   const diffHours = diffMs / (1000 * 60 * 60)
 
   // QuÃ¡ háº¡n
-  if (diffMs < 0 && ticket.status !== 'closed' && ticket.status !== 'completed') {
+  if (diffMs < 0 && !isTicketClosed(ticket.status)) {
     const overdueHours = Math.abs(diffHours)
     if (overdueHours < 24) {
       return t('dashboard.sla.overdueHours', { value: Math.round(overdueHours) })
@@ -1217,7 +1208,7 @@ const getSLAStatusLabel = (ticket: any) => {
   }
 
   // ÄÃ£ Ä‘Ã³ng hoáº·c hoÃ n thÃ nh
-  if (ticket.status === 'closed' || ticket.status === 'completed') {
+  if (isTicketClosed(ticket.status)) {
     return t('dashboard.sla.completed')
   }
 
@@ -1259,7 +1250,7 @@ const filteredTickets = computed(() => {
 
   // Show all incomplete tickets (not completed or closed)
   result = result.filter((ticket) => {
-    return ticket.status !== 'completed' && ticket.status !== 'closed'
+    return !isTicketClosed(ticket.status)
   })
 
   if (ticketSlaBucket.value === 'overdue') {
@@ -1365,45 +1356,23 @@ const summaryStats = computed(() => {
 })
 
 const updateTicketStatusChart = () => {
-  // Group tickets by status categories
-  let initialized = 0
-  let inProgress = 0
-  let closed = 0
-  let total = 0
+  const counts = Object.fromEntries(TICKET_STATUS_ORDER.map((status) => [status, 0])) as Record<string, number>
 
   ticketsByStatus.value.forEach((item) => {
-    const count = item.count || 0
-    total += count
-
-    // Map statuses to categories
-    if (item.status === 'initialized' || item.status === 'new') {
-      initialized += count
-    } else if (
-      item.status === 'in_progress' ||
-      item.status === 'assigned' ||
-      item.status === 'waiting_parts'
-    ) {
-      inProgress += count
-    } else if (item.status === 'closed' || item.status === 'completed') {
-      closed += count
+    const normalized = normalizeTicketStatus(item.status)
+    if (normalized in counts) {
+      counts[normalized] += item.count || 0
     }
   })
 
-  // Calculate percentages
   const labels: string[] = []
   const series: number[] = []
 
-  if (initialized > 0) {
-    labels.push(t('dashboard.ticketStatusChart.categories.initialized'))
-    series.push(initialized)
-  }
-  if (inProgress > 0) {
-    labels.push(t('dashboard.ticketStatusChart.categories.inProgress'))
-    series.push(inProgress)
-  }
-  if (closed > 0) {
-    labels.push(t('dashboard.ticketStatusChart.categories.closed'))
-    series.push(closed)
+  for (const status of TICKET_STATUS_ORDER) {
+    if (counts[status] > 0) {
+      labels.push(t(TICKET_STATUS_I18N_KEY[status as keyof typeof TICKET_STATUS_I18N_KEY]))
+      series.push(counts[status])
+    }
   }
 
   ticketStatusLabels.value = labels
@@ -1514,5 +1483,10 @@ watch(
 onMounted(() => {
   loadContractDashboard()
   loadDashboardData()
+})
+
+useChangeDetection({
+  onTicketChange: () => loadDashboardData(),
+  onTaskChange: () => loadDashboardData(),
 })
 </script>

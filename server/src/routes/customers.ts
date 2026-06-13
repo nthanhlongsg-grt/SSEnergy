@@ -3,13 +3,50 @@ import db from '../database/db.js'
 import { authenticateToken, requireRole, AuthRequest } from '../middleware/auth.js'
 import { UserRole } from '../types/index.js'
 import { syncCustomerToTickets, syncUserToCustomers } from '../database/sync.js'
+import { CUSTOMER_INVERTERS_WITH_MODEL_SQL } from '../database/dataModel.js'
 import { createNotification, notifyUsersByRoles } from '../services/notificationService.js'
+import { stripContractFinancialFields } from '../utils/contractFinance.js'
 
 const router = Router()
+
+function dedupeInverters(list: any[]): any[] {
+  const seen = new Set<number>()
+  return list.filter((inv) => {
+    if (!inv?.id || seen.has(inv.id)) return false
+    seen.add(inv.id)
+    return true
+  })
+}
+
+function fetchInvertersByCustomerId(customerId: number): any[] {
+  try {
+    return db.prepare(CUSTOMER_INVERTERS_WITH_MODEL_SQL).all(customerId, customerId) as any[]
+  } catch {
+    try {
+      return db.prepare(`
+        SELECT DISTINCT i.*
+        FROM inverters i
+        WHERE i.customer_id = ?
+           OR i.id IN (
+             SELECT ci.inverter_id
+             FROM contract_inverters ci
+             INNER JOIN contracts ct ON ct.id = ci.contract_id
+             WHERE ct.customer_id = ?
+           )
+      `).all(customerId, customerId) as any[]
+    } catch {
+      return []
+    }
+  }
+}
 
 // Get all customers (only users with END_USER and DISTRIBUTOR roles)
 router.get('/', authenticateToken, (req, res) => {
   try {
+    const user = (req as AuthRequest).user
+    if (user && (user.role === UserRole.TECHNICIAN || user.role === UserRole.WAREHOUSE)) {
+      return res.status(403).json({ error: 'Insufficient permissions' })
+    }
     const { search, customer_type, page = '1', limit = '1000' } = req.query
 
     let query = `
@@ -61,246 +98,138 @@ router.get('/', authenticateToken, (req, res) => {
   }
 })
 
-// Get customer by ID (supports user IDs from users table)
+// Get customer by ID — luôn ưu tiên customers.id; portal user chỉ khi prefix user_
 router.get('/:id', authenticateToken, (req, res) => {
   try {
+    const user = (req as AuthRequest).user
+    if (user && (user.role === UserRole.TECHNICIAN || user.role === UserRole.WAREHOUSE)) {
+      return res.status(403).json({ error: 'Insufficient permissions' })
+    }
     const id = req.params.id
     let customer: any = null
     let inverters: any[] = []
     let tickets: any[] = []
 
-    console.log('🔍 [GET /customers/:id] Requested ID:', id)
+    const isPortalUserId = id.startsWith('user_')
+    const numericId = isPortalUserId
+      ? parseInt(id.replace('user_', ''), 10)
+      : parseInt(id, 10)
 
-    // Check if ID is a user ID (number or user_ prefix)
-    const userId = id.startsWith('user_') ? parseInt(id.replace('user_', '')) : parseInt(id)
+    if (isNaN(numericId) || numericId <= 0) {
+      return res.status(400).json({ error: 'Invalid customer id' })
+    }
 
-    if (!isNaN(userId) && userId > 0) {
-      console.log('🔍 [GET /customers/:id] Parsed userId:', userId)
+    const customerSelectSql = `
+      SELECT c.id, c.name, c.email, c.phone, c.address,
+             c.customer_type as type, c.customer_type,
+             c.organization, c.tax_code as code, c.tax_code,
+             c.contact_person, c.representative_name, c.representative_position, c.authorization_doc,
+             c.recipient_name, c.recipient_address, c.recipient_phone,
+             c.notes, c.user_id, c.contact_user_id,
+             c.created_at, c.updated_at, 'customer' as source,
+             c.contact_person  AS contact_name,
+             c.contact_email   AS contact_email,
+             c.contact_phone   AS contact_phone,
+             c.contact_address AS contact_address
+      FROM customers c
+      WHERE c.id = ?
+    `
 
-      // Try customers table first (has richer fields)
-      const custRecord = db.prepare(`
-        SELECT c.id, c.name, c.email, c.phone, c.address,
-               c.customer_type as type, c.customer_type,
-               c.organization, c.tax_code as code, c.tax_code,
-               c.contact_person, c.representative_name, c.representative_position, c.authorization_doc,
-               c.recipient_name, c.recipient_address, c.recipient_phone,
-               c.notes, c.user_id, c.contact_user_id,
-               c.created_at, c.updated_at, 'customer' as source,
-               c.contact_person  AS contact_name,
-               c.contact_email   AS contact_email,
-               c.contact_phone   AS contact_phone,
-               c.contact_address AS contact_address
-        FROM customers c
-        WHERE c.id = ?
-      `).get(userId) as any
-
-      if (custRecord) {
-        customer = custRecord
-      } else {
-        // Try users table
-        customer = db.prepare(`
-          SELECT
-            id, name, email, phone, address,
-            role as type, role as customer_type,
-            organization, code, NULL as tax_code, NULL as contact_person,
-            created_at, updated_at, 'user' as source
-          FROM users
-          WHERE id = ? AND role IN ('end_user', 'distributor', 'dealer') AND status = 'active'
-        `).get(userId) as any
-      }
-
-      if (customer) {
-        console.log('✅ [GET /customers/:id] Found customer from users table:', customer.name)
-        // Get inverters where user_id = userId (thiết bị của user này)
-        let userInverters: any[] = []
-        try {
-          userInverters = db.prepare(`
-            SELECT i.*, m.capacity as model_capacity 
-            FROM inverters i
-            LEFT JOIN models m ON i.model = m.name
-            WHERE i.user_id = ?
-          `).all(userId) as any[] || []
-        } catch (err) {
-          console.error('❌ [GET /customers/:id] Error fetching user inverters:', err)
-          // Try without models join if models table doesn't exist
-          try {
-            userInverters = db.prepare(`
-              SELECT i.*
-              FROM inverters i
-              WHERE i.user_id = ?
-            `).all(userId) as any[] || []
-          } catch (err2) {
-            console.error('❌ [GET /customers/:id] Error fetching inverters (fallback):', err2)
-            userInverters = []
-          }
+    const loadTicketsForCustomer = (customerId: number, inverterList: any[]) => {
+      try {
+        const inverterIds = inverterList.filter((inv) => inv?.id).map((inv) => inv.id)
+        if (inverterIds.length > 0) {
+          const placeholders = inverterIds.map(() => '?').join(',')
+          return db.prepare(`
+            SELECT DISTINCT * FROM tickets
+            WHERE customer_id = ? OR inverter_id IN (${placeholders})
+            ORDER BY created_at DESC
+          `).all(customerId, ...inverterIds) as any[]
         }
-        
-        // Get inverters where user is distributor (with capacity from models)
-        let distributorInverters: any[] = []
-        try {
-          distributorInverters = db.prepare(`
-            SELECT i.*, m.capacity as model_capacity 
-            FROM inverters i
-            LEFT JOIN models m ON i.model = m.name
-            WHERE i.distributor_id = ?
-          `).all(userId) as any[] || []
-        } catch (err) {
-          console.error('❌ [GET /customers/:id] Error fetching distributor inverters:', err)
-          // Try without models join if models table doesn't exist
-          try {
-            distributorInverters = db.prepare(`
-              SELECT i.*
-              FROM inverters i
-              WHERE i.distributor_id = ?
-            `).all(userId) as any[] || []
-          } catch (err2) {
-            console.error('❌ [GET /customers/:id] Error fetching inverters (fallback):', err2)
-            distributorInverters = []
-          }
-        }
-        
-        // Also get inverters linked via customer records matching email/phone
-        if (customer.email || customer.phone) {
-          let matchingCustomer: { id: number } | undefined
-          try {
-            matchingCustomer = db.prepare(`
-              SELECT id FROM customers 
-              WHERE (email = ? OR phone = ?) 
-              LIMIT 1
-            `).get(customer.email || '', customer.phone || '') as { id: number } | undefined
-          } catch (err) {
-            console.error('❌ [GET /customers/:id] Error finding matching customer:', err)
-            matchingCustomer = undefined
-          }
-          
-          if (matchingCustomer) {
-            let customerInverters: any[] = []
-            try {
-              customerInverters = db.prepare(`
-                SELECT i.*, m.capacity as model_capacity 
-                FROM inverters i
-                LEFT JOIN models m ON i.model = m.name
-                WHERE i.customer_id = ?
-              `).all(matchingCustomer.id) as any[] || []
-            } catch (err) {
-              console.error('❌ [GET /customers/:id] Error fetching customer inverters:', err)
-              // Try without models join if models table doesn't exist
-              try {
-                customerInverters = db.prepare(`
-                  SELECT i.*
-                  FROM inverters i
-                  WHERE i.customer_id = ?
-                `).all(matchingCustomer.id) as any[] || []
-              } catch (err2) {
-                console.error('❌ [GET /customers/:id] Error fetching customer inverters (fallback):', err2)
-                customerInverters = []
-              }
-            }
-            inverters = [...(userInverters || []), ...(distributorInverters || []), ...(customerInverters || [])]
-            // Remove duplicates if any
-            const inverterIds = new Set(inverters.filter(i => i && i.id).map(i => i.id))
-            inverters = Array.from(inverterIds)
-              .map(id => inverters.find(i => i && i.id === id))
-              .filter((inv): inv is any => inv !== undefined && inv !== null) // Remove undefined and null values
-          } else {
-            inverters = [...(userInverters || []), ...(distributorInverters || [])]
-            // Remove duplicates if any
-            const inverterIds = new Set(inverters.filter(i => i && i.id).map(i => i.id))
-            inverters = Array.from(inverterIds)
-              .map(id => inverters.find(i => i && i.id === id))
-              .filter((inv): inv is any => inv !== undefined && inv !== null)
-          }
-        } else {
-          inverters = [...(userInverters || []), ...(distributorInverters || [])]
-          // Remove duplicates if any
-          const inverterIds = new Set(inverters.filter(i => i && i.id).map(i => i.id))
-          inverters = Array.from(inverterIds)
-            .map(id => inverters.find(i => i && i.id === id))
-            .filter((inv): inv is any => inv !== undefined && inv !== null)
-        }
-
-        // Get tickets: created by this user OR assigned to this user OR linked to inverters managed by this customer
-        try {
-          const inverterIds = (inverters || []).filter(inv => inv && inv.id).map(inv => inv.id)
-          if (inverterIds.length > 0) {
-            const placeholders = inverterIds.map(() => '?').join(',')
-            tickets = db.prepare(`
-              SELECT DISTINCT * FROM tickets 
-              WHERE created_by = ? OR assigned_to = ? OR inverter_id IN (${placeholders})
-              ORDER BY created_at DESC
-            `).all(userId, userId, ...inverterIds) as any[] || []
-          } else {
-            tickets = db.prepare('SELECT * FROM tickets WHERE created_by = ? OR assigned_to = ? ORDER BY created_at DESC').all(userId, userId) as any[] || []
-          }
-        } catch (err) {
-          console.error('❌ [GET /customers/:id] Error fetching tickets:', err)
-          tickets = []
-        }
-      } else {
-        console.log('⚠️ [GET /customers/:id] User not found or not a valid customer role')
+        return db.prepare(
+          'SELECT * FROM tickets WHERE customer_id = ? ORDER BY created_at DESC',
+        ).all(customerId) as any[]
+      } catch {
+        return []
       }
     }
 
-    // If not found in users, try customers table for backward compatibility
-    if (!customer && !isNaN(parseInt(id))) {
-      const customerId = parseInt(id)
-      console.log('🔍 [GET /customers/:id] Trying customers table with ID:', customerId)
-      customer = db.prepare('SELECT *, "customer" as source FROM customers WHERE id = ?').get(customerId) as any
-      
+    // CRM customer (mặc định khi không có prefix user_)
+    if (!isPortalUserId) {
+      customer = db.prepare(customerSelectSql).get(numericId) as any
       if (customer) {
-        console.log('✅ [GET /customers/:id] Found customer from customers table:', customer.name)
-        try {
-          inverters = db.prepare(`
-            SELECT i.*, m.capacity as model_capacity 
-            FROM inverters i
-            LEFT JOIN models m ON i.model = m.name
-            WHERE i.customer_id = ?
-          `).all(customerId) as any[] || []
-        } catch (err) {
-          console.error('❌ [GET /customers/:id] Error fetching inverters:', err)
-          // Try without models join if models table doesn't exist
+        inverters = dedupeInverters(fetchInvertersByCustomerId(customer.id))
+        tickets = loadTicketsForCustomer(customer.id, inverters)
+      }
+    }
+
+    // Portal user — chỉ khi user_<id> hoặc không tìm thấy CRM record
+    if (!customer) {
+      const portalUser = db.prepare(`
+        SELECT
+          id, name, email, phone, address,
+          role as type, role as customer_type,
+          organization, code, NULL as tax_code, NULL as contact_person,
+          created_at, updated_at, 'user' as source
+        FROM users
+        WHERE id = ? AND role IN ('end_user', 'distributor', 'dealer') AND status = 'active'
+      `).get(numericId) as any
+
+      if (portalUser) {
+        customer = portalUser
+
+        const linkedCustomer = db.prepare(`
+          SELECT id FROM customers
+          WHERE user_id = ?
+             OR (email IS NOT NULL AND email != '' AND email = ?)
+             OR (phone IS NOT NULL AND phone != '' AND phone = ?)
+          ORDER BY CASE WHEN user_id = ? THEN 0 ELSE 1 END
+          LIMIT 1
+        `).get(numericId, portalUser.email || '', portalUser.phone || '', numericId) as { id: number } | undefined
+
+        if (linkedCustomer) {
+          inverters = dedupeInverters(fetchInvertersByCustomerId(linkedCustomer.id))
+          tickets = loadTicketsForCustomer(linkedCustomer.id, inverters)
+        } else {
           try {
-            inverters = db.prepare(`
-              SELECT i.*
+            inverters = dedupeInverters(db.prepare(`
+              SELECT i.*, m.capacity as model_capacity
               FROM inverters i
-              WHERE i.customer_id = ?
-            `).all(customerId) as any[] || []
-          } catch (err2) {
-            console.error('❌ [GET /customers/:id] Error fetching inverters (fallback):', err2)
-            inverters = []
+              LEFT JOIN models m ON i.model = m.name
+              WHERE i.distributor_id = ? OR i.user_id = ?
+            `).all(numericId, numericId) as any[])
+          } catch {
+            inverters = dedupeInverters(db.prepare(`
+              SELECT i.* FROM inverters i
+              WHERE i.distributor_id = ? OR i.user_id = ?
+            `).all(numericId, numericId) as any[])
+          }
+
+          try {
+            const inverterIds = inverters.filter((inv) => inv?.id).map((inv) => inv.id)
+            if (inverterIds.length > 0) {
+              const placeholders = inverterIds.map(() => '?').join(',')
+              tickets = db.prepare(`
+                SELECT DISTINCT * FROM tickets
+                WHERE created_by = ? OR assigned_to = ? OR inverter_id IN (${placeholders})
+                ORDER BY created_at DESC
+              `).all(numericId, numericId, ...inverterIds) as any[]
+            } else {
+              tickets = db.prepare(
+                'SELECT * FROM tickets WHERE created_by = ? OR assigned_to = ? ORDER BY created_at DESC',
+              ).all(numericId, numericId) as any[]
+            }
+          } catch {
+            tickets = []
           }
         }
-        
-        // Get tickets: linked to customer OR linked to inverters of this customer
-        try {
-          const inverterIds = (inverters || []).filter(inv => inv && inv.id).map(inv => inv.id)
-          if (inverterIds.length > 0) {
-            const placeholders = inverterIds.map(() => '?').join(',')
-            tickets = db.prepare(`
-              SELECT DISTINCT * FROM tickets 
-              WHERE customer_id = ? OR inverter_id IN (${placeholders})
-              ORDER BY created_at DESC
-            `).all(customerId, ...inverterIds) as any[] || []
-          } else {
-            tickets = db.prepare('SELECT * FROM tickets WHERE customer_id = ? ORDER BY created_at DESC').all(customerId) as any[] || []
-          }
-        } catch (err) {
-          console.error('❌ [GET /customers/:id] Error fetching tickets:', err)
-          tickets = []
-        }
-      } else {
-        console.log('❌ [GET /customers/:id] Customer not found in customers table')
       }
     }
 
     if (!customer) {
-      console.log('❌ [GET /customers/:id] Customer not found for ID:', id)
       return res.status(404).json({ error: 'Customer not found' })
     }
 
-    console.log('✅ [GET /customers/:id] Returning customer data')
-    
-    // Ensure customer object is safe to spread
     const customerData = {
       id: customer.id,
       name: customer.name || null,
@@ -332,15 +261,11 @@ router.get('/:id', authenticateToken, (req, res) => {
       inverters: inverters || [],
       tickets: tickets || [],
     }
-    
+
     res.json(customerData)
   } catch (error) {
-    console.error('❌ [GET /customers/:id] Get customer error:', error)
-    console.error('❌ [GET /customers/:id] Error details:', error instanceof Error ? error.stack : String(error))
-    res.status(500).json({ 
-      error: 'Internal server error', 
-      details: process.env.NODE_ENV === 'development' ? (error instanceof Error ? error.message : String(error)) : undefined
-    })
+    console.error('Get customer error:', error)
+    res.status(500).json({ error: 'Internal server error' })
   }
 })
 
@@ -807,6 +732,7 @@ router.delete('/:id', authenticateToken, requireRole(UserRole.ADMIN), (req, res)
 // GET /api/customers/:id/contracts
 router.get('/:id/contracts', authenticateToken, (req, res) => {
   try {
+    const user = (req as AuthRequest).user
     const customerId = parseInt(req.params.id)
     const contracts = db.prepare(`
       SELECT c.*,
@@ -814,7 +740,12 @@ router.get('/:id/contracts', authenticateToken, (req, res) => {
       FROM contracts c
       WHERE c.customer_id = ?
       ORDER BY c.created_at DESC
-    `).all(customerId)
+    `).all(customerId) as Array<Record<string, unknown>>
+
+    for (const c of contracts) {
+      stripContractFinancialFields(user?.role, c)
+    }
+
     res.json(contracts)
   } catch (err: any) {
     res.status(500).json({ error: err.message })

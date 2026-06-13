@@ -10,6 +10,7 @@ export enum UserRole {
   DEALER = 'dealer',
   END_USER = 'end_user',
   WAREHOUSE = 'warehouse',
+  ACCOUNTING = 'accounting',
 }
 
 // User status
@@ -73,7 +74,18 @@ export enum Permission {
   // Contract Management
   VIEW_CONTRACTS = 'view_contracts',
   MANAGE_CONTRACTS = 'manage_contracts',
+  VIEW_CONTRACT_FINANCE = 'view_contract_finance',
 }
+
+// Permissions kế toán không có — toàn bộ mục "Cài đặt thêm"
+const ACCOUNTING_DENIED_PERMISSIONS: Permission[] = [
+  Permission.MANAGE_ROLES,
+  Permission.VIEW_USERS,
+  Permission.CREATE_USER,
+  Permission.EDIT_USER,
+  Permission.DELETE_USER,
+  Permission.VIEW_TECHNICIANS,
+]
 
 // Role permissions mapping
 const rolePermissions: Record<UserRole, Permission[]> = {
@@ -108,8 +120,6 @@ const rolePermissions: Record<UserRole, Permission[]> = {
   ],
   [UserRole.TECHNICIAN]: [
     Permission.VIEW_INVERTERS,
-    Permission.MANAGE_MODELS,
-    Permission.VIEW_CUSTOMERS,
     Permission.VIEW_TICKETS,
     Permission.CREATE_TICKET,
     Permission.UPDATE_TICKET_STATUS,
@@ -117,7 +127,7 @@ const rolePermissions: Record<UserRole, Permission[]> = {
     Permission.VIEW_REPORTS,
     Permission.CREATE_REPORT,
     Permission.EDIT_REPORT,
-    Permission.VIEW_CONTRACTS,
+    // Không có VIEW_CUSTOMERS, VIEW_CONTRACTS — chỉ thấy thiết bị và ticket
   ],
   [UserRole.DISTRIBUTOR]: [
     Permission.VIEW_INVERTERS,
@@ -148,7 +158,12 @@ const rolePermissions: Record<UserRole, Permission[]> = {
     Permission.IMPORT_PARTS,
     Permission.EXPORT_PARTS,
     Permission.VIEW_TICKETS,
+    Permission.VIEW_INVERTERS,
+    // Không có VIEW_CUSTOMERS, VIEW_CONTRACTS
   ],
+  [UserRole.ACCOUNTING]: Object.values(Permission).filter(
+    (permission) => !ACCOUNTING_DENIED_PERMISSIONS.includes(permission),
+  ),
 }
 
 // Current user state
@@ -179,6 +194,16 @@ const isAdminLikeRole = (role?: UserRole | string | null): boolean => {
   return role === UserRole.ADMIN || role === UserRole.DEV
 }
 
+export const isStaffAdminRole = (role?: UserRole | string | null): boolean => {
+  return isAdminLikeRole(role) || role === UserRole.ACCOUNTING
+}
+
+export const canViewContractFinanceRole = (role?: UserRole | string | null): boolean => {
+  if (!role) return false
+  if (isAdminLikeRole(role)) return true
+  return String(role).toLowerCase() === UserRole.ACCOUNTING
+}
+
 // Check if user has permission
 export const hasPermission = (permission: Permission): boolean => {
   if (!currentUser.value) return false
@@ -199,14 +224,14 @@ export const hasAllPermissions = (permissions: Permission[]): boolean => {
 // Check if user has role
 export const hasRole = (role: UserRole): boolean => {
   if (!currentUser.value) return false
-  if (role === UserRole.ADMIN && isAdminLikeRole(currentUser.value.role)) return true
+  if (role === UserRole.ADMIN && isStaffAdminRole(currentUser.value.role)) return true
   return currentUser.value.role === role
 }
 
 // Check if user has any of the roles
 export const hasAnyRole = (roles: UserRole[]): boolean => {
   if (!currentUser.value) return false
-  if (roles.includes(UserRole.ADMIN) && isAdminLikeRole(currentUser.value.role)) return true
+  if (roles.includes(UserRole.ADMIN) && isStaffAdminRole(currentUser.value.role)) return true
   return roles.includes(currentUser.value.role)
 }
 
@@ -356,6 +381,14 @@ export const setUser = (user: {
 
 // Composable function for components
 export const useAuth = () => {
+  const canViewContractFinance = computed(() =>
+    canViewContractFinanceRole(getUserRole.value) ||
+    hasPermission(Permission.VIEW_CONTRACT_FINANCE),
+  )
+  const canManageContracts = computed(() =>
+    hasPermission(Permission.MANAGE_CONTRACTS),
+  )
+
   return {
     isAuthenticated,
     getUser,
@@ -365,6 +398,9 @@ export const useAuth = () => {
     hasAllPermissions,
     hasRole,
     hasAnyRole,
+    isStaffAdminRole,
+    canViewContractFinance,
+    canManageContracts,
     login,
     logout,
     setUser,

@@ -1,8 +1,9 @@
 import { Router } from 'express'
 import db from '../database/db.js'
-import { authenticateToken, AuthRequest } from '../middleware/auth.js'
+import { authenticateToken, requireRole, AuthRequest } from '../middleware/auth.js'
 import { UserRole } from '../types/index.js'
 import { createNotification, notifyUsersByRoles } from '../services/notificationService.js'
+import { canViewContractFinance, canManageContracts, stripContractFinancialFields } from '../utils/contractFinance.js'
 
 const router = Router()
 
@@ -194,11 +195,12 @@ const customerScopeClause = (user: NonNullable<AuthRequest['user']>): { clause: 
   }
 }
 
-/** Ghi chú nội bộ — chỉ nhân viên xem được, không trả cho end user */
+/** Ghi chú nội bộ — chỉ nhân viên xem được; giá trị HĐ — chỉ kế toán/admin */
 const stripInternalFields = (user: AuthRequest['user'], contract: Record<string, unknown>): void => {
   if (user?.role === UserRole.END_USER) {
     delete contract.notes
   }
+  stripContractFinancialFields(user?.role, contract)
 }
 
 const generateContractNumber = (): string => {
@@ -237,6 +239,9 @@ router.get('/customer-inverters', authenticateToken, (req, res) => {
 router.get('/', authenticateToken, (req, res) => {
   try {
     const user = (req as AuthRequest).user
+    if (user && (user.role === UserRole.TECHNICIAN || user.role === UserRole.WAREHOUSE)) {
+      return res.status(403).json({ error: 'Insufficient permissions' })
+    }
     const { status, customer_id, search, unpaid, undelivered, page = '1', limit = '20' } = req.query
 
     const pageNum = Math.max(1, parseInt(page as string))
@@ -331,6 +336,9 @@ router.get('/stats', authenticateToken, (req, res) => {
 router.get('/:id', authenticateToken, (req, res) => {
   try {
     const user = (req as AuthRequest).user
+    if (user && (user.role === UserRole.TECHNICIAN || user.role === UserRole.WAREHOUSE)) {
+      return res.status(403).json({ error: 'Insufficient permissions' })
+    }
     const contract = db
       .prepare(`
         SELECT c.*,
@@ -420,6 +428,10 @@ router.get('/:id/available-inverters', authenticateToken, (req, res) => {
 // PUT /api/contracts/:id/inverters — replace inverter list
 router.put('/:id/inverters', authenticateToken, (req, res) => {
   try {
+    const user = (req as AuthRequest).user!
+    if (!canManageContracts(user.role)) {
+      return res.status(403).json({ error: 'Bạn không có quyền chỉnh sửa hợp đồng' })
+    }
     const { inverter_ids } = req.body as { inverter_ids: number[] }
     const existing = db.prepare('SELECT id, end_date FROM contracts WHERE id = ?').get(req.params.id) as { id: number; end_date?: string } | undefined
     if (!existing) return res.status(404).json({ error: 'Không tìm thấy hợp đồng' })
@@ -441,8 +453,8 @@ router.put('/:id/inverters', authenticateToken, (req, res) => {
 router.post('/', authenticateToken, (req, res) => {
   try {
     const user = (req as AuthRequest).user
-    if (!user || !isStaffRole(user.role)) {
-      return res.status(403).json({ error: 'Chỉ nhân viên mới được tạo hợp đồng' })
+    if (!user || !canManageContracts(user.role)) {
+      return res.status(403).json({ error: 'Bạn không có quyền tạo hợp đồng' })
     }
     const { customer_id, contract_number: bodyNumber, title, contract_type, start_date, end_date, value, status, description, notes, signed_date, delivery_days, warranty_months, items, vat_rate, inverter_ids } = req.body
 
@@ -464,7 +476,12 @@ router.post('/', authenticateToken, (req, res) => {
 
     const contract_number = (bodyNumber && String(bodyNumber).trim()) || generateContractNumber()
     const contractTitle = (title && String(title).trim()) || contract_number
-    const itemsJson = Array.isArray(items) ? JSON.stringify(items) : (items || null)
+    const canSetFinance = canViewContractFinance(user!.role)
+    const contractValue = canSetFinance ? (value || 0) : 0
+    const contractVatRate = canSetFinance ? (vat_rate ?? 8) : 8
+    const itemsJson = canSetFinance
+      ? (Array.isArray(items) ? JSON.stringify(items) : (items || null))
+      : null
 
     const result = db
       .prepare(`
@@ -474,11 +491,11 @@ router.post('/', authenticateToken, (req, res) => {
       .run(
         contract_number, customer_id, contractTitle,
         contract_type || 'service', start_date || '', end_date || '',
-        value || 0, status || 'draft',
+        contractValue, status || 'draft',
         description || null, notes || null, signed_date || null,
         (delivery_days !== undefined && delivery_days !== null && delivery_days !== '') ? Number(delivery_days) : DEFAULT_DELIVERY_DAYS,
         (warranty_months !== undefined && warranty_months !== null && warranty_months !== '') ? Number(warranty_months) : DEFAULT_WARRANTY_MONTHS,
-        itemsJson, vat_rate ?? 8,
+        itemsJson, contractVatRate,
         user!.id
       )
 
@@ -491,6 +508,7 @@ router.post('/', authenticateToken, (req, res) => {
 
     const created = db.prepare('SELECT * FROM contracts WHERE id = ?').get(newId) as any
     try { created.items = created.items ? JSON.parse(created.items) : [] } catch { created.items = [] }
+    stripInternalFields(user, created)
 
     try {
       const creator = db.prepare('SELECT name FROM users WHERE id = ?').get(user!.id) as { name: string } | undefined
@@ -507,7 +525,7 @@ router.post('/', authenticateToken, (req, res) => {
       })
 
       notifyUsersByRoles(
-        [UserRole.ADMIN, UserRole.DEV, UserRole.SERVICE_CENTER],
+        [UserRole.ADMIN, UserRole.DEV, UserRole.SERVICE_CENTER, UserRole.ACCOUNTING],
         {
           type: 'contract_created',
           title: `Hợp đồng mới ${contract_number}`,
@@ -572,8 +590,8 @@ router.patch('/:id/status', authenticateToken, (req, res) => {
 router.patch('/:id/paperwork', authenticateToken, (req, res) => {
   try {
     const user = (req as AuthRequest).user!
-    if (!isStaffRole(user.role)) {
-      return res.status(403).json({ error: 'Chỉ nhân viên mới được cập nhật hồ sơ giấy tờ' })
+    if (!canManageContracts(user.role)) {
+      return res.status(403).json({ error: 'Bạn không có quyền cập nhật hồ sơ giấy tờ' })
     }
 
     const existing = db
@@ -624,14 +642,25 @@ router.put('/:id', authenticateToken, (req, res) => {
     const user = (req as AuthRequest).user!
     const { title, contract_type, start_date, end_date, value, status, description, notes, signed_date, delivery_days, warranty_months, items, vat_rate, inverter_ids } = req.body
 
-    const existing = db.prepare('SELECT id, customer_id FROM contracts WHERE id = ?').get(req.params.id) as { id: number; customer_id: number } | undefined
+    const existing = db.prepare('SELECT id, customer_id, value, vat_rate, items FROM contracts WHERE id = ?').get(req.params.id) as {
+      id: number
+      customer_id: number
+      value: number
+      vat_rate: number
+      items: string | null
+    } | undefined
     if (!existing) return res.status(404).json({ error: 'Không tìm thấy hợp đồng' })
 
-    if (!isStaffRole(user.role)) {
-      return res.status(403).json({ error: 'Chỉ nhân viên mới được chỉnh sửa hợp đồng' })
+    if (!canManageContracts(user.role)) {
+      return res.status(403).json({ error: 'Bạn không có quyền chỉnh sửa hợp đồng' })
     }
 
-    const itemsJson = Array.isArray(items) ? JSON.stringify(items) : (items ?? null)
+    const canSetFinance = canViewContractFinance(user.role)
+    const contractValue = canSetFinance ? value : existing.value
+    const contractVatRate = canSetFinance ? (vat_rate ?? 8) : existing.vat_rate
+    const itemsJson = canSetFinance
+      ? (Array.isArray(items) ? JSON.stringify(items) : (items ?? null))
+      : existing.items
 
     db.prepare(`
       UPDATE contracts
@@ -641,10 +670,10 @@ router.put('/:id', authenticateToken, (req, res) => {
           updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
     `).run(
-      title, contract_type, start_date || '', end_date || '', value, status, description, notes, signed_date,
+      title, contract_type, start_date || '', end_date || '', contractValue, status, description, notes, signed_date,
       (delivery_days !== undefined && delivery_days !== null && delivery_days !== '') ? Number(delivery_days) : DEFAULT_DELIVERY_DAYS,
       (warranty_months !== undefined && warranty_months !== null && warranty_months !== '') ? Number(warranty_months) : DEFAULT_WARRANTY_MONTHS,
-      itemsJson, vat_rate ?? 8, req.params.id
+      itemsJson, contractVatRate, req.params.id
     )
 
     if (inverter_ids !== undefined) {
@@ -660,23 +689,20 @@ router.put('/:id', authenticateToken, (req, res) => {
 
     const updated = db.prepare('SELECT * FROM contracts WHERE id = ?').get(req.params.id) as any
     try { updated.items = updated.items ? JSON.parse(updated.items) : [] } catch { updated.items = [] }
+    stripInternalFields(user, updated)
     res.json(updated)
   } catch (err: any) {
     res.status(500).json({ error: err.message })
   }
 })
 
-// DELETE /api/contracts/:id
-router.delete('/:id', authenticateToken, (req, res) => {
+// DELETE /api/contracts/:id — chỉ dev
+router.delete('/:id', authenticateToken, requireRole(UserRole.DEV), (req, res) => {
   try {
-    const user = (req as AuthRequest).user!
-    if (!isStaffRole(user.role)) {
-      return res.status(403).json({ error: 'Chỉ nhân viên mới được xóa hợp đồng' })
-    }
-
     const existing = db.prepare('SELECT id FROM contracts WHERE id = ?').get(req.params.id)
     if (!existing) return res.status(404).json({ error: 'Không tìm thấy hợp đồng' })
 
+    db.prepare('DELETE FROM contract_inverters WHERE contract_id = ?').run(req.params.id)
     db.prepare('DELETE FROM contracts WHERE id = ?').run(req.params.id)
     res.status(204).send()
   } catch (err: any) {

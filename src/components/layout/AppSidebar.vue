@@ -231,6 +231,7 @@ type MenuItemDefinition = {
   path?: string;
   subItems?: MenuItemDefinition[];
   requiresPermission?: string;
+  excludedRoles?: UserRole[];
   pro?: boolean;
   new?: boolean;
 };
@@ -287,12 +288,14 @@ const MENU_GROUPS: MenuGroupDefinition[] = [
         nameKey: "menu.customerManagement",
         path: "/customers",
         requiresPermission: "view_customers",
+        excludedRoles: [UserRole.TECHNICIAN, UserRole.WAREHOUSE],
       },
       {
         icon: PageIcon,
         nameKey: "menu.contractManagement",
         path: "/contracts",
         requiresPermission: "view_contracts",
+        excludedRoles: [UserRole.TECHNICIAN, UserRole.WAREHOUSE],
       },
       {
         icon: BoxCubeIcon,
@@ -326,6 +329,7 @@ const MENU_GROUPS: MenuGroupDefinition[] = [
       {
         icon: SettingsIcon,
         nameKey: "menu.moreSetting",
+        excludedRoles: [UserRole.ACCOUNTING],
         subItems: [
           {
             nameKey: "menu.technicianManagement",
@@ -423,6 +427,11 @@ const translateMenuGroups = computed<MenuGroupWithLabel[]>(() => {
 const filterMenuItems = (items: MenuItemWithLabel[]): MenuItemWithLabel[] => {
   return items
     .map((item) => {
+      const userRole = getUserRole.value
+      if (item.excludedRoles?.length && userRole && item.excludedRoles.includes(userRole as UserRole)) {
+        return null
+      }
+
       // Check permissions first
       if (item.requiresPermission && !checkPermission(item.requiresPermission as Permission)) {
         return null;
