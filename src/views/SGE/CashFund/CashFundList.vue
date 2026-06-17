@@ -272,14 +272,14 @@ import { ref, computed, reactive, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import AppDatePicker from '@/components/forms/AppDatePicker.vue'
-import { hasPermission, Permission } from '@/composables/useAuth'
+import { hasPermission, Permission, getUserRole } from '@/composables/useAuth'
 import { cashFundService, type CashReceipt, type CashManager, type CashFundBalance, type CashFundReport } from '@/services/cashFundService'
 import { getVietnamWeekRange, getVietnamFullMonthRange, getVietnamYearRange } from '@/utils/dateTime'
 
 const { t } = useI18n()
 
 const canManage = computed(() => hasPermission(Permission.MANAGE_CASH_FUND))
-const canDelete = computed(() => hasPermission(Permission.MANAGE_CASH_FUND))
+const canDelete = computed(() => getUserRole.value === 'dev')
 
 const tabs = computed(() => [
   { key: 'list', label: t('cashFund.tabs.list') },

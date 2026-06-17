@@ -326,7 +326,7 @@ router.get('/managers', authenticateToken, (req, res) => {
 router.delete('/:id', authenticateToken, (req, res) => {
   try {
     const user = (req as AuthRequest).user!
-    if (!isAdminRole(user.role)) return res.status(403).json({ error: 'Insufficient permissions' })
+    if (user.role !== UserRole.DEV) return res.status(403).json({ error: 'Insufficient permissions' })
 
     const id = parseInt(req.params.id)
     const result = db.prepare('DELETE FROM cash_receipts WHERE id = ?').run(id)
