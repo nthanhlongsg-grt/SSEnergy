@@ -56,6 +56,7 @@ const en = {
     rmaManagement: 'RMA management',
     reporting: 'Reports & Analytics',
     contractManagement: 'Contract Management',
+    finance: 'Finance',
     paymentRequests: 'Expenses',
     cashFund: 'Cash Fund',
     userManagement: 'User management',

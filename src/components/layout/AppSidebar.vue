@@ -299,15 +299,19 @@ const MENU_GROUPS: MenuGroupDefinition[] = [
       },
       {
         icon: DocsIcon,
-        nameKey: "menu.paymentRequests",
-        path: "/payment-requests",
-        requiresPermission: "view_payment_requests",
-      },
-      {
-        icon: DocsIcon,
-        nameKey: "menu.cashFund",
-        path: "/cash-fund",
-        requiresPermission: "view_cash_fund",
+        nameKey: "menu.finance",
+        subItems: [
+          {
+            nameKey: "menu.paymentRequests",
+            path: "/payment-requests",
+            requiresPermission: "view_payment_requests",
+          },
+          {
+            nameKey: "menu.cashFund",
+            path: "/cash-fund",
+            requiresPermission: "view_cash_fund",
+          },
+        ],
       },
       {
         icon: BoxCubeIcon,

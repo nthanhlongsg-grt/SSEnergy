@@ -56,6 +56,7 @@ const vi = {
     rmaManagement: 'Quản lý RMA',
     reporting: 'Báo cáo & Thống kê',
     contractManagement: 'Quản lý Hợp đồng',
+    finance: 'Tài chính',
     paymentRequests: 'Chi phí',
     cashFund: 'Quỹ tiền mặt',
     userManagement: 'Quản lý Người dùng',
