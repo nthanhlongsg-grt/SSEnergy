@@ -24,7 +24,7 @@ jobs:
         run: npm ci
 
       - name: Install backend dependencies
-        run: npm ci --prefix server --ignore-scripts
+        run: npm install --prefix server --ignore-scripts
 
       - name: Build frontend
         env:
