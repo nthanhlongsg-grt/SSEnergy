@@ -10,6 +10,48 @@ import { buildTicketAccessFilter } from '../utils/ticketAccessFilter.js'
 
 const router = Router()
 
+function tableExists(table: string): boolean {
+  const row = db
+    .prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?")
+    .get(table) as { name: string } | undefined
+  return !!row
+}
+
+function tableColumns(table: string): Set<string> {
+  if (!tableExists(table)) return new Set()
+  const cols = db.prepare(`PRAGMA table_info(${table})`).all() as Array<{ name: string }>
+  return new Set(cols.map((c) => c.name))
+}
+
+function pickTimestampColumn(table: string): string | null {
+  const cols = tableColumns(table)
+  if (cols.has('updated_at')) return 'updated_at'
+  if (cols.has('created_at')) return 'created_at'
+  return null
+}
+
+function getUnreadNotificationCount(userId: number): number {
+  if (!tableExists('notifications')) return 0
+  const cols = tableColumns('notifications')
+  if (cols.has('is_read')) {
+    const row = db
+      .prepare(
+        'SELECT COUNT(*) as count FROM notifications WHERE user_id = ? AND is_read = 0',
+      )
+      .get(userId) as { count: number }
+    return row.count
+  }
+  if (cols.has('read_at')) {
+    const row = db
+      .prepare(
+        'SELECT COUNT(*) as count FROM notifications WHERE user_id = ? AND read_at IS NULL',
+      )
+      .get(userId) as { count: number }
+    return row.count
+  }
+  return 0
+}
+
 /**
  * Lightweight change snapshot for frontend polling (~5s).
  * Returns fingerprints instead of full data so the client only refetches when needed.
@@ -25,8 +67,9 @@ router.get('/changes', authenticateToken, (req, res) => {
 
     const { whereClause, params } = buildTicketAccessFilter(user)
 
+    const ticketTsCol = pickTimestampColumn('tickets') ?? 'id'
     let ticketsQuery = `
-      SELECT MAX(t.updated_at) as max_updated, COUNT(*) as total
+      SELECT MAX(t.${ticketTsCol}) as max_updated, COUNT(*) as total
       FROM tickets t
       ${whereClause || 'WHERE 1=1'}
     `
@@ -60,38 +103,48 @@ router.get('/changes', authenticateToken, (req, res) => {
 
     let users: string | null = null
     if (isAdminRole(user.role) || user.role === UserRole.SERVICE_CENTER) {
-      const userRow = db.prepare('SELECT MAX(updated_at) as max_updated FROM users').get() as {
-        max_updated: string | null
+      const userTsCol = pickTimestampColumn('users')
+      if (userTsCol) {
+        const userRow = db.prepare(`SELECT MAX(${userTsCol}) as max_updated FROM users`).get() as {
+          max_updated: string | null
+        }
+        users = userRow.max_updated
       }
-      users = userRow.max_updated
     }
 
-    const notifRow = db
-      .prepare(`
-        SELECT COUNT(*) as count
-        FROM notifications
-        WHERE user_id = ? AND is_read = 0
-      `)
-      .get(user.id) as { count: number }
+    const notifications = getUnreadNotificationCount(user.id)
 
-    const taskRow = db.prepare('SELECT MAX(updated_at) as max_updated FROM technician_schedules').get() as {
-      max_updated: string | null
+    let tasks: string | null = null
+    const scheduleTsCol = pickTimestampColumn('technician_schedules')
+    if (scheduleTsCol) {
+      const taskRow = db
+        .prepare(`SELECT MAX(${scheduleTsCol}) as max_updated FROM technician_schedules`)
+        .get() as { max_updated: string | null }
+      tasks = taskRow.max_updated
     }
 
+    const userCols = tableColumns('users')
+    const profileSelect = userCols.has('updated_at')
+      ? 'updated_at, role'
+      : userCols.has('created_at')
+        ? 'created_at as updated_at, role'
+        : 'role'
     const profileRow = db
-      .prepare('SELECT updated_at, role FROM users WHERE id = ?')
-      .get(user.id) as { updated_at: string | null; role: string } | undefined
+      .prepare(`SELECT ${profileSelect} FROM users WHERE id = ?`)
+      .get(user.id) as { updated_at?: string | null; role: string } | undefined
     const profile =
       profileRow?.updated_at != null
         ? `${profileRow.updated_at}:${profileRow.role}`
-        : null
+        : profileRow?.role
+          ? `:${profileRow.role}`
+          : null
 
     res.json({
       tickets,
       users,
       profile,
-      notifications: notifRow.count,
-      tasks: taskRow.max_updated,
+      notifications,
+      tasks,
     })
   } catch (error) {
     console.error('Sync changes error:', error)
