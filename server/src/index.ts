@@ -21,6 +21,7 @@ import autoAssignSettingsRoutes from './routes/auto-assign-settings.js'
 import contractRoutes from './routes/contracts.js'
 import quotationRoutes from './routes/quotation.js'
 import paymentRequestRoutes from './routes/payment-requests.js'
+import cashFundRoutes from './routes/cash-fund.js'
 import { formatTimestampsInResponse } from './utils/dateTime.js'
 import { maskSystemData } from './utils/systemUser.js'
 import './database/db.js' // Initialize database
@@ -143,6 +144,7 @@ app.use('/api/auto-assign-settings', autoAssignSettingsRoutes)
 app.use('/api/contracts', contractRoutes)
 app.use('/api/quotation', quotationRoutes)
 app.use('/api/payment-requests', paymentRequestRoutes)
+app.use('/api/cash-fund', cashFundRoutes)
 
 // Error handling middleware
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {

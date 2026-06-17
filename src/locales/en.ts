@@ -57,6 +57,7 @@ const en = {
     reporting: 'Reports & Analytics',
     contractManagement: 'Contract Management',
     paymentRequests: 'Expenses',
+    cashFund: 'Cash Fund',
     userManagement: 'User management',
     moreSetting: 'More setting',
     slaSettings: 'SLA settings',
@@ -2712,6 +2713,62 @@ const en = {
       deleteFailed: 'Failed to delete expense',
       imageTooLarge: 'Image {name} is too large (max 10MB)',
     },
+  },
+  cashFund: {
+    title: 'Cash Fund',
+    subtitle: 'Manage internal cash receipts and expenses',
+    empty: 'No receipts found',
+    records: 'records',
+    tabs: {
+      list: 'Receipts',
+      report: 'Monthly Report',
+    },
+    balance: {
+      totalIn: 'Total In',
+      totalOut: 'Total Out (Cash DNTT)',
+      current: 'Current Balance',
+    },
+    filters: {
+      searchPlaceholder: 'Search by content, notes...',
+      apply: 'Apply',
+      clear: 'Clear',
+    },
+    columns: {
+      date: 'Date',
+      content: 'Content',
+      amount: 'Amount',
+      notes: 'Notes',
+      createdBy: 'Created by',
+    },
+    form: {
+      date: 'Receipt date',
+      amount: 'Amount',
+      amountPlaceholder: 'Enter amount...',
+      content: 'Content',
+      notes: 'Notes',
+    },
+    actions: {
+      create: 'New Receipt',
+    },
+    modal: {
+      createTitle: 'New Cash Receipt',
+      editTitle: 'Edit Cash Receipt',
+    },
+    report: {
+      month: 'Month',
+      receipts: 'Cash In',
+      expenses: 'Cash Out (DNTT)',
+      net: 'Net',
+      cumulative: 'Cumulative',
+      total: 'Total',
+      empty: 'No data for this period',
+    },
+    errors: {
+      loadFailed: 'Failed to load data',
+      saveFailed: 'Save failed',
+      required: 'Please fill in: date, amount, content',
+    },
+    confirmDelete: 'Delete receipt "{content}"?',
   },
   sidebar: {
     footer: {

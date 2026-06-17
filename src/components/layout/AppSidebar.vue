@@ -304,6 +304,12 @@ const MENU_GROUPS: MenuGroupDefinition[] = [
         requiresPermission: "view_payment_requests",
       },
       {
+        icon: DocsIcon,
+        nameKey: "menu.cashFund",
+        path: "/cash-fund",
+        requiresPermission: "view_cash_fund",
+      },
+      {
         icon: BoxCubeIcon,
         nameKey: "menu.deviceList",
         path: "/inverters",

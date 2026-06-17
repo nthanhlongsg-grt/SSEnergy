@@ -803,6 +803,25 @@ try {
   console.log('ℹ️  ticket_comments is_internal migration:', err.message)
 }
 
+// Migration: cash_receipts table
+try {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS cash_receipts (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      receipt_date TEXT NOT NULL,
+      amount REAL NOT NULL DEFAULT 0,
+      content TEXT NOT NULL,
+      notes TEXT,
+      created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE INDEX IF NOT EXISTS idx_cash_receipts_date ON cash_receipts(receipt_date);
+  `)
+} catch (err: any) {
+  console.log('ℹ️  cash_receipts migration:', err.message)
+}
+
 // Full schema sync (idempotent — adds any columns/tables missing vs current code)
 try {
   const added = applySchemaSync(db)

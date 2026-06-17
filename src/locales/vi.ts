@@ -57,6 +57,7 @@ const vi = {
     reporting: 'Báo cáo & Thống kê',
     contractManagement: 'Quản lý Hợp đồng',
     paymentRequests: 'Chi phí',
+    cashFund: 'Quỹ tiền mặt',
     userManagement: 'Quản lý Người dùng',
     moreSetting: 'More setting',
     slaSettings: 'Thiết lập SLA',
@@ -2716,6 +2717,62 @@ const vi = {
       deleteFailed: 'Không xóa được chi phí',
       imageTooLarge: 'Ảnh {name} quá lớn (tối đa 10MB)',
     },
+  },
+  cashFund: {
+    title: 'Quỹ tiền mặt',
+    subtitle: 'Quản lý thu chi tiền mặt nội bộ',
+    empty: 'Chưa có phiếu thu nào',
+    records: 'bản ghi',
+    tabs: {
+      list: 'Phiếu thu',
+      report: 'Báo cáo tháng',
+    },
+    balance: {
+      totalIn: 'Tổng thu',
+      totalOut: 'Tổng chi (DNTT tiền mặt)',
+      current: 'Số dư hiện tại',
+    },
+    filters: {
+      searchPlaceholder: 'Tìm theo nội dung, ghi chú...',
+      apply: 'Áp dụng',
+      clear: 'Xóa bộ lọc',
+    },
+    columns: {
+      date: 'Ngày nhận',
+      content: 'Nội dung',
+      amount: 'Số tiền',
+      notes: 'Ghi chú',
+      createdBy: 'Người tạo',
+    },
+    form: {
+      date: 'Ngày nhận tiền',
+      amount: 'Số tiền',
+      amountPlaceholder: 'Nhập số tiền...',
+      content: 'Nội dung',
+      notes: 'Ghi chú',
+    },
+    actions: {
+      create: 'Tạo phiếu thu',
+    },
+    modal: {
+      createTitle: 'Tạo phiếu thu mới',
+      editTitle: 'Chỉnh sửa phiếu thu',
+    },
+    report: {
+      month: 'Tháng',
+      receipts: 'Thu (tiền mặt)',
+      expenses: 'Chi (DNTT)',
+      net: 'Chênh lệch',
+      cumulative: 'Lũy kế',
+      total: 'Tổng',
+      empty: 'Không có dữ liệu trong kỳ này',
+    },
+    errors: {
+      loadFailed: 'Không thể tải dữ liệu',
+      saveFailed: 'Lưu không thành công',
+      required: 'Vui lòng nhập đầy đủ: ngày, số tiền, nội dung',
+    },
+    confirmDelete: 'Xóa phiếu thu "{content}"?',
   },
   sidebar: {
     footer: {

@@ -256,6 +256,17 @@ const router = createRouter({
       },
     },
     {
+      path: '/cash-fund',
+      name: 'CashFund',
+      component: () => import('../views/SGE/CashFund/CashFundList.vue'),
+      meta: {
+        title: 'Quỹ tiền mặt',
+        requiresAuth: true,
+        requiresPermission: 'view_cash_fund',
+        userGroup: 'management',
+      },
+    },
+    {
       path: '/payment-requests/:id',
       name: 'PaymentRequestDetail',
       component: () => import('../views/SGE/PaymentRequests/PaymentRequestDetail.vue'),

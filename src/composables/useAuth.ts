@@ -81,6 +81,10 @@ export enum Permission {
   CREATE_PAYMENT_REQUEST = 'create_payment_request',
   REVIEW_PAYMENT_REQUEST = 'review_payment_request',
   DELETE_PAYMENT_REQUEST = 'delete_payment_request',
+
+  // Cash Fund
+  VIEW_CASH_FUND = 'view_cash_fund',
+  MANAGE_CASH_FUND = 'manage_cash_fund',
 }
 
 // Permissions kế toán không có — toàn bộ mục "Cài đặt thêm"
@@ -126,6 +130,8 @@ const rolePermissions: Record<UserRole, Permission[]> = {
     Permission.MANAGE_CONTRACTS,
     Permission.VIEW_PAYMENT_REQUESTS,
     Permission.CREATE_PAYMENT_REQUEST,
+    Permission.VIEW_CASH_FUND,
+    Permission.MANAGE_CASH_FUND,
   ],
   [UserRole.TECHNICIAN]: [
     Permission.VIEW_INVERTERS,
