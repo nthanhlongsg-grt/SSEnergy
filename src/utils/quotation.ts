@@ -354,14 +354,32 @@ export async function exportQuotation(
   contract: QuotationContract,
   options: QuotationExportOptions = {}
 ): Promise<void> {
-  const stampDataUrl = await fetchStampDataUrl()
-  const html = buildQuotationHtml(contract, options, stampDataUrl)
+  // Mở cửa sổ NGAY LẬP TỨC (đồng bộ) trong cùng user-event handler
+  // để tránh bị trình duyệt chặn popup (Mac Safari / Chrome mobile)
   const win = window.open('', '_blank')
   if (!win) {
     alert('Trình duyệt đã chặn cửa sổ in. Vui lòng cho phép pop-up để xuất báo giá.')
     return
   }
-  win.document.open()
-  win.document.write(html)
-  win.document.close()
+
+  // Hiển thị màn hình loading trong cửa sổ mới trong khi tải dữ liệu
+  win.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Đang tải...</title>
+    <style>body{font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;color:#555}
+    .spinner{width:40px;height:40px;border:4px solid #e5e7eb;border-top-color:#3b82f6;border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 16px}
+    @keyframes spin{to{transform:rotate(360deg)}}</style></head>
+    <body><div><div class="spinner"></div><p>Đang tạo báo giá...</p></div></body></html>`)
+
+  try {
+    const stampDataUrl = await fetchStampDataUrl()
+    const html = buildQuotationHtml(contract, options, stampDataUrl)
+    win.document.open()
+    win.document.write(html)
+    win.document.close()
+  } catch (err) {
+    win.document.open()
+    win.document.write(`<!DOCTYPE html><html><body style="font-family:sans-serif;padding:2rem;color:#dc2626">
+      <h3>Lỗi tạo báo giá</h3><p>${err instanceof Error ? err.message : 'Đã có lỗi xảy ra.'}</p>
+      <button onclick="window.close()">Đóng</button></body></html>`)
+    win.document.close()
+  }
 }
