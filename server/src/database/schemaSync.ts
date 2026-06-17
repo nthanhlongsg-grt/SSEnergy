@@ -83,7 +83,18 @@ export function applySchemaSync(db: Database.Database): string[] {
 
   // --- ticket attachments / comments ---
   add('ticket_attachments', 'comment_id', 'comment_id INTEGER')
+  add('ticket_attachments', 'file_size', 'file_size INTEGER')
+  add('ticket_attachments', 'mime_type', 'mime_type TEXT')
+  add('ticket_attachments', 'uploaded_by', 'uploaded_by INTEGER')
   add('ticket_comments', 'is_internal', 'is_internal INTEGER DEFAULT 0')
+
+  // --- timestamps (old DBs may lack these) ---
+  add('tickets', 'updated_at', 'updated_at DATETIME DEFAULT CURRENT_TIMESTAMP')
+  add('users', 'updated_at', 'updated_at DATETIME DEFAULT CURRENT_TIMESTAMP')
+  add('technician_schedules', 'updated_at', 'updated_at DATETIME DEFAULT CURRENT_TIMESTAMP')
+
+  // --- notifications (old DBs may use read_at instead of is_read) ---
+  add('notifications', 'is_read', 'is_read INTEGER DEFAULT 0')
 
   // --- contracts ---
   add('contracts', 'items', 'items TEXT')
