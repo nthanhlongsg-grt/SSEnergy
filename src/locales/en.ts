@@ -2529,7 +2529,6 @@ const en = {
       noData: 'No data in this period',
       emptyHint: 'Try a wider range (Month or Year), or add contract / expense data.',
       periodLabel: 'Report period: {from} — {to}',
-      quantity: 'Quantity',
       ticketsTrend: 'Tickets Trend Over Time',
       workTypeDistribution: 'Work Type Distribution',
       technicianPerformance: 'Staff Performance',

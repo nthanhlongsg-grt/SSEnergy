@@ -2533,7 +2533,6 @@ const vi = {
       noData: 'Chưa có dữ liệu trong kỳ',
       emptyHint: 'Thử chọn kỳ rộng hơn (Tháng hoặc Năm) hoặc kiểm tra dữ liệu hợp đồng / chi phí.',
       periodLabel: 'Kỳ báo cáo: {from} — {to}',
-      quantity: 'Số lượng',
       ticketsTrend: 'Xu hướng Tickets theo thời gian',
       workTypeDistribution: 'Phân bổ theo Loại Công việc',
       technicianPerformance: 'Hiệu suất Staff',
