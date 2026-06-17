@@ -1,0 +1,23 @@
+cd ~
+export PATH="$HOME/.nodenv/versions/18/bin:$PATH"
+
+# Xóa thư mục cũ, clone mới
+rm -rf ~/SGE
+git clone https://github.com/nthanhlongsg-grt/SGE.git SGE
+
+# Build
+cd ~/SGE/server
+npm install
+npm run build
+
+# Copy dist mới vào app đang chạy
+cp -r ~/SGE/server/dist/* ~/baohanh.sgesolartech.vn/sge-api/dist/
+
+# Dọn dẹp
+rm -rf ~/SGE
+
+kill process
+
+ps aux | grep node
+
+kill -9 3498183
