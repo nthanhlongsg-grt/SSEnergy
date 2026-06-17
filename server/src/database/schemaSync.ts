@@ -80,6 +80,7 @@ export function applySchemaSync(db: Database.Database): string[] {
   add('tickets', 'customer_address', 'customer_address TEXT')
   add('tickets', 'inverter_serial', 'inverter_serial TEXT')
   add('tickets', 'inverter_model', 'inverter_model TEXT')
+  add('tickets', 'report_html_file', 'report_html_file TEXT')
 
   // --- ticket attachments / comments ---
   add('ticket_attachments', 'comment_id', 'comment_id INTEGER')

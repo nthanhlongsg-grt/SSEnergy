@@ -132,9 +132,11 @@ const migrations: Migration[] = [
     version: 4,
     name: 'Add pending_reason to tickets',
     up: () => {
-      db.exec(`
-        ALTER TABLE tickets ADD COLUMN pending_reason TEXT;
-      `)
+      const tableInfo = db.prepare('PRAGMA table_info(tickets)').all() as Array<{ name: string }>
+      const hasPendingReason = tableInfo.some(col => col.name === 'pending_reason')
+      if (!hasPendingReason) {
+        db.exec(`ALTER TABLE tickets ADD COLUMN pending_reason TEXT;`)
+      }
     },
   },
   {

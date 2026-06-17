@@ -54,6 +54,7 @@
 import { ref, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAutoRefresh } from '@/composables/useAutoRefresh'
+import { POLL } from '@/utils/pollInterval'
 import {
   paymentRequestService,
   type PaymentRequestComment,
@@ -122,7 +123,7 @@ const sendComment = async () => {
 }
 
 const { stop: stopAutoRefresh } = useAutoRefresh({
-  interval: 15000,
+  interval: POLL.chatRefresh(),
   fetchFn: async () => {
     if (!sending.value) await fetchComments()
   },

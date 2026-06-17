@@ -373,6 +373,8 @@ import { useI18n } from 'vue-i18n'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import { ticketService } from '@/services/ticketService'
 import { getApiBaseUrlWithoutApi } from '@/utils/apiUrl'
+import { resolveAttachmentUrl, resolveCommentImageSrc } from '@/utils/attachmentUrl'
+import { POLL } from '@/utils/pollInterval'
 import { filterImageFiles, readFileAsDataUrl } from '@/utils/imageUpload'
 import { useImagePaste } from '@/composables/useImagePaste'
 import { useTicketStatus } from '@/composables/useTicketStatus'
@@ -400,9 +402,9 @@ const allImages = computed(() => {
   if (publicComments.value) {
     publicComments.value.forEach((comment: any) => {
       if (comment.images && comment.images.length > 0) {
-        comment.images.forEach((imgSrc: string, idx: number) => {
+        comment.images.forEach((imgSrc: number | string, idx: number) => {
           images.push({
-            file_path: imgSrc,
+            file_path: resolveCommentImageSrc(imgSrc, ticket.value!.id),
             filename: `comment-image-${idx + 1}.jpg`,
             source: 'comment'
           })
@@ -416,10 +418,10 @@ const allImages = computed(() => {
     ticket.value.attachments.forEach((file: any) => {
       if (isImageFile(file)) {
         images.push({
-          file_path: file.file_path || '',
+          file_path: getAttachmentUrl(file),
           filename: file.filename || file.name || 'image.jpg',
           source: 'attachment',
-          ...file // Keep original file data for getAttachmentUrl
+          ...file
         })
       }
     })
@@ -479,13 +481,9 @@ const getCommentText = (text: string): string => {
   return text.replace(/\n*📷 Đã đính kèm \d+ hình ảnh\s*$/u, '').trimEnd()
 }
 
-const getCommentImageSrc = (imageSrc: string): string => {
-  if (!imageSrc) return ''
-  if (imageSrc.startsWith('data:') || imageSrc.startsWith('http')) return imageSrc
-  if (imageSrc.length > 100 && !imageSrc.includes('/') && !imageSrc.includes('\\')) {
-    return `data:image/jpeg;base64,${imageSrc}`
-  }
-  return imageSrc
+const getCommentImageSrc = (imageSrc: number | string): string => {
+  if (!ticket.value?.id) return ''
+  return resolveCommentImageSrc(imageSrc, ticket.value.id)
 }
 
 const loadTicket = async () => {
@@ -530,57 +528,7 @@ const removeImage = (index: number) => {
 }
 
 const getAttachmentUrl = (attachment: any): string => {
-  if (!attachment) return ''
-  
-  const filePath = attachment.file_path || ''
-  
-  // Priority 1: If file_path is a base64 data URI, return it directly
-  if (filePath && typeof filePath === 'string') {
-    if (filePath.startsWith('data:image/')) {
-      return filePath
-    }
-    
-    // Priority 2: If it's a long string without data: prefix, might be base64
-    // Check if it looks like base64 (alphanumeric, long, no slashes)
-    const looksLikeBase64 = filePath.length > 50 && 
-                            /^[A-Za-z0-9+/=]+$/.test(filePath) && 
-                            !filePath.includes('/') && 
-                            !filePath.includes('\\') && 
-                            !filePath.startsWith('http')
-    
-    if (looksLikeBase64) {
-      const filename = (attachment.filename || '').toLowerCase()
-      const mimeType = attachment.mime_type || 'image/jpeg'
-      
-      let finalMimeType = mimeType
-      if (!mimeType.startsWith('image/')) {
-        if (filename.endsWith('.png')) finalMimeType = 'image/png'
-        else if (filename.endsWith('.gif')) finalMimeType = 'image/gif'
-        else if (filename.endsWith('.webp')) finalMimeType = 'image/webp'
-        else if (filename.endsWith('.svg')) finalMimeType = 'image/svg+xml'
-        else if (filename.endsWith('.jpg') || filename.endsWith('.jpeg')) finalMimeType = 'image/jpeg'
-        else finalMimeType = 'image/jpeg'
-      }
-      
-      return `data:${finalMimeType};base64,${filePath}`
-    }
-  }
-  
-  // Priority 3: Try to construct API URL using attachment ID
-  if (attachment.id && ticket.value?.id) {
-    const baseApiUrl = getApiBaseUrlWithoutApi()
-    // Construct URL
-    const url = `${baseApiUrl}/api/tickets/${ticket.value.id}/attachments/${attachment.id}`
-    return url
-  }
-  
-  // Priority 4: Fallback - try to use file_path as URL if it looks like a URL
-  if (filePath && (filePath.startsWith('http') || filePath.startsWith('/'))) {
-    return filePath
-  }
-  
-  console.warn('Could not construct URL for attachment:', attachment)
-  return ''
+  return resolveAttachmentUrl(attachment, ticket.value?.id)
 }
 
 const handleImageError = (event: Event) => {
@@ -894,9 +842,9 @@ useChangeDetection({
   },
 })
 
-// Fallback polling every 30s
+// Fallback polling
 const { stop: stopAutoRefresh } = useAutoRefresh({
-  interval: 30000,
+  interval: POLL.detailRefresh(),
   fetchFn: async () => {
     if (!loading.value) await loadTicket()
   },

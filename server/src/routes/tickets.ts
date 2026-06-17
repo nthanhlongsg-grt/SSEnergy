@@ -13,6 +13,13 @@ import { AUTO_ASSIGN_KEYS } from './auto-assign-settings.js'
 import { resolveStaffFunction, AUTO_ASSIGN_STAFF_ROLES } from '../utils/staffFunction.js'
 import { generateLegacyTicketNumber, generateTicketNumber } from '../utils/ticketNumber.js'
 import {
+  decodeUploadPayload,
+  resolveAttachmentAbsolutePath,
+  sanitizeAttachmentRow,
+  saveAttachmentToDisk,
+} from '../utils/attachmentStorage.js'
+import { findReportFilename, saveTicketReportHtml } from '../utils/ticketReportStorage.js'
+import {
   TicketStatus,
   TICKET_STATUS_ORDER,
   expandStatusFilter,
@@ -574,22 +581,22 @@ router.get('/:id', authenticateToken, (req, res) => {
     
     const rawComments = db.prepare(commentsQuery).all(...commentsParams) as any[]
 
-    // Enrich each comment with its linked image attachments
+    // Enrich each comment with linked image attachment IDs (not base64 payloads)
     const commentImages = db.prepare(`
-      SELECT comment_id, file_path
+      SELECT id, comment_id
       FROM ticket_attachments
       WHERE ticket_id = ?
         AND comment_id IS NOT NULL
-        AND (mime_type LIKE 'image/%' OR file_path LIKE 'data:image/%')
+        AND (mime_type LIKE 'image/%' OR file_path LIKE 'data:image/%' OR mime_type IS NULL)
       ORDER BY created_at ASC
-    `).all(ticketId) as Array<{ comment_id: number; file_path: string }>
+    `).all(ticketId) as Array<{ id: number; comment_id: number }>
 
-    const imagesByComment = new Map<number, string[]>()
+    const imagesByComment = new Map<number, number[]>()
     for (const img of commentImages) {
       if (!imagesByComment.has(img.comment_id)) {
         imagesByComment.set(img.comment_id, [])
       }
-      imagesByComment.get(img.comment_id)!.push(img.file_path)
+      imagesByComment.get(img.comment_id)!.push(img.id)
     }
 
     const comments = rawComments.map((c: any) => ({
@@ -613,17 +620,28 @@ router.get('/:id', authenticateToken, (req, res) => {
       ORDER BY tw.created_at ASC
     `).all(ticketId) as any[]
 
-    // Get attachments (exclude images/files linked to comments)
-    const attachments = db.prepare(`
+    // Get attachments (exclude images/files linked to comments); omit file_path from JSON
+    const rawAttachments = db.prepare(`
       SELECT ta.*, u.name as uploaded_by_name
       FROM ticket_attachments ta
       LEFT JOIN users u ON ta.uploaded_by = u.id
       WHERE ta.ticket_id = ? AND ta.comment_id IS NULL
       ORDER BY ta.created_at DESC
-    `).all(ticketId)
+    `).all(ticketId) as Array<Record<string, unknown>>
+
+    const attachments = rawAttachments.map((a) => sanitizeAttachmentRow(a, ticketId))
 
     // Get service reports
     const serviceReports = db.prepare('SELECT * FROM service_reports WHERE ticket_id = ? ORDER BY created_at DESC').all(ticketId)
+
+    const storedReportFile = (ticket as { report_html_file?: string | null }).report_html_file
+    const resolvedReportFile = findReportFilename(ticketId, storedReportFile)
+    if (resolvedReportFile && resolvedReportFile !== storedReportFile) {
+      db.prepare('UPDATE tickets SET report_html_file = ? WHERE id = ?').run(resolvedReportFile, ticketId)
+    }
+    const report_url = resolvedReportFile
+      ? `/api/tickets/reports/${resolvedReportFile}`
+      : null
 
     res.json({
       ...ticket,
@@ -631,6 +649,7 @@ router.get('/:id', authenticateToken, (req, res) => {
       attachments,
       service_reports: serviceReports,
       watchers,
+      report_url,
     })
   } catch (error) {
     console.error('Get ticket error:', error)
@@ -2011,8 +2030,14 @@ router.get('/:ticketId/attachments/:attachmentId', (req, res) => {
       }
     }
 
-    // If file_path is a file path, try to serve from filesystem
-    // For now, if it's not base64, return error (filesystem serving can be added later)
+    // Serve from disk when stored as relative path
+    const absolutePath = resolveAttachmentAbsolutePath(String(filePath))
+    if (absolutePath && fs.existsSync(absolutePath)) {
+      res.setHeader('Content-Type', mimeType)
+      res.setHeader('Content-Disposition', `inline; filename="${attachment.filename || 'attachment'}"`)
+      return res.sendFile(absolutePath)
+    }
+
     return res.status(404).json({ error: 'Attachment file not found or invalid format' })
   } catch (error) {
     console.error('Get attachment error:', error)
@@ -2123,18 +2148,16 @@ router.post('/:id/generate-report', authenticateToken, (req: AuthRequest, res) =
       logoUrl
     })
 
-    // Generate unique report ID
-    const reportId = `REPORT-${Date.now()}-${ticketId}`
-    const filename = `${reportId}.html`
-    const filePath = path.join(reportsDir, filename)
-    
-    // Lưu HTML vào file
-    fs.writeFileSync(filePath, html, 'utf8')
-    
-    // Return report ID và URL (URL trỏ đến route GET với auth)
+    const { reportId, filename, url } = saveTicketReportHtml(ticketId, html)
+
+    db.prepare('UPDATE tickets SET report_html_file = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?').run(
+      filename,
+      ticketId,
+    )
+
     res.json({
       reportId,
-      url: `/api/tickets/reports/${filename}`,
+      url,
       message: 'Report generated successfully'
     })
   } catch (error) {
@@ -2167,13 +2190,21 @@ router.post('/:id/attachments', authenticateToken, async (req, res) => {
       return res.status(400).json({ error: 'File too large. Maximum size is 10MB' })
     }
 
-    // If file is already a base64 data URI, use it directly
-    // Otherwise, assume it's raw base64 and create data URI
-    let filePath = file
-    if (typeof filePath === 'string' && !filePath.startsWith('data:')) {
-      const mimeType = mime_type || 'application/octet-stream'
-      filePath = `data:${mimeType};base64,${filePath}`
+    let buffer: Buffer
+    let storedMime: string
+    try {
+      const decoded = decodeUploadPayload(file, mime_type)
+      buffer = decoded.buffer
+      storedMime = decoded.mimeType
+    } catch {
+      return res.status(400).json({ error: 'Invalid file data' })
     }
+
+    if (buffer.length > 10 * 1024 * 1024) {
+      return res.status(400).json({ error: 'File too large. Maximum size is 10MB' })
+    }
+
+    const { relativePath, size } = saveAttachmentToDisk(ticketId, filename, buffer)
 
     const linkedCommentId = comment_id ? Number(comment_id) : null
 
@@ -2184,9 +2215,9 @@ router.post('/:id/attachments', authenticateToken, async (req, res) => {
     `).run(
       ticketId,
       filename,
-      filePath,
-      file_size || null,
-      mime_type || null,
+      relativePath,
+      size,
+      storedMime,
       user.id,
       linkedCommentId
     )
@@ -2196,12 +2227,12 @@ router.post('/:id/attachments', authenticateToken, async (req, res) => {
       FROM ticket_attachments ta
       LEFT JOIN users u ON ta.uploaded_by = u.id
       WHERE ta.id = ?
-    `).get(result.lastInsertRowid) as any
+    `).get(result.lastInsertRowid) as Record<string, unknown>
 
     // Update ticket updated_at
     db.prepare('UPDATE tickets SET updated_at = CURRENT_TIMESTAMP WHERE id = ?').run(ticketId)
 
-    res.status(201).json(attachment)
+    res.status(201).json(sanitizeAttachmentRow(attachment, ticketId))
   } catch (error: any) {
     console.error('Upload attachment error:', error)
     console.error('Error details:', {

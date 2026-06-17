@@ -2,6 +2,7 @@ import { useRouter } from 'vue-router'
 import { getUserRole, isAuthenticated, refreshUserInfo } from '@/composables/useAuth'
 import { getDefaultRouteByRole } from '@/utils/userGroups'
 import { useChangeDetection } from '@/composables/useChangeDetection'
+import { POLL } from '@/utils/pollInterval'
 
 /**
  * Poll profile changes so role updates apply without forcing a full reload.
@@ -10,7 +11,7 @@ export function useAuthSessionSync() {
   const router = useRouter()
 
   useChangeDetection({
-    interval: 8000,
+    interval: POLL.authSession(),
     onProfileChange: async () => {
       if (!isAuthenticated.value) return
 

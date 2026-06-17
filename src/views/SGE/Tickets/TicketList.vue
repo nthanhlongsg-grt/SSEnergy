@@ -635,6 +635,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch, onActivated } from 'vue'
 import { useAutoRefresh } from '@/composables/useAutoRefresh'
+import { POLL } from '@/utils/pollInterval'
 import { useChangeDetection } from '@/composables/useChangeDetection'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
@@ -1249,7 +1250,7 @@ onActivated(() => {
 
 // Fallback polling mỗi 30s (dự phòng nếu change detection miss)
 const { stop: stopAutoRefresh } = useAutoRefresh({
-  interval: 30000,
+  interval: POLL.listRefresh(),
   fetchFn: async () => {
     if (!loading.value) await fetchTickets()
   },

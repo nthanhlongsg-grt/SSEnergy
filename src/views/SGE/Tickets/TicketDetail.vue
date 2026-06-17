@@ -1546,7 +1546,8 @@ import { useSlaSettings } from '@/composables/useSlaSettings'
 import { apiClient } from '@/services/api'
 import { formatDateTime, formatDateForInput, formatDateTimeForInput } from '@/utils/dateTime'
 import { emptyReplacementPartRow, serializeReplacementParts, type ReplacementPartRow } from '@/utils/replacementParts'
-import { getApiBaseUrlWithoutApi } from '@/utils/apiUrl'
+import { resolveAttachmentUrl, resolveCommentImageSrc, resolveReportUrl } from '@/utils/attachmentUrl'
+import { POLL } from '@/utils/pollInterval'
 import flatPickr from 'vue-flatpickr-component'
 import 'flatpickr/dist/flatpickr.css'
 import { useFlatpickrConfig } from '@/composables/useFlatpickr'
@@ -1601,6 +1602,32 @@ const ticketAttachments = computed(() =>
 )
 const reportId = ref<string | null>(null)
 const reportUrl = ref<string | null>(null)
+
+const applyReportFromTicket = (ticketData: {
+  report_url?: string | null
+  id?: number
+  status?: string
+}) => {
+  if (ticketData?.report_url) {
+    reportUrl.value = ticketData.report_url
+    return
+  }
+  if (ticketData?.id && isTicketClosed(ticketData.status ?? '')) {
+    try {
+      const savedReport = sessionStorage.getItem(`ticket_${ticketData.id}_report`)
+      if (savedReport) {
+        const saved = JSON.parse(savedReport) as { url?: string; reportId?: string }
+        reportId.value = saved.reportId ? String(saved.reportId) : null
+        reportUrl.value = saved.url || null
+        return
+      }
+    } catch {
+      // ignore legacy sessionStorage parse errors
+    }
+  }
+  reportId.value = null
+  reportUrl.value = null
+}
 const activities = ref<any[]>([])
 const technicians = ref<any[]>([])
 const loadingTechnicians = ref(false)
@@ -2358,103 +2385,18 @@ const isImageFile = (file: any): boolean => {
 
 // Get attachment URL for display
 const getAttachmentUrl = (file: any): string => {
-  if (!file) {
-    console.warn('getAttachmentUrl: file is null or undefined')
-    return ''
-  }
-  
-  const filePath = file.file_path || ''
-  
-  // If file_path is a base64 data URI, return it directly
-  if (filePath && typeof filePath === 'string') {
-    if (filePath.startsWith('data:image/') || filePath.startsWith('data:application/octet-stream')) {
-      if (filePath.includes('base64,')) {
-        return filePath
-      }
-    }
-    
-    // If it's a long string without data: prefix and doesn't look like a file path, might be base64
-    if (filePath.length > 100 && !filePath.includes('/') && !filePath.includes('\\') && !filePath.includes('http')) {
-      // Likely base64 string, determine mime type from filename or mime_type
-      const filename = (file.filename || file.name || '').toLowerCase()
-      const mimeType = file.mime_type || 'image/jpeg'
-      
-      let finalMimeType = mimeType
-      if (!mimeType.startsWith('image/')) {
-        if (filename.endsWith('.png')) finalMimeType = 'image/png'
-        else if (filename.endsWith('.gif')) finalMimeType = 'image/gif'
-        else if (filename.endsWith('.webp')) finalMimeType = 'image/webp'
-        else if (filename.endsWith('.svg')) finalMimeType = 'image/svg+xml'
-        else finalMimeType = 'image/jpeg'
-      }
-      
-      return `data:${finalMimeType};base64,${filePath}`
-    }
-  }
-  
-  // Try to construct API URL using attachment ID (preferred method)
-  if (file.id && ticket.value?.id) {
-    const baseApiUrl = getApiBaseUrlWithoutApi()
-    // For images, construct URL that can be accessed directly (backend handles auth optionally)
-    return `${baseApiUrl}/api/tickets/${ticket.value.id}/attachments/${file.id}`
-  }
-  
-  // Fallback: if file_path exists but no ID
-  if (filePath && ticket.value?.id) {
-    const baseApiUrl = getApiBaseUrlWithoutApi()
-    return `${baseApiUrl}/api/tickets/${ticket.value.id}/attachments/${encodeURIComponent(filePath)}`
-  }
-  
-  console.warn('getAttachmentUrl: Could not construct URL for file:', file)
-  return ''
+  return resolveAttachmentUrl(file, ticket.value?.id)
 }
 
 // View report
-const viewReport = async () => {
-  // Lấy report URL từ state hoặc sessionStorage
-  let urlToOpen: string | null = null
-  
-  // Kiểm tra trong state trước
-  if (reportUrl.value && ticket.value?.id) {
-    urlToOpen = reportUrl.value
-  } else if (isTicketClosed(ticket.value?.status) && ticket.value?.id) {
-    // Thử load từ sessionStorage
-    try {
-      const savedReport = sessionStorage.getItem(`ticket_${ticket.value.id}_report`)
-      if (savedReport) {
-        const reportData = JSON.parse(savedReport)
-        reportId.value = reportData.reportId
-        reportUrl.value = reportData.url
-        urlToOpen = reportData.url
-      }
-    } catch (e) {
-      console.warn('Error loading report from sessionStorage:', e)
-    }
-  }
-  
-  if (urlToOpen) {
-    // Mở file HTML từ server
-    // Đảm bảo URL luôn trỏ đến backend (port 3000), không phải frontend (port 5173)
-    const baseApiUrl = getApiBaseUrlWithoutApi()
-    
-    // Nếu urlToOpen đã là full URL, sử dụng trực tiếp
-    // Nếu là relative path, thêm baseApiUrl
-    let fullUrl: string
-    if (urlToOpen.startsWith('http://') || urlToOpen.startsWith('https://')) {
-      fullUrl = urlToOpen
-    } else {
-      // Đảm bảo baseApiUrl không có trailing slash và urlToOpen bắt đầu với /
-      const cleanBase = baseApiUrl.replace(/\/$/, '')
-      const cleanPath = urlToOpen.startsWith('/') ? urlToOpen : `/${urlToOpen}`
-      fullUrl = `${cleanBase}${cleanPath}`
-    }
-    
-    console.log('Opening report URL:', fullUrl)
-    window.open(fullUrl, '_blank')
-  } else {
-    // Nếu không có report, hiển thị thông báo
+const viewReport = () => {
+  const urlToOpen = reportUrl.value
+  if (!urlToOpen) {
     alert('Báo cáo chưa được tạo. Vui lòng đóng ticket để tạo báo cáo.')
+    return
   }
+  const fullUrl = resolveReportUrl(urlToOpen)
+  if (fullUrl) window.open(fullUrl, '_blank')
 }
 
 // Open attachment image in modal
@@ -2630,40 +2572,31 @@ const loadTicket = async () => {
     comments.value = (ticketData as any).comments || []
     attachments.value = (ticketData as any).attachments || []
     watchers.value = (ticketData as any).watchers || []
+    applyReportFromTicket(ticketData as { report_url?: string; id?: number; status?: string })
     
-    // Load report info from sessionStorage if ticket is closed
-    if (isTicketClosed(ticket.value?.status)) {
-      try {
-        const savedReport = sessionStorage.getItem(`ticket_${ticketId}_report`)
-        if (savedReport) {
-          const reportData = JSON.parse(savedReport)
-          reportId.value = reportData.reportId
-          reportUrl.value = reportData.url
-        }
-      } catch (e) {
-        console.warn('Error loading report from sessionStorage:', e)
-      }
-    } else {
-      reportId.value = null
-      reportUrl.value = null
-    }
-    
-    // Debug: Log attachments to see what we're getting
+    // Debug: ticket-level attachments vs comment-linked images
+    const commentImageCount = (ticketData.comments || []).reduce(
+      (sum: number, c: { images?: unknown[] }) => sum + (c.images?.length || 0),
+      0,
+    )
     if (attachments.value.length > 0) {
-      console.log('📎 Attachments loaded:', attachments.value.length, 'files')
+      console.log('📎 Ticket attachments loaded:', attachments.value.length, 'files')
       attachments.value.forEach((att: any, idx: number) => {
         console.log(`  Attachment ${idx + 1}:`, {
           id: att.id,
           filename: att.filename,
           mime_type: att.mime_type,
-          file_path: att.file_path ? (att.file_path.length > 100 ? att.file_path.substring(0, 100) + '...' : att.file_path) : 'no path',
           file_size: att.file_size,
           isImage: isImageFile(att),
-          url: getAttachmentUrl(att)
+          url: getAttachmentUrl(att),
         })
       })
+    } else if (commentImageCount > 0) {
+      console.log(
+        `📎 No standalone attachments for ticket ${ticketId}; ${commentImageCount} image(s) on comments`,
+      )
     } else {
-      console.log('📎 No attachments found for ticket', ticketId)
+      console.log('📎 No attachments for ticket', ticketId)
     }
     
     // Build activities from comments and ticket history
@@ -2680,7 +2613,7 @@ const loadTicket = async () => {
   }
 }
 
-// Change detection: refresh within ~5s when ticket/comments change
+// Change detection: refresh when ticket/comments change (20s prod)
 useChangeDetection({
   ticketId: route.params.id,
   onTicketChange: async () => {
@@ -2688,9 +2621,9 @@ useChangeDetection({
   },
 })
 
-// Auto-refresh ticket data every 30 seconds (fallback)
+// Auto-refresh ticket data (fallback)
 const { isRefreshing: isAutoRefreshing, lastRefreshTime } = useAutoRefresh({
-  interval: 30000, // 10 seconds
+  interval: POLL.detailRefresh(),
   fetchFn: async () => {
     // Only refresh if not currently loading manually
     if (!loading.value) {
@@ -2714,6 +2647,7 @@ const { isRefreshing: isAutoRefreshing, lastRefreshTime } = useAutoRefresh({
       comments.value = (newData as any).comments || []
       attachments.value = (newData as any).attachments || []
       watchers.value = (newData as any).watchers || []
+      applyReportFromTicket(newData as { report_url?: string; id?: number; status?: string })
       // Rebuild activities
       buildActivities()
     }
@@ -2819,8 +2753,10 @@ const buildActivities = () => {
     const commentText = comment.comment || comment.content || ''
     const isSystemAssignment = commentText.includes('Hệ thống phân công cho nhân viên') || false
     
-    // Get images from API (comment.images from attachments)
-    const images: string[] = comment.images || []
+    // Attachment IDs from API — resolve to URLs (no base64 in JSON)
+    const images: string[] = (comment.images || []).map((img: number | string) =>
+      resolveCommentImageSrc(img, ticket.value!.id),
+    )
     
     // Skip system assignment comments (they are auto-generated, no need to show in activity log)
     if (isSystemAssignment) {
@@ -3064,23 +3000,16 @@ const updateTicketStatus = async () => {
           // Lưu report URL để hiển thị nút xem report
           reportId.value = reportData.reportId ? String(reportData.reportId) : null
           reportUrl.value = reportData.url || null
-          
-          // Lưu vào sessionStorage để có thể xem lại sau khi reload
+
           sessionStorage.setItem(`ticket_${ticket.value.id}_report`, JSON.stringify({
             reportId: reportData.reportId,
             url: reportData.url,
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
           }))
-          
-          // Open report in new window
+
           if (reportData.url) {
-            const baseApiUrl = getApiBaseUrlWithoutApi()
-            // Đảm bảo URL luôn trỏ đến backend (port 3000)
-            const cleanBase = baseApiUrl.replace(/\/$/, '')
-            const cleanPath = reportData.url.startsWith('/') ? reportData.url : `/${reportData.url}`
-            const fullUrl = `${cleanBase}${cleanPath}`
-            console.log('Auto-opening report URL:', fullUrl, 'Base:', baseApiUrl, 'Path:', reportData.url)
-            window.open(fullUrl, '_blank')
+            const fullUrl = resolveReportUrl(reportData.url)
+            if (fullUrl) window.open(fullUrl, '_blank')
           }
         }
       } catch (reportError) {

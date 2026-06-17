@@ -235,6 +235,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useAutoRefresh } from '@/composables/useAutoRefresh'
+import { POLL } from '@/utils/pollInterval'
 import { useChangeDetection } from '@/composables/useChangeDetection'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
@@ -335,7 +336,7 @@ useChangeDetection({
 
 // Fallback polling every 30s
 const { stop: stopAutoRefresh } = useAutoRefresh({
-  interval: 30000,
+  interval: POLL.listRefresh(),
   fetchFn: async () => {
     if (!loading.value) await loadTickets()
   },

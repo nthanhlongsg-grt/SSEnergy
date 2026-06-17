@@ -93,8 +93,8 @@ sge-inverter-app/
 # Local chat/screenshot artifacts
 assets/
 
-# Generated backend reports
-server/reports/
+# Ticket attachment uploads (disk storage)
+server/uploads/
 
 # SQLite runtime files
 *.db-wal

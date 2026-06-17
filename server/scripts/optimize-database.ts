@@ -185,8 +185,13 @@ try {
     { name: 'idx_projects_status', sql: 'CREATE INDEX IF NOT EXISTS idx_projects_status ON projects(status)' },
     
     // Ticket comments
+    { name: 'idx_ticket_comments_ticket_id', sql: 'CREATE INDEX IF NOT EXISTS idx_ticket_comments_ticket_id ON ticket_comments(ticket_id)' },
     { name: 'idx_ticket_comments_user_id', sql: 'CREATE INDEX IF NOT EXISTS idx_ticket_comments_user_id ON ticket_comments(user_id)' },
     { name: 'idx_ticket_comments_created_at', sql: 'CREATE INDEX IF NOT EXISTS idx_ticket_comments_created_at ON ticket_comments(created_at)' },
+
+    // Ticket attachments (detail + comment images)
+    { name: 'idx_ticket_attachments_ticket_id', sql: 'CREATE INDEX IF NOT EXISTS idx_ticket_attachments_ticket_id ON ticket_attachments(ticket_id)' },
+    { name: 'idx_ticket_attachments_ticket_comment', sql: 'CREATE INDEX IF NOT EXISTS idx_ticket_attachments_ticket_comment ON ticket_attachments(ticket_id, comment_id)' },
     
     // Notifications
     { name: 'idx_notifications_type', sql: 'CREATE INDEX IF NOT EXISTS idx_notifications_type ON notifications(type)' },

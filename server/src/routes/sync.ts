@@ -33,7 +33,7 @@ router.get('/changes', authenticateToken, (req, res) => {
     const ticketParams = [...params]
 
     if (ticketId && !Number.isNaN(ticketId)) {
-      ticketsQuery += whereClause ? ' AND t.id = ?' : ' WHERE t.id = ?'
+      ticketsQuery += ' AND t.id = ?'
       ticketParams.push(ticketId)
     }
 
