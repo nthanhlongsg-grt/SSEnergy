@@ -2768,6 +2768,7 @@ const vi = {
       content: 'Nội dung',
       amount: 'Số tiền',
       notes: 'Ghi chú',
+      managedBy: 'Người quản lý',
       createdBy: 'Người tạo',
     },
     form: {
@@ -2775,6 +2776,8 @@ const vi = {
       amount: 'Số tiền',
       amountPlaceholder: 'Nhập số tiền...',
       content: 'Nội dung',
+      managedBy: 'Người quản lý',
+      noManager: 'Không chỉ định',
       notes: 'Ghi chú',
     },
     actions: {

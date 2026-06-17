@@ -2764,6 +2764,7 @@ const en = {
       content: 'Content',
       amount: 'Amount',
       notes: 'Notes',
+      managedBy: 'Manager',
       createdBy: 'Created by',
     },
     form: {
@@ -2771,6 +2772,8 @@ const en = {
       amount: 'Amount',
       amountPlaceholder: 'Enter amount...',
       content: 'Content',
+      managedBy: 'Manager',
+      noManager: 'Not assigned',
       notes: 'Notes',
     },
     actions: {

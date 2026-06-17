@@ -227,9 +227,10 @@ router.get('/', authenticateToken, (req, res) => {
     const total = (db.prepare(`SELECT COUNT(*) AS total FROM cash_receipts cr WHERE ${where}`).get(...params) as any).total
 
     const rows = db.prepare(`
-      SELECT cr.*, u.name AS created_by_name
+      SELECT cr.*, u.name AS created_by_name, m.name AS managed_by_name
       FROM cash_receipts cr
       LEFT JOIN users u ON u.id = cr.created_by
+      LEFT JOIN users m ON m.id = cr.managed_by
       WHERE ${where}
       ORDER BY cr.receipt_date DESC, cr.id DESC
       LIMIT ? OFFSET ?
@@ -248,19 +249,22 @@ router.post('/', authenticateToken, (req, res) => {
     const user = (req as AuthRequest).user!
     if (!canManageCashFund(user.role)) return res.status(403).json({ error: 'Insufficient permissions' })
 
-    const { receipt_date, amount, content, notes } = req.body
+    const { receipt_date, amount, content, notes, managed_by } = req.body
     if (!receipt_date || !amount || !content) {
       return res.status(400).json({ error: 'receipt_date, amount, content are required' })
     }
 
     const result = db.prepare(`
-      INSERT INTO cash_receipts (receipt_date, amount, content, notes, created_by)
-      VALUES (?, ?, ?, ?, ?)
-    `).run(receipt_date, Number(amount), String(content).trim(), notes || null, user.id)
+      INSERT INTO cash_receipts (receipt_date, amount, content, notes, managed_by, created_by)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `).run(receipt_date, Number(amount), String(content).trim(), notes || null, managed_by || null, user.id)
 
     const row = db.prepare(`
-      SELECT cr.*, u.name AS created_by_name FROM cash_receipts cr
-      LEFT JOIN users u ON u.id = cr.created_by WHERE cr.id = ?
+      SELECT cr.*, u.name AS created_by_name, m.name AS managed_by_name
+      FROM cash_receipts cr
+      LEFT JOIN users u ON u.id = cr.created_by
+      LEFT JOIN users m ON m.id = cr.managed_by
+      WHERE cr.id = ?
     `).get(result.lastInsertRowid)
 
     res.status(201).json(row)
@@ -280,20 +284,40 @@ router.put('/:id', authenticateToken, (req, res) => {
     const existing = db.prepare('SELECT * FROM cash_receipts WHERE id = ?').get(id)
     if (!existing) return res.status(404).json({ error: 'Not found' })
 
-    const { receipt_date, amount, content, notes } = req.body
+    const { receipt_date, amount, content, notes, managed_by } = req.body
     db.prepare(`
-      UPDATE cash_receipts SET receipt_date = ?, amount = ?, content = ?, notes = ?
+      UPDATE cash_receipts SET receipt_date = ?, amount = ?, content = ?, notes = ?, managed_by = ?
       WHERE id = ?
-    `).run(receipt_date, Number(amount), String(content).trim(), notes || null, id)
+    `).run(receipt_date, Number(amount), String(content).trim(), notes || null, managed_by || null, id)
 
     const row = db.prepare(`
-      SELECT cr.*, u.name AS created_by_name FROM cash_receipts cr
-      LEFT JOIN users u ON u.id = cr.created_by WHERE cr.id = ?
+      SELECT cr.*, u.name AS created_by_name, m.name AS managed_by_name
+      FROM cash_receipts cr
+      LEFT JOIN users u ON u.id = cr.created_by
+      LEFT JOIN users m ON m.id = cr.managed_by
+      WHERE cr.id = ?
     `).get(id)
 
     res.json(row)
   } catch (err) {
     console.error('Error updating cash receipt:', err)
+    res.status(500).json({ error: 'Internal server error' })
+  }
+})
+
+// GET /api/cash-fund/managers — danh sách user có thể làm người quản lý
+router.get('/managers', authenticateToken, (req, res) => {
+  try {
+    const user = (req as AuthRequest).user!
+    if (!canViewCashFund(user.role)) return res.status(403).json({ error: 'Insufficient permissions' })
+    const rows = db.prepare(`
+      SELECT id, name, role FROM users
+      WHERE status = 'active' AND role NOT IN ('end_user', 'distributor')
+      ORDER BY name
+    `).all()
+    res.json(rows)
+  } catch (err) {
+    console.error('Error getting managers:', err)
     res.status(500).json({ error: 'Internal server error' })
   }
 })

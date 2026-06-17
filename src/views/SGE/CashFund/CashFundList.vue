@@ -109,7 +109,8 @@
                     <th class="px-4 py-2.5 text-left text-xs font-medium text-gray-500 dark:text-gray-400">{{ t('cashFund.columns.content') }}</th>
                     <th class="px-4 py-2.5 text-right text-xs font-medium text-gray-500 dark:text-gray-400 whitespace-nowrap">{{ t('cashFund.columns.amount') }}</th>
                     <th class="px-4 py-2.5 text-left text-xs font-medium text-gray-500 dark:text-gray-400 hidden sm:table-cell">{{ t('cashFund.columns.notes') }}</th>
-                    <th class="px-4 py-2.5 text-left text-xs font-medium text-gray-500 dark:text-gray-400 hidden md:table-cell">{{ t('cashFund.columns.createdBy') }}</th>
+                    <th class="px-4 py-2.5 text-left text-xs font-medium text-gray-500 dark:text-gray-400 hidden md:table-cell">{{ t('cashFund.columns.managedBy') }}</th>
+                    <th class="px-4 py-2.5 text-left text-xs font-medium text-gray-500 dark:text-gray-400 hidden lg:table-cell">{{ t('cashFund.columns.createdBy') }}</th>
                     <th v-if="canManage" class="px-4 py-2.5 text-center text-xs font-medium text-gray-500 dark:text-gray-400 w-16"></th>
                   </tr>
                 </thead>
@@ -123,7 +124,8 @@
                       +{{ formatCurrency(item.amount) }}
                     </td>
                     <td class="px-4 py-3 text-gray-500 dark:text-gray-400 text-xs hidden sm:table-cell max-w-[160px] truncate">{{ item.notes || '—' }}</td>
-                    <td class="px-4 py-3 text-gray-500 dark:text-gray-400 text-xs hidden md:table-cell whitespace-nowrap">{{ item.created_by_name || '—' }}</td>
+                    <td class="px-4 py-3 text-gray-700 dark:text-gray-300 text-xs hidden md:table-cell whitespace-nowrap">{{ item.managed_by_name || '—' }}</td>
+                    <td class="px-4 py-3 text-gray-500 dark:text-gray-400 text-xs hidden lg:table-cell whitespace-nowrap">{{ item.created_by_name || '—' }}</td>
                     <td v-if="canManage" class="px-4 py-3 text-center">
                       <div class="flex items-center justify-center gap-2">
                         <button @click="openEditModal(item)" class="text-blue-500 hover:text-blue-700">
@@ -136,7 +138,7 @@
                     </td>
                   </tr>
                   <tr v-if="items.length === 0">
-                    <td :colspan="canManage ? 6 : 5" class="px-4 py-10 text-center text-gray-500 dark:text-gray-400">{{ t('cashFund.empty') }}</td>
+                    <td :colspan="canManage ? 7 : 6" class="px-4 py-10 text-center text-gray-500 dark:text-gray-400">{{ t('cashFund.empty') }}</td>
                   </tr>
                 </tbody>
               </table>
@@ -240,6 +242,13 @@
             <input v-model="form.content" type="text" class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white" />
           </div>
           <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{{ t('cashFund.form.managedBy') }}</label>
+            <select v-model="form.managed_by" class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white">
+              <option :value="null">— {{ t('cashFund.form.noManager') }} —</option>
+              <option v-for="m in managers" :key="m.id" :value="m.id">{{ m.name }}</option>
+            </select>
+          </div>
+          <div>
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{{ t('cashFund.form.notes') }}</label>
             <textarea v-model="form.notes" rows="2" class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white resize-none" />
           </div>
@@ -264,7 +273,7 @@ import { useI18n } from 'vue-i18n'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import AppDatePicker from '@/components/forms/AppDatePicker.vue'
 import { hasPermission, Permission } from '@/composables/useAuth'
-import { cashFundService, type CashReceipt, type CashFundBalance, type CashFundReport } from '@/services/cashFundService'
+import { cashFundService, type CashReceipt, type CashManager, type CashFundBalance, type CashFundReport } from '@/services/cashFundService'
 import { getVietnamWeekRange, getVietnamFullMonthRange, getVietnamYearRange } from '@/utils/dateTime'
 
 const { t } = useI18n()
@@ -375,7 +384,8 @@ const editingItem = ref<CashReceipt | null>(null)
 const saving = ref(false)
 const formError = ref('')
 const amountDisplay = ref('')
-const form = reactive({ receipt_date: '', amount: 0, content: '', notes: '' })
+const managers = ref<CashManager[]>([])
+const form = reactive({ receipt_date: '', amount: 0, content: '', notes: '', managed_by: null as number | null })
 
 const onAmountInput = (e: Event) => {
   const raw = (e.target as HTMLInputElement).value.replace(/\D/g, '')
@@ -386,18 +396,20 @@ const onAmountInput = (e: Event) => {
 const openCreateModal = () => {
   editingItem.value = null
   const today = new Date().toISOString().slice(0, 10)
-  Object.assign(form, { receipt_date: today, amount: 0, content: '', notes: '' })
+  Object.assign(form, { receipt_date: today, amount: 0, content: '', notes: '', managed_by: null })
   amountDisplay.value = ''
   formError.value = ''
   showModal.value = true
+  if (!managers.value.length) cashFundService.getManagers().then(r => { managers.value = r }).catch(() => {})
 }
 
 const openEditModal = (item: CashReceipt) => {
   editingItem.value = item
-  Object.assign(form, { receipt_date: item.receipt_date?.slice(0, 10) || '', amount: item.amount, content: item.content, notes: item.notes || '' })
+  Object.assign(form, { receipt_date: item.receipt_date?.slice(0, 10) || '', amount: item.amount, content: item.content, notes: item.notes || '', managed_by: item.managed_by ?? null })
   amountDisplay.value = item.amount > 0 ? item.amount.toLocaleString('vi-VN') : ''
   formError.value = ''
   showModal.value = true
+  if (!managers.value.length) cashFundService.getManagers().then(r => { managers.value = r }).catch(() => {})
 }
 
 const closeModal = () => { showModal.value = false }
@@ -410,9 +422,9 @@ const submitModal = async () => {
   saving.value = true
   try {
     if (editingItem.value) {
-      await cashFundService.update(editingItem.value.id, { receipt_date: form.receipt_date, amount: form.amount, content: form.content, notes: form.notes || undefined })
+      await cashFundService.update(editingItem.value.id, { receipt_date: form.receipt_date, amount: form.amount, content: form.content, notes: form.notes || undefined, managed_by: form.managed_by })
     } else {
-      await cashFundService.create({ receipt_date: form.receipt_date, amount: form.amount, content: form.content, notes: form.notes || undefined })
+      await cashFundService.create({ receipt_date: form.receipt_date, amount: form.amount, content: form.content, notes: form.notes || undefined, managed_by: form.managed_by })
     }
     closeModal(); loadItems(); loadBalance()
   } catch (e) {

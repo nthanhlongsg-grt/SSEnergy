@@ -13,9 +13,17 @@ export interface CashReceipt {
   amount: number
   content: string
   notes?: string
+  managed_by?: number | null
+  managed_by_name?: string | null
   created_by?: number
   created_by_name?: string
   created_at: string
+}
+
+export interface CashManager {
+  id: number
+  name: string
+  role: string
 }
 
 export interface CashFundBalance {
@@ -54,6 +62,7 @@ export interface CreateCashReceiptDto {
   amount: number
   content: string
   notes?: string
+  managed_by?: number | null
 }
 
 export const cashFundService = {
@@ -99,5 +108,11 @@ export const cashFundService = {
   async remove(id: number) {
     const res = await fetch(`${BASE}/${id}`, { method: 'DELETE', headers: authHeaders() })
     if (!res.ok) throw new Error((await res.json()).error || 'Lỗi xóa')
+  },
+
+  async getManagers() {
+    const res = await fetch(`${BASE}/managers`, { headers: authHeaders() })
+    if (!res.ok) throw new Error('Lỗi tải danh sách')
+    return res.json() as Promise<CashManager[]>
   },
 }

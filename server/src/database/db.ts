@@ -812,6 +812,7 @@ try {
       amount REAL NOT NULL DEFAULT 0,
       content TEXT NOT NULL,
       notes TEXT,
+      managed_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
       created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -820,6 +821,17 @@ try {
   `)
 } catch (err: any) {
   console.log('ℹ️  cash_receipts migration:', err.message)
+}
+
+// Migration: managed_by column on cash_receipts
+try {
+  const cols = db.prepare('PRAGMA table_info(cash_receipts)').all() as Array<{ name: string }>
+  if (!cols.some(c => c.name === 'managed_by')) {
+    db.prepare('ALTER TABLE cash_receipts ADD COLUMN managed_by INTEGER REFERENCES users(id) ON DELETE SET NULL').run()
+    console.log('✅ Added managed_by to cash_receipts')
+  }
+} catch (err: any) {
+  console.log('ℹ️  cash_receipts managed_by migration:', err.message)
 }
 
 // Full schema sync (idempotent — adds any columns/tables missing vs current code)
