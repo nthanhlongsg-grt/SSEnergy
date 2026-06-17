@@ -299,7 +299,8 @@ const MENU_GROUPS: MenuGroupDefinition[] = [
       },
       {
         icon: DocsIcon,
-        nameKey: "menu.finance",
+        nameKey: "menu.cashFlow",
+        requiresPermission: "view_payment_requests",
         subItems: [
           {
             nameKey: "menu.paymentRequests",
@@ -309,6 +310,11 @@ const MENU_GROUPS: MenuGroupDefinition[] = [
           {
             nameKey: "menu.cashFund",
             path: "/cash-fund",
+            requiresPermission: "view_cash_fund",
+          },
+          {
+            nameKey: "menu.cashFlowReport",
+            path: "/cash-flow-report",
             requiresPermission: "view_cash_fund",
           },
         ],

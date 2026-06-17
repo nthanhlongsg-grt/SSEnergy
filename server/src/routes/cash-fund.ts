@@ -11,6 +11,106 @@ const canManageCashFund = (role: UserRole): boolean =>
 const canViewCashFund = (role: UserRole): boolean =>
   isStaffAdminRole(role) || role === UserRole.ACCOUNTING
 
+// GET /api/cash-fund/stats — thống kê cho biểu đồ
+router.get('/stats', authenticateToken, (req, res) => {
+  try {
+    const user = (req as AuthRequest).user!
+    if (!canViewCashFund(user.role)) return res.status(403).json({ error: 'Insufficient permissions' })
+
+    const { from, to } = req.query
+    const dateFilter = (alias: string) =>
+      from && to ? `AND DATE(${alias}) >= DATE(?) AND DATE(${alias}) <= DATE(?)` : ''
+    const dateParams = from && to ? [from, to] : []
+
+    // Monthly receipts
+    const receiptsMonthly = db.prepare(`
+      SELECT strftime('%Y-%m', receipt_date) AS month, SUM(amount) AS total
+      FROM cash_receipts WHERE 1=1 ${dateFilter('receipt_date')}
+      GROUP BY month ORDER BY month
+    `).all(...dateParams) as Array<{ month: string; total: number }>
+
+    // Monthly cash expenses
+    const expensesMonthly = db.prepare(`
+      SELECT strftime('%Y-%m', COALESCE(NULLIF(TRIM(payment_date),''), created_at)) AS month,
+             SUM(amount) AS total
+      FROM payment_requests
+      WHERE payment_source = 'cash' AND status = 'paid'
+      ${from && to ? "AND DATE(COALESCE(NULLIF(TRIM(payment_date),''), created_at)) >= DATE(?) AND DATE(COALESCE(NULLIF(TRIM(payment_date),''), created_at)) <= DATE(?)" : ''}
+      GROUP BY month ORDER BY month
+    `).all(...dateParams) as Array<{ month: string; total: number }>
+
+    // Expenses by category
+    const byCategory = db.prepare(`
+      SELECT COALESCE(expense_category, 'other') AS category, SUM(amount) AS total, COUNT(*) AS count
+      FROM payment_requests
+      WHERE payment_source = 'cash' AND status = 'paid'
+      ${from && to ? "AND DATE(COALESCE(NULLIF(TRIM(payment_date),''), created_at)) >= DATE(?) AND DATE(COALESCE(NULLIF(TRIM(payment_date),''), created_at)) <= DATE(?)" : ''}
+      GROUP BY category ORDER BY total DESC
+    `).all(...dateParams) as Array<{ category: string; total: number; count: number }>
+
+    // Total summary
+    const totalIn = (db.prepare(`
+      SELECT COALESCE(SUM(amount), 0) AS t FROM cash_receipts WHERE 1=1 ${dateFilter('receipt_date')}
+    `).get(...dateParams) as any).t
+
+    const totalOut = (db.prepare(`
+      SELECT COALESCE(SUM(amount), 0) AS t FROM payment_requests
+      WHERE payment_source = 'cash' AND status = 'paid'
+      ${from && to ? "AND DATE(COALESCE(NULLIF(TRIM(payment_date),''), created_at)) >= DATE(?) AND DATE(COALESCE(NULLIF(TRIM(payment_date),''), created_at)) <= DATE(?)" : ''}
+    `).get(...dateParams) as any).t
+
+    const pendingOut = (db.prepare(`
+      SELECT COALESCE(SUM(amount), 0) AS t FROM payment_requests
+      WHERE payment_source = 'cash' AND status IN ('pending','approved')
+      ${from && to ? "AND DATE(COALESCE(NULLIF(TRIM(payment_date),''), created_at)) >= DATE(?) AND DATE(COALESCE(NULLIF(TRIM(payment_date),''), created_at)) <= DATE(?)" : ''}
+    `).get(...dateParams) as any).t
+
+    res.json({ receipts_monthly: receiptsMonthly, expenses_monthly: expensesMonthly, by_category: byCategory, total_in: totalIn, total_out: totalOut, pending_out: pendingOut })
+  } catch (err) {
+    console.error('Error getting cash fund stats:', err)
+    res.status(500).json({ error: 'Internal server error' })
+  }
+})
+
+// GET /api/cash-fund/expenses — danh sách chi tiêu từ quỹ tiền mặt (DNTT)
+router.get('/expenses', authenticateToken, (req, res) => {
+  try {
+    const user = (req as AuthRequest).user!
+    if (!canViewCashFund(user.role)) return res.status(403).json({ error: 'Insufficient permissions' })
+
+    const { from, to, category, page = '1', limit = '20' } = req.query
+    const pageNum = Math.max(1, parseInt(page as string) || 1)
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit as string) || 20))
+    const offset = (pageNum - 1) * limitNum
+
+    let where = `payment_source = 'cash' AND status = 'paid'`
+    const params: unknown[] = []
+
+    if (from && to) {
+      where += ` AND DATE(COALESCE(NULLIF(TRIM(payment_date),''), created_at)) >= DATE(?) AND DATE(COALESCE(NULLIF(TRIM(payment_date),''), created_at)) <= DATE(?)`
+      params.push(from, to)
+    }
+    if (category) { where += ' AND COALESCE(expense_category, \'other\') = ?'; params.push(category) }
+
+    const total = (db.prepare(`SELECT COUNT(*) AS t FROM payment_requests WHERE ${where}`).get(...params) as any).t
+    const rows = db.prepare(`
+      SELECT pr.id, pr.request_number, pr.payment_date, pr.payment_content, pr.amount,
+             pr.expense_category, pr.payer_name, pr.has_vat,
+             u.name AS requester_name
+      FROM payment_requests pr
+      LEFT JOIN users u ON u.id = pr.created_by
+      WHERE ${where}
+      ORDER BY COALESCE(NULLIF(TRIM(pr.payment_date),''), pr.created_at) DESC
+      LIMIT ? OFFSET ?
+    `).all(...params, limitNum, offset)
+
+    res.json({ data: rows, pagination: { total, page: pageNum, limit: limitNum } })
+  } catch (err) {
+    console.error('Error listing cash expenses:', err)
+    res.status(500).json({ error: 'Internal server error' })
+  }
+})
+
 // GET /api/cash-fund/balance — số dư hiện tại
 router.get('/balance', authenticateToken, (req, res) => {
   try {

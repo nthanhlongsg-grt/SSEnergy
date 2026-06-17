@@ -267,6 +267,17 @@ const router = createRouter({
       },
     },
     {
+      path: '/cash-flow-report',
+      name: 'CashFlowReport',
+      component: () => import('../views/SGE/CashFund/CashFlowReport.vue'),
+      meta: {
+        title: 'Báo cáo thu chi tiền mặt',
+        requiresAuth: true,
+        requiresPermission: 'view_cash_fund',
+        userGroup: 'management',
+      },
+    },
+    {
       path: '/payment-requests/:id',
       name: 'PaymentRequestDetail',
       component: () => import('../views/SGE/PaymentRequests/PaymentRequestDetail.vue'),
