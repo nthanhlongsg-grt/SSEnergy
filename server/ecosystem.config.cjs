@@ -1,5 +1,5 @@
 /**
- * PM2 Ecosystem Config — Linux hosting (baohanh.sgesolartech.vn)
+ * PM2 Ecosystem Config — Linux hosting (baohanh.ssenergy.vn)
  *
  *   pm2 start ecosystem.config.cjs
  *   pm2 save
@@ -9,7 +9,7 @@
 module.exports = {
   apps: [
     {
-      name: 'sge-baohanh-api',
+      name: 'ssenergy-baohanh-api',
       cwd: __dirname,
       script: 'dist/index.js',
       instances: 1,

@@ -1005,6 +1005,8 @@ const vi = {
         edit: 'Sửa',
         editLimited: 'Sửa địa chỉ & ghi chú',
         syncFromContractNote: 'Đồng bộ từ hợp đồng — chỉ sửa địa chỉ lắp đặt và ghi chú',
+        syncFromContractAdminNote: 'Đồng bộ từ hợp đồng — admin có thể sửa ngày bắt đầu bảo hành, địa chỉ và ghi chú',
+        adminWarrantyStartHint: 'Ngày hết hạn tự tính lại theo số tháng bảo hành của thiết bị (nếu có)',
         cancel: 'Hủy',
         save: 'Lưu',
         saving: 'Đang lưu...',

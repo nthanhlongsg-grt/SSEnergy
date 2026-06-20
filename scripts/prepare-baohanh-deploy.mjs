@@ -1,8 +1,11 @@
 import fs from 'node:fs'
 import path from 'node:path'
 
+const APP_URL = 'https://baohanh.ssenergy.vn'
+const API_URL = `${APP_URL}/api`
+
 const rootDir = process.cwd()
-const deployDir = path.join(rootDir, '.deploy', 'baohanh-sgesolartech')
+const deployDir = path.join(rootDir, '.deploy', 'baohanh-ssenergy')
 const frontendSource = path.join(rootDir, 'dist')
 const backendSource = path.join(rootDir, 'server', 'dist')
 const backendRoot = path.join(rootDir, 'server')
@@ -32,7 +35,7 @@ const copySafe = (src, dest) => {
 
 copySafe(frontendSource, publicHtml)
 copySafe(path.join(rootDir, '.htaccess.example'), path.join(publicHtml, '.htaccess'))
-copySafe(path.join(rootDir, 'deploy', 'nginx', 'baohanh.sgesolartech.vn.conf'), path.join(deployDir, 'nginx.conf'))
+copySafe(path.join(rootDir, 'deploy', 'nginx', 'baohanh.ssenergy.vn.conf'), path.join(deployDir, 'nginx.conf'))
 
 copySafe(path.join(backendRoot, 'dist'), path.join(apiApp, 'dist'))
 copySafe(path.join(backendRoot, 'package.json'), path.join(apiApp, 'package.json'))
@@ -44,32 +47,42 @@ copySafe(path.join(backendRoot, 'reports'), path.join(apiApp, 'reports'))
 copySafe(path.join(backendRoot, 'private'), path.join(apiApp, 'private'))
 
 const readme = [
-  'DEPLOY PACKAGE — https://baohanh.sgesolartech.vn/',
+  `DEPLOY PACKAGE — ${APP_URL}/`,
   '',
-  '1) public_html/*     → document root (Vite dist + .htaccess)',
-  '2) api-server/*      → Node.js app (PM2 hoặc cPanel Node.js)',
+  '=== Mắt Bão / cPanel (khuyến nghị) ===',
+  '',
+  '1) public_html/*  → document root subdomain baohanh.ssenergy.vn',
+  '   (đã kèm .htaccess proxy /api → Node.js port 3000)',
+  '',
+  '2) api-server/*   → thư mục Node.js App (cPanel → Setup Node.js App)',
+  '   - Application startup file: dist/index.js',
+  '   - Application URL: (để trống hoặc subdomain riêng nếu không dùng proxy)',
+  '   - cd api-server && npm ci --omit=dev',
+  '   - npm rebuild better-sqlite3   (nếu lỗi native module trên server)',
+  '   - Restart app',
   '',
   'Frontend build env (.env.production):',
-  '  VITE_API_URL=https://baohanh.sgesolartech.vn/api',
+  `  VITE_API_URL=${API_URL}`,
   '',
-  'Backend env (server/.env):',
+  'Backend env (cPanel Node.js App hoặc file .env):',
   '  NODE_ENV=production',
   '  PORT=3000',
-  '  JWT_SECRET=<strong-secret>',
-  '  CORS_ORIGIN=https://baohanh.sgesolartech.vn',
+  '  JWT_SECRET=<strong-random-secret>',
+  `  CORS_ORIGIN=${APP_URL}`,
   '  DATABASE_PATH=./database/SSE.db',
   '  TZ=Asia/Ho_Chi_Minh',
-  '  STAMP_IMAGE_PATH=./private/stamp.png   # con dấu báo giá (hoặc ./dist/private/stamp.png)',
+  '  STAMP_IMAGE_PATH=./private/stamp.png',
   '',
-  'Linux (PM2):',
-  '  cd api-server && npm ci --omit=dev',
-  '  cp .env.example .env  # chỉnh JWT_SECRET',
+  '=== Linux VPS (Nginx + PM2) ===',
+  '',
+  '  cd api-server && npm ci --omit=dev && cp .env.example .env',
   '  pm2 start ecosystem.config.cjs',
-  '',
-  'Nginx: xem nginx.conf trong gói này.',
+  '  sudo cp nginx.conf /etc/nginx/sites-available/baohanh.ssenergy.vn',
   '',
   'Kiểm tra:',
-  '  node scripts/smoke-test-api-subdomain.mjs https://baohanh.sgesolartech.vn',
+  `  curl ${API_URL}/health`,
+  '',
+  'Kỳ vọng: {"status":"ok","message":"SSE API is running"}',
 ].join('\n')
 
 fs.writeFileSync(path.join(deployDir, 'README-UPLOAD.txt'), readme, 'utf8')

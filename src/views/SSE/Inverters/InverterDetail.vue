@@ -33,7 +33,7 @@
                 {{ t('inverters.detail.deviceInfo.title') }}
               </h2>
               <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                {{ t('inverters.detail.deviceInfo.syncFromContractNote') }}
+                {{ canEditWarrantyStart ? t('inverters.detail.deviceInfo.syncFromContractAdminNote') : t('inverters.detail.deviceInfo.syncFromContractNote') }}
               </p>
             </div>
             <button
@@ -110,8 +110,20 @@
                 <label class="text-sm font-medium text-gray-500 dark:text-gray-400">
                   {{ t('inverters.detail.deviceInfo.fields.warrantyStart') }}
                 </label>
-                <p class="mt-1 text-gray-900 dark:text-white">
+                <AppDatePicker
+                  v-if="editingDevice && canEditWarrantyStart"
+                  v-model="deviceForm.warranty_start_date"
+                  class="mt-1"
+                  input-class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                />
+                <p v-else class="mt-1 text-gray-900 dark:text-white">
                   {{ formatDate(inverter?.warranty_start_date) }}
+                </p>
+                <p
+                  v-if="editingDevice && canEditWarrantyStart"
+                  class="mt-1 text-xs text-gray-500 dark:text-gray-400"
+                >
+                  {{ t('inverters.detail.deviceInfo.adminWarrantyStartHint') }}
                 </p>
               </div>
               <div>
@@ -724,6 +736,7 @@ import { ref, computed, watch, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
+import AppDatePicker from '@/components/forms/AppDatePicker.vue'
 import { apiClient } from '@/services/api'
 import type { Inverter } from '@/services/inverterService'
 import { useAuth, UserRole } from '@/composables/useAuth'
@@ -736,6 +749,9 @@ const { t } = useI18n()
 const { getUserRole } = useAuth()
 const isStaff = computed(
   () => getUserRole.value !== UserRole.END_USER && getUserRole.value !== UserRole.DISTRIBUTOR
+)
+const canEditWarrantyStart = computed(
+  () => getUserRole.value === UserRole.ADMIN || getUserRole.value === UserRole.DEV
 )
 
 const contextContractId = computed(() => {
@@ -756,11 +772,12 @@ const loading = ref(false)
 const error = ref<string | null>(null)
 const saving = ref(false)
 
-// Edit mode — chỉ địa chỉ lắp đặt & ghi chú
+// Edit mode — địa chỉ, ghi chú; admin/dev thêm ngày bắt đầu bảo hành
 const editingDevice = ref(false)
 const deviceForm = ref({
   installation_address: '',
   notes: '',
+  warranty_start_date: '',
 })
 
 const linkedContracts = computed(() => (inverter.value?.contracts as Array<{ id: number; contract_number: string }>) || [])
@@ -1058,13 +1075,16 @@ const startEditDevice = () => {
   deviceForm.value = {
     installation_address: inverter.value.installation_address || '',
     notes: inverter.value.notes || '',
+    warranty_start_date: inverter.value.warranty_start_date
+      ? String(inverter.value.warranty_start_date).split('T')[0]
+      : '',
   }
   editingDevice.value = true
 }
 
 const cancelEditDevice = () => {
   editingDevice.value = false
-  deviceForm.value = { installation_address: '', notes: '' }
+  deviceForm.value = { installation_address: '', notes: '', warranty_start_date: '' }
 }
 
 const saveDeviceInfo = async () => {
@@ -1074,9 +1094,12 @@ const saveDeviceInfo = async () => {
   error.value = null
 
   try {
-    const updateData = {
+    const updateData: Record<string, string | null> = {
       installation_address: deviceForm.value.installation_address.trim() || null,
       notes: deviceForm.value.notes.trim() || null,
+    }
+    if (canEditWarrantyStart.value) {
+      updateData.warranty_start_date = deviceForm.value.warranty_start_date || null
     }
 
     const response = await apiClient.put<Inverter>(`/inverters/${inverter.value.id}`, updateData)

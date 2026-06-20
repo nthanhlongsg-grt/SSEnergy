@@ -1003,6 +1003,8 @@ const en = {
         edit: 'Edit',
         editLimited: 'Edit address & notes',
         syncFromContractNote: 'Synced from contract — only installation address and notes are editable',
+        syncFromContractAdminNote: 'Synced from contract — admin can edit warranty start date, address and notes',
+        adminWarrantyStartHint: 'End date is recalculated from the device warranty months (if set)',
         cancel: 'Cancel',
         save: 'Save',
         saving: 'Saving...',

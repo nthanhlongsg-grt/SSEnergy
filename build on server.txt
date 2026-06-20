@@ -1,0 +1,57 @@
+# Build FRONTEND + BACKEND trực tiếp trên server (SSH — Mắt Bão/Plesk)
+# Domain: https://baohanh.ssenergy.vn/
+# Node: nodenv 18
+
+cd ~
+export PATH="$HOME/.nodenv/versions/18/bin:$PATH"
+node -v && npm -v
+
+# ── 1. Clone / cập nhật code ───────────────────────────────────────────────
+rm -rf ~/SSEnergy-build
+git clone https://github.com/nthanhlongsg-grt/SSEnergy.git SSEnergy-build
+# Lần sau (không cần clone lại):
+# cd ~/SSEnergy-build && git pull origin master
+
+cd ~/SSEnergy-build
+
+# ── 2. Build FRONTEND ────────────────────────────────────────────────────────
+cat > .env.production << 'EOF'
+VITE_API_URL=https://baohanh.ssenergy.vn/api
+EOF
+
+npm install
+npm run build-only
+
+mkdir -p ~/baohanh.ssenergy.vn/sse-api/httpdocs
+# Deploy frontend → sse-api/httpdocs (document root Plesk)
+cp -r dist/* ~/baohanh.ssenergy.vn/sse-api/httpdocs/
+
+# ── 3. Build BACKEND ─────────────────────────────────────────────────────────
+cd ~/SSEnergy-build/server
+npm install
+npm run build
+
+mkdir -p ~/baohanh.ssenergy.vn/sse-api/dist
+cp -r dist/* ~/baohanh.ssenergy.vn/sse-api/dist/
+
+# Lần đầu (chưa có package.json / .env trong sse-api):
+# cp package.json package-lock.json ~/baohanh.ssenergy.vn/sse-api/
+# cp -r database private reports ~/baohanh.ssenergy.vn/sse-api/ 2>/dev/null || true
+# cd ~/baohanh.ssenergy.vn/sse-api && npm ci --omit=dev && npm rebuild better-sqlite3
+
+# ── 4. Dọn clone tạm ─────────────────────────────────────────────────────────
+rm -rf ~/SSEnergy-build
+
+# ── 5. Restart Node.js App (Plesk web) hoặc SSH ────────────────────────────
+# Plesk → Node.js → Restart
+# hoặc:
+# ps aux | grep node
+# kill -9 <PID>
+
+# ── 6. Kiểm tra ──────────────────────────────────────────────────────────────
+curl -s http://127.0.0.1:3000/api/health
+curl -sI https://baohanh.ssenergy.vn/ | head -5
+
+# Nếu vite build báo thiếu RAM:
+# export NODE_OPTIONS=--max-old-space-size=512
+# npm run build-only

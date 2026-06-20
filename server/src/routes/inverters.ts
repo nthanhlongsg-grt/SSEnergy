@@ -1,11 +1,22 @@
 import { Router } from 'express'
 import db from '../database/db.js'
 import { authenticateToken, requireRole, AuthRequest } from '../middleware/auth.js'
-import { UserRole } from '../types/index.js'
+import { UserRole, isAdminRole } from '../types/index.js'
 import { syncInverterToTickets } from '../database/sync.js'
 import { resolveCustomerId, portalUserIdForCustomer } from '../database/dataModel.js'
 
 const router = Router()
+
+/** Cộng tháng vào ngày ISO (YYYY-MM-DD) — dùng tính warranty_end_date */
+function addMonthsToDateString(isoDate: string, months: number): string {
+  const [y, m, d] = isoDate.slice(0, 10).split('-').map(Number)
+  const date = new Date(y, m - 1, d)
+  date.setMonth(date.getMonth() + months)
+  const yy = date.getFullYear()
+  const mm = String(date.getMonth() + 1).padStart(2, '0')
+  const dd = String(date.getDate()).padStart(2, '0')
+  return `${yy}-${mm}-${dd}`
+}
 
 /** Lấy trường khách hàng từ hợp đồng liên kết gần nhất (ưu tiên hơn customer_id trực tiếp trên máy) */
 const contractCustomerColumn = (column: string): string => `
@@ -677,6 +688,31 @@ router.put('/:id', authenticateToken, requireRole(UserRole.ADMIN, UserRole.SERVI
         ? Number(warranty_months)
         : null
 
+    const adminUser = isAdminRole((req as AuthRequest).user?.role)
+    if (
+      (warranty_start_date !== undefined || warranty_end_date !== undefined) &&
+      !adminUser
+    ) {
+      return res.status(403).json({ error: 'Only admin can update warranty dates' })
+    }
+
+    let warrantyStartForUpdate: string | null | undefined = warranty_start_date
+    let warrantyEndForUpdate: string | null | undefined = warranty_end_date
+
+    if (adminUser && warranty_start_date !== undefined && warranty_end_date === undefined) {
+      const startStr = warranty_start_date ? String(warranty_start_date).slice(0, 10) : null
+      warrantyStartForUpdate = startStr
+      if (startStr) {
+        const row = db.prepare('SELECT warranty_months FROM inverters WHERE id = ?').get(inverterId) as {
+          warranty_months: number | null
+        } | undefined
+        const months = Number(row?.warranty_months) || 0
+        if (months > 0) {
+          warrantyEndForUpdate = addMonthsToDateString(startStr, months)
+        }
+      }
+    }
+
     db.prepare(`
       UPDATE inverters
       SET serial_number = COALESCE(?, serial_number),
@@ -706,8 +742,8 @@ router.put('/:id', authenticateToken, requireRole(UserRole.ADMIN, UserRole.SERVI
       type || null,
       power_rating || null,
       installation_date || null,
-      warranty_start_date || null,
-      warranty_end_date || null,
+      warrantyStartForUpdate !== undefined ? (warrantyStartForUpdate || null) : null,
+      warrantyEndForUpdate !== undefined ? (warrantyEndForUpdate || null) : null,
       normalizedWarrantyMonths,
       warranty_type || null,
       finalCustomerId,

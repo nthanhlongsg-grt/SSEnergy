@@ -12,7 +12,7 @@
     "deploy:prepare:cpanel-subdomain": "npm run build:all && node ./scripts/prepare-cpanel-subdomain.mjs",
     "deploy:prepare:baohanh": "npm run build:all && node ./scripts/prepare-baohanh-deploy.mjs",
     "smoke:api:subdomain": "node ./scripts/smoke-test-api-subdomain.mjs",
-    "smoke:api:baohanh": "node ./scripts/smoke-test-api-subdomain.mjs https://baohanh.sgesolartech.vn",
+    "smoke:api:baohanh": "node ./scripts/smoke-test-api-subdomain.mjs https://baohanh.ssenergy.vn",
     "type-check": "vue-tsc --build",
     "lint": "eslint . --fix",
     "format": "prettier --write src/",
