@@ -2113,17 +2113,20 @@ router.post('/:id/generate-report', authenticateToken, (req: AuthRequest, res) =
       const projectRoot = path.join(reportsDir, '../..')
       
       // Try new logo first, then fallback to old logo
-      let logoSourcePath = path.join(projectRoot, 'public/images/logo/SGE-logo.png')
+      let logoSourcePath = path.join(projectRoot, 'public/images/logo/SSE-logo.png')
+      if (!fs.existsSync(logoSourcePath)) {
+        logoSourcePath = path.join(projectRoot, 'public/images/logo/SSElogo.png')
+      }
       if (!fs.existsSync(logoSourcePath)) {
         logoSourcePath = path.join(projectRoot, 'public/images/logo/logo.png')
       }
       if (fs.existsSync(logoSourcePath)) {
         // Copy logo to reports directory
-        const logoFileName = 'SGE-logo.png'
+        const logoFileName = 'SSE-logo.png'
         const logoDestPath = path.join(reportsDir, logoFileName)
         fs.copyFileSync(logoSourcePath, logoDestPath)
         // Use full URL path for logo in HTML
-        logoUrl = '/api/tickets/reports/SGE-logo.png'
+        logoUrl = '/api/tickets/reports/SSE-logo.png'
         console.log('Logo copied successfully from', logoSourcePath, 'to', logoDestPath)
       } else {
         console.warn('Logo file not found. Tried:', logoSourcePath)
@@ -2245,10 +2248,10 @@ router.post('/:id/attachments', authenticateToken, async (req, res) => {
 })
 
 // Serve logo file from reports directory
-router.get('/reports/SGE-logo.png', (req, res) => {
+router.get('/reports/SSE-logo.png', (req, res) => {
   try {
     const reportsDir = path.join(__dirname, '../../reports')
-    const logoPath = path.join(reportsDir, 'SGE-logo.png')
+    const logoPath = path.join(reportsDir, 'SSE-logo.png')
     
     if (!fs.existsSync(logoPath)) {
       return res.status(404).send('Logo not found')

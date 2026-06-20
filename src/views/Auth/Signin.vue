@@ -8,7 +8,7 @@
           <div class="w-full max-w-md pt-4 mx-auto sm:pt-10">
             <div class="flex items-center justify-between">
               <a
-                :href="SGE_HOME_URL"
+                :href="SSE_HOME_URL"
                 target="_blank"
                 rel="noopener noreferrer"
                 class="inline-flex items-center text-sm text-gray-500 transition-colors hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
@@ -41,7 +41,7 @@
                 <router-link to="/" class="flex items-center justify-center">
                   <img 
                     src="/images/logo/logo.png" 
-                    alt="SGE VietNam" 
+                    alt="SSE VietNam" 
                     class="object-contain h-16 w-auto sm:h-20"
                   />
                 </router-link>
@@ -235,7 +235,7 @@ import CommonGridShape from '@/components/common/CommonGridShape.vue'
 import FullScreenLayout from '@/components/layout/FullScreenLayout.vue'
 import LanguageSwitcher from '@/components/common/LanguageSwitcher.vue'
 import { login } from '@/composables/useAuth'
-import { SGE_HOME_URL } from '@/constants/site'
+import { SSE_HOME_URL } from '@/constants/site'
 
 const router = useRouter()
 const { t } = useI18n()

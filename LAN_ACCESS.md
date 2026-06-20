@@ -49,10 +49,10 @@ Script sẽ tự động:
 2. **Chạy các lệnh:**
 ```powershell
 # Cho phép Frontend (port 5173)
-New-NetFirewallRule -DisplayName "SGE Frontend" -Direction Inbound -LocalPort 5173 -Protocol TCP -Action Allow
+New-NetFirewallRule -DisplayName "SSE Frontend" -Direction Inbound -LocalPort 5173 -Protocol TCP -Action Allow
 
 # Cho phép Backend (port 3000)
-New-NetFirewallRule -DisplayName "SGE Backend" -Direction Inbound -LocalPort 3000 -Protocol TCP -Action Allow
+New-NetFirewallRule -DisplayName "SSE Backend" -Direction Inbound -LocalPort 3000 -Protocol TCP -Action Allow
 ```
 
 Hoặc sử dụng Windows Firewall GUI:
@@ -62,7 +62,7 @@ Hoặc sử dụng Windows Firewall GUI:
 4. Chọn **Port** → **TCP** → Nhập port `5173` hoặc `3000`
 5. Chọn **Allow the connection**
 6. Áp dụng cho tất cả profiles
-7. Đặt tên: "SGE Frontend" hoặc "SGE Backend"
+7. Đặt tên: "SSE Frontend" hoặc "SSE Backend"
 
 ### 3. Khởi động servers
 
@@ -106,7 +106,7 @@ Frontend sẽ tự động sử dụng IP hiện tại nếu bạn truy cập qu
 
 1. **Kiểm tra Firewall:**
    ```powershell
-   Get-NetFirewallRule -DisplayName "SGE*" | Select-Object DisplayName, Enabled, Direction, Action
+   Get-NetFirewallRule -DisplayName "SSE*" | Select-Object DisplayName, Enabled, Direction, Action
    ```
 
 2. **Kiểm tra server đang chạy:**

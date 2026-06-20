@@ -22,9 +22,9 @@ const router = createRouter({
     {
       path: '/',
       name: 'Dashboard',
-      component: () => import('../views/SGE/Dashboard.vue'),
+      component: () => import('../views/SSE/Dashboard.vue'),
       meta: {
-        title: 'SGE After-Sales Dashboard',
+        title: 'SSE After-Sales Dashboard',
         requiresAuth: true,
         userGroup: 'management',
       },
@@ -33,7 +33,7 @@ const router = createRouter({
     {
       path: '/inverters',
       name: 'Inverters',
-      component: () => import('../views/SGE/Inverters/InverterList.vue'),
+      component: () => import('../views/SSE/Inverters/InverterList.vue'),
       meta: {
         title: 'Danh sách Biến tần',
         requiresAuth: true,
@@ -43,7 +43,7 @@ const router = createRouter({
     {
       path: '/inverters/:id',
       name: 'InverterDetail',
-      component: () => import('../views/SGE/Inverters/InverterDetail.vue'),
+      component: () => import('../views/SSE/Inverters/InverterDetail.vue'),
       meta: {
         title: 'Chi tiết Thiết bị',
         requiresAuth: true,
@@ -54,7 +54,7 @@ const router = createRouter({
     {
       path: '/customers',
       name: 'Customers',
-      component: () => import('../views/SGE/Customers/CustomerList.vue'),
+      component: () => import('../views/SSE/Customers/CustomerList.vue'),
       meta: {
         title: 'Quản lý Khách hàng',
         requiresAuth: true,
@@ -65,7 +65,7 @@ const router = createRouter({
     {
       path: '/customers/:id',
       name: 'CustomerDetail',
-      component: () => import('../views/SGE/Customers/CustomerDetail.vue'),
+      component: () => import('../views/SSE/Customers/CustomerDetail.vue'),
       meta: {
         title: 'Chi tiết Khách hàng',
         requiresAuth: true,
@@ -77,7 +77,7 @@ const router = createRouter({
     {
       path: '/tickets',
       name: 'Tickets',
-      component: () => import('../views/SGE/Tickets/TicketList.vue'),
+      component: () => import('../views/SSE/Tickets/TicketList.vue'),
       meta: {
         title: 'Quản lý Ticket',
         requiresAuth: true,
@@ -88,7 +88,7 @@ const router = createRouter({
     {
       path: '/tickets/new',
       name: 'NewTicket',
-      component: () => import('../views/SGE/Tickets/NewTicket.vue'),
+      component: () => import('../views/SSE/Tickets/NewTicket.vue'),
       meta: {
         title: 'Tạo Ticket mới',
         requiresAuth: true,
@@ -99,7 +99,7 @@ const router = createRouter({
     {
       path: '/tickets/:id',
       name: 'TicketDetail',
-      component: () => import('../views/SGE/Tickets/TicketDetail.vue'),
+      component: () => import('../views/SSE/Tickets/TicketDetail.vue'),
       meta: {
         title: 'Chi tiết Ticket',
         requiresAuth: true,
@@ -111,7 +111,7 @@ const router = createRouter({
     {
       path: '/notifications',
       name: 'Notifications',
-      component: () => import('../views/SGE/Notifications.vue'),
+      component: () => import('../views/SSE/Notifications.vue'),
       meta: {
         title: 'Thông báo',
         requiresAuth: true,
@@ -122,7 +122,7 @@ const router = createRouter({
     {
       path: '/technicians',
       name: 'Technicians',
-      component: () => import('../views/SGE/Technicians/TechnicianList.vue'),
+      component: () => import('../views/SSE/Technicians/TechnicianList.vue'),
       meta: {
         title: 'Quản lý Kỹ thuật',
         requiresAuth: true,
@@ -133,7 +133,7 @@ const router = createRouter({
     {
       path: '/technicians/schedule',
       name: 'TechnicianSchedule',
-      component: () => import('../views/SGE/Technicians/TechnicianSchedule.vue'),
+      component: () => import('../views/SSE/Technicians/TechnicianSchedule.vue'),
       meta: {
         title: 'Lịch Kỹ thuật viên',
         requiresAuth: true,
@@ -144,7 +144,7 @@ const router = createRouter({
     {
       path: '/tasks/:id',
       name: 'TaskDetail',
-      component: () => import('../views/SGE/Tasks/TaskDetail.vue'),
+      component: () => import('../views/SSE/Tasks/TaskDetail.vue'),
       meta: {
         title: 'Chi tiết Công việc',
         requiresAuth: true,
@@ -156,7 +156,7 @@ const router = createRouter({
     {
       path: '/warehouse',
       name: 'Warehouse',
-      component: () => import('../views/SGE/Warehouse/WarehouseList.vue'),
+      component: () => import('../views/SSE/Warehouse/WarehouseList.vue'),
       meta: {
         title: 'Quản lý Kho',
         requiresAuth: true,
@@ -167,7 +167,7 @@ const router = createRouter({
     {
       path: '/warehouse/parts',
       name: 'PartsManagement',
-      component: () => import('../views/SGE/Warehouse/PartsManagement.vue'),
+      component: () => import('../views/SSE/Warehouse/PartsManagement.vue'),
       meta: {
         title: 'Quản lý Linh kiện',
         requiresAuth: true,
@@ -178,7 +178,7 @@ const router = createRouter({
     {
       path: '/warehouse/rma',
       name: 'RMAManagement',
-      component: () => import('../views/SGE/Warehouse/RMAManagement.vue'),
+      component: () => import('../views/SSE/Warehouse/RMAManagement.vue'),
       meta: {
         title: 'Quản lý RMA',
         requiresAuth: true,
@@ -190,7 +190,7 @@ const router = createRouter({
     {
       path: '/service-reports',
       name: 'ServiceReports',
-      component: () => import('../views/SGE/ServiceReports/ServiceReportList.vue'),
+      component: () => import('../views/SSE/ServiceReports/ServiceReportList.vue'),
       meta: {
         title: 'Biên bản Dịch vụ',
         requiresAuth: true,
@@ -201,21 +201,9 @@ const router = createRouter({
     {
       path: '/service-reports/:id',
       name: 'ServiceReportDetail',
-      component: () => import('../views/SGE/ServiceReports/ServiceReportDetail.vue'),
+      component: () => import('../views/SSE/ServiceReports/ServiceReportDetail.vue'),
       meta: {
         title: 'Chi tiết Biên bản',
-        requiresAuth: true,
-        requiresPermission: 'view_reports',
-        userGroup: 'management',
-      },
-    },
-    // Báo cáo
-    {
-      path: '/reports',
-      name: 'Reports',
-      component: () => import('../views/SGE/Reports/Reports.vue'),
-      meta: {
-        title: 'Báo cáo & Thống kê',
         requiresAuth: true,
         requiresPermission: 'view_reports',
         userGroup: 'management',
@@ -225,7 +213,7 @@ const router = createRouter({
     {
       path: '/contracts',
       name: 'Contracts',
-      component: () => import('../views/SGE/Contracts/ContractList.vue'),
+      component: () => import('../views/SSE/Contracts/ContractList.vue'),
       meta: {
         title: 'Quản lý Hợp đồng',
         requiresAuth: true,
@@ -236,7 +224,7 @@ const router = createRouter({
     {
       path: '/contracts/:id',
       name: 'ContractDetail',
-      component: () => import('../views/SGE/Contracts/ContractDetail.vue'),
+      component: () => import('../views/SSE/Contracts/ContractDetail.vue'),
       meta: {
         title: 'Chi tiết Hợp đồng',
         requiresAuth: true,
@@ -244,55 +232,11 @@ const router = createRouter({
         userGroup: 'management',
       },
     },
-    {
-      path: '/payment-requests',
-      name: 'PaymentRequests',
-      component: () => import('../views/SGE/PaymentRequests/PaymentRequestList.vue'),
-      meta: {
-        title: 'Chi phí',
-        requiresAuth: true,
-        requiresPermission: 'view_payment_requests',
-        userGroup: 'management',
-      },
-    },
-    {
-      path: '/cash-fund',
-      name: 'CashFund',
-      component: () => import('../views/SGE/CashFund/CashFundList.vue'),
-      meta: {
-        title: 'Quỹ tiền mặt',
-        requiresAuth: true,
-        requiresPermission: 'view_cash_fund',
-        userGroup: 'management',
-      },
-    },
-    {
-      path: '/cash-flow-report',
-      name: 'CashFlowReport',
-      component: () => import('../views/SGE/CashFund/CashFlowReport.vue'),
-      meta: {
-        title: 'Báo cáo thu chi tiền mặt',
-        requiresAuth: true,
-        requiresPermission: 'view_cash_fund',
-        userGroup: 'management',
-      },
-    },
-    {
-      path: '/payment-requests/:id',
-      name: 'PaymentRequestDetail',
-      component: () => import('../views/SGE/PaymentRequests/PaymentRequestDetail.vue'),
-      meta: {
-        title: 'Chi tiết chi phí',
-        requiresAuth: true,
-        requiresPermission: 'view_payment_requests',
-        userGroup: 'management',
-      },
-    },
     // Quản lý Người dùng & Phân quyền
     {
       path: '/users',
       name: 'UserManagement',
-      component: () => import('../views/SGE/Users/UserManagement.vue'),
+      component: () => import('../views/SSE/Users/UserManagement.vue'),
       meta: {
         title: 'Quản lý Người dùng',
         requiresAuth: true,
@@ -303,7 +247,7 @@ const router = createRouter({
     {
       path: '/settings/auto-assign',
       name: 'AutoAssignSettings',
-      component: () => import('../views/SGE/Settings/AutoAssignSettings.vue'),
+      component: () => import('../views/SSE/Settings/AutoAssignSettings.vue'),
       meta: {
         title: 'Auto-assign Settings',
         requiresAuth: true,
@@ -314,7 +258,7 @@ const router = createRouter({
     {
       path: '/settings/sla',
       name: 'SlaSettings',
-      component: () => import('../views/SGE/Settings/SlaSettings.vue'),
+      component: () => import('../views/SSE/Settings/SlaSettings.vue'),
       meta: {
         title: 'SLA Settings',
         requiresAuth: true,
@@ -413,7 +357,7 @@ const router = createRouter({
 export default router
 
 router.beforeEach(async (to, from, next) => {
-  document.title = `${to.meta.title || 'SGE'} | SGE After-Sales Management System`
+  document.title = `${to.meta.title || 'SSE'} | SSE After-Sales Management System`
   
   // Wait for auth initialization to complete
   if (!authInitialized) {

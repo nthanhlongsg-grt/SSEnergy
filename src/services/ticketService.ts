@@ -119,8 +119,11 @@ export const ticketService = {
     total: number
     new: number
     assigned: number
+    machine_received: number
     in_progress: number
     waiting_parts: number
+    waiting_delivery: number
+    delivered: number
     completed: number
     closed: number
   }> {
@@ -128,8 +131,11 @@ export const ticketService = {
       total: number
       new: number
       assigned: number
+      machine_received: number
       in_progress: number
       waiting_parts: number
+      waiting_delivery: number
+      delivered: number
       completed: number
       closed: number
     }>('/tickets/stats')

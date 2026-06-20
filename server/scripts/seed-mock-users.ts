@@ -10,12 +10,12 @@ async function seedMockUsers() {
 
   try {
     const user = {
-      name: 'SGE Developer',
+      name: 'SSE Developer',
       email: DEV_EMAIL,
       password: await bcrypt.hash(plainPassword, 10),
       code: 'DEV001',
       role: 'dev',
-      organization: 'SGE Vietnam',
+      organization: 'SS ENERGY',
       phone: '0900000000',
     }
 

@@ -25,6 +25,44 @@ fs.mkdirSync(distDir, { recursive: true })
 fs.writeFileSync(startCjsDest, startCjsContent)
 console.log('[copy-build-assets] Wrote dist/start.cjs (CommonJS startup wrapper)')
 
+const dbUpkeepDest = path.join(distDir, 'db-upkeep.cjs')
+const dbUpkeepContent = `// Run DB maintenance on production (no git source / tsx required).
+// Stop the Node app first, then from the api app root (sge-api/):
+//   node dist/db-upkeep.cjs sync
+//   node dist/db-upkeep.cjs migrate
+//   node dist/db-upkeep.cjs all
+// Optional: DATABASE_PATH=./database/SSE.db
+const { spawnSync } = require('node:child_process')
+const path = require('node:path')
+
+const task = (process.argv[2] || 'all').toLowerCase()
+const distDir = __dirname
+
+function runScript(relative) {
+  const script = path.join(distDir, relative)
+  const result = spawnSync(process.execPath, [script], {
+    stdio: 'inherit',
+    env: process.env,
+  })
+  if (result.status !== 0) {
+    process.exit(result.status ?? 1)
+  }
+}
+
+if (task === 'sync' || task === 'all') {
+  runScript('database/runSchemaSync.js')
+}
+if (task === 'migrate' || task === 'all') {
+  runScript('database/migrate.js')
+}
+if (!['sync', 'migrate', 'all'].includes(task)) {
+  console.error('Usage: node dist/db-upkeep.cjs [sync|migrate|all]')
+  process.exit(1)
+}
+`
+fs.writeFileSync(dbUpkeepDest, dbUpkeepContent)
+console.log('[copy-build-assets] Wrote dist/db-upkeep.cjs (production DB migrate helper)')
+
 if (!fs.existsSync(stampSrc)) {
   console.warn('[copy-build-assets] Warning: server/private/stamp.png not found — quotation stamp will be missing')
   process.exit(0)

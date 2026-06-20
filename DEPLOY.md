@@ -1,4 +1,4 @@
-# Hướng dẫn Deploy lên https://SGEvietnam.com
+# Hướng dẫn Deploy lên https://SSEvietnam.com
 
 ## 📋 Yêu cầu
 
@@ -13,12 +13,12 @@
 Tạo file `.env.production` trong thư mục root với nội dung:
 
 ```env
-VITE_API_URL=https://SGEvietnam.com/api
+VITE_API_URL=https://SSEvietnam.com/api
 ```
 
 **Lưu ý**: 
-- Nếu backend chạy trên subdomain riêng (ví dụ: `api.SGEvietnam.com`), sử dụng: `VITE_API_URL=https://api.SGEvietnam.com`
-- Nếu backend chạy cùng domain với frontend, sử dụng: `VITE_API_URL=https://SGEvietnam.com/api`
+- Nếu backend chạy trên subdomain riêng (ví dụ: `api.SSEvietnam.com`), sử dụng: `VITE_API_URL=https://api.SSEvietnam.com`
+- Nếu backend chạy cùng domain với frontend, sử dụng: `VITE_API_URL=https://SSEvietnam.com/api`
 
 ### 2. Cấu hình Backend CORS
 
@@ -27,12 +27,12 @@ VITE_API_URL=https://SGEvietnam.com/api
 **File: `server/src/index.ts`**
 
 ```typescript
-const CORS_ORIGIN = process.env.CORS_ORIGIN || 'https://SGEvietnam.com'
+const CORS_ORIGIN = process.env.CORS_ORIGIN || 'https://SSEvietnam.com'
 ```
 
 Hoặc set environment variable:
 ```env
-CORS_ORIGIN=https://SGEvietnam.com
+CORS_ORIGIN=https://SSEvietnam.com
 ```
 
 ### 3. Build Frontend
@@ -54,14 +54,14 @@ Build output sẽ nằm trong thư mục `dist/`
    - Output Directory: `dist`
    - Install Command: `npm install`
    - Environment Variables:
-     - `VITE_API_URL`: `https://SGEvietnam.com/api`
+     - `VITE_API_URL`: `https://SSEvietnam.com/api`
 
 2. **Netlify**:
    - Kết nối GitHub repository
    - Build command: `npm run build`
    - Publish directory: `dist`
    - Environment Variables:
-     - `VITE_API_URL`: `https://SGEvietnam.com/api`
+     - `VITE_API_URL`: `https://SSEvietnam.com/api`
 
 #### Option B: Deploy lên Server (Nginx/Apache)
 
@@ -73,7 +73,7 @@ Build output sẽ nằm trong thư mục `dist/`
 server {
     listen 80;
     listen [::]:80;
-    server_name SGEvietnam.com www.SGEvietnam.com;
+    server_name SSEvietnam.com www.SSEvietnam.com;
 
     # Redirect HTTP to HTTPS
     return 301 https://$server_name$request_uri;
@@ -82,12 +82,12 @@ server {
 server {
     listen 443 ssl http2;
     listen [::]:443 ssl http2;
-    server_name SGEvietnam.com www.SGEvietnam.com;
+    server_name SSEvietnam.com www.SSEvietnam.com;
 
     ssl_certificate /path/to/certificate.crt;
     ssl_certificate_key /path/to/private.key;
 
-    root /var/www/SGE/dist;
+    root /var/www/SSE/dist;
     index index.html;
 
     # SPA routing - redirect all requests to index.html
@@ -122,7 +122,7 @@ server {
 
 ## ✅ Kiểm tra sau khi deploy
 
-1. Truy cập: https://SGEvietnam.com
+1. Truy cập: https://SSEvietnam.com
 2. Kiểm tra:
    - ✅ Trang load thành công
    - ✅ Login/Register hoạt động

@@ -16,7 +16,7 @@ const seedUsers = async () => {
     password: hashedPassword,
     code: 'SYS001',
     role: 'dev',
-    organization: 'SGE',
+    organization: 'SS ENERGY',
     phone: '0900000000',
   }
 

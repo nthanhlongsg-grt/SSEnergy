@@ -880,9 +880,18 @@ const closeEditModal = () => {
   editForm.value = {
     name: '',
     email: '',
-    phone: '',
+    tax_code: '',
     address: '',
-    organization: '',
+    contact_person: '',
+    contact_phone: '',
+    contact_email: '',
+    contact_address: '',
+    representative_name: '',
+    representative_position: '',
+    authorization_doc: '',
+    recipient_name: '',
+    recipient_address: '',
+    recipient_phone: '',
     role: '',
   }
 }
@@ -916,9 +925,8 @@ const saveCustomer = async () => {
       const response = await apiClient.put(`/users/${customerId}`, {
         name: editForm.value.name,
         email: editForm.value.email,
-        phone: editForm.value.phone || null,
+        phone: editForm.value.contact_phone || null,
         address: editForm.value.address || null,
-        organization: editForm.value.organization || null,
       })
       
       if (response.error) {

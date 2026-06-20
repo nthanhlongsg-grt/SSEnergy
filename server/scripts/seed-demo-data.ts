@@ -1,21 +1,22 @@
 /**
- * Comprehensive demo data seed script
- * Run: npm run db:seed:demo
+ * Comprehensive demo / mock data seed script
+ * Run: npm run db:seed:demo       — bổ sung dữ liệu (bỏ qua nếu đã có)
+ * Run: npm run db:mock            — xóa sạch + seed lại toàn bộ
  *
  * Creates realistic Vietnamese mock data:
- *  - 10 users (admin, service_center, technicians, distributors, end_users)
- *  - 8 customers (enterprise + residential)
- *  - 5 inverter models
- *  - 12 inverters
- *  - 20 tickets (various statuses & priorities)
- *  - 10 warehouse parts
- *  - 8 technician schedules
- *  - 6 service reports
- *  - SLA settings
+ *  - 12 users (dev, admin, kế toán, kho, service_center, technicians, distributors, end_users)
+ *  - 8 customers, 2 distributors, 5 models, 12 inverters
+ *  - 6 contracts (draft / active / paid / unpaid / giao máy)
+ *  - 20 tickets, 10 warehouse parts, 8 schedules, 6 service reports, SLA settings
+ *
+ * Password: DEV_SEED_PASSWORD (min 8 ký tự). Tuỳ chọn DEV_SEED_EMAIL cho tài khoản dev.
  */
 
 import bcrypt from 'bcryptjs'
 import db from '../src/database/db.js'
+
+const FRESH = process.argv.includes('--fresh') || process.env.MOCK_FRESH === '1'
+const DEV_EMAIL = process.env.DEV_SEED_EMAIL || 'developer@local.dev'
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 
@@ -23,27 +24,94 @@ const upsertUser = db.prepare(`
   INSERT INTO users (name, email, password, code, role, function, organization, phone, status)
   VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'active')
   ON CONFLICT(email) DO UPDATE SET
-    name = excluded.name, role = excluded.role,
+    name = excluded.name, password = excluded.password, role = excluded.role,
     function = excluded.function, organization = excluded.organization,
     phone = excluded.phone, status = 'active'
 `)
 
 const log = (msg: string) => console.log(msg)
 
+const tableCount = (table: string): number => {
+  try {
+    return (db.prepare(`SELECT COUNT(*) AS c FROM ${table}`).get() as { c: number }).c
+  } catch {
+    return 0
+  }
+}
+
+const clearDatabase = () => {
+  log('\n🗑️  Clearing existing data (--fresh)...')
+  const tables = [
+    'payment_request_comments',
+    'payment_requests',
+    'task_comments',
+    'task_related_users',
+    'ticket_attachments',
+    'ticket_watchers',
+    'ticket_comments',
+    'service_report_parts',
+    'service_reports',
+    'warehouse_transactions',
+    'warehouse_parts',
+    'rma_requests',
+    'technician_schedules',
+    'project_inverters',
+    'projects',
+    'inverter_history',
+    'inverter_errors',
+    'tickets',
+    'contract_inverters',
+    'contracts',
+    'inverters',
+    'customers',
+    'distributors',
+    'models',
+    'notifications',
+    'settings',
+    'users',
+  ]
+
+  db.exec('BEGIN')
+  try {
+    for (const table of tables) {
+      try {
+        db.exec(`DELETE FROM ${table}`)
+        log(`  ✓ ${table}`)
+      } catch {
+        // optional table
+      }
+    }
+    db.exec('COMMIT')
+    try {
+      db.exec(`DELETE FROM sqlite_sequence WHERE name IN (${tables.map((t) => `'${t}'`).join(', ')})`)
+    } catch {
+      // sqlite_sequence may not exist yet
+    }
+    log('  ✓ Database cleared')
+  } catch (err) {
+    db.exec('ROLLBACK')
+    throw err
+  }
+}
+
+const shouldSkip = (table: string, minCount: number) => !FRESH && tableCount(table) >= minCount
+
 // ─── 1. USERS ───────────────────────────────────────────────────────────────
 
 const seedUsers = async () => {
   log('\n👥 Seeding users...')
   const { requireSeedPassword } = await import('../src/utils/seedPassword.js')
-  const demoPw = requireSeedPassword('DEMO_SEED_PASSWORD')
+  const demoPw = requireSeedPassword('DEV_SEED_PASSWORD')
 
   const raw = [
-    { name: 'Developer', email: 'developer@demo.local', pw: demoPw, code: 'DEV001', role: 'dev', fn: 'management', org: 'SGE Vietnam' },
-    { name: 'Admin Trần Minh', email: 'admin@demo.local', pw: demoPw, code: 'ADM001', role: 'admin', fn: 'management', org: 'SGE Vietnam' },
-    { name: 'Trung tâm Dịch vụ', email: 'service@demo.local', pw: demoPw, code: 'SVC001', role: 'service_center', fn: 'management', org: 'SGE Vietnam' },
-    { name: 'KTV Nguyễn Văn An', email: 'ktv1@demo.local', pw: demoPw, code: 'KTV001', role: 'technician', fn: 'repair', org: 'SGE Vietnam', phone: '0901111111' },
-    { name: 'KTV Lê Thị Bảo', email: 'ktv2@demo.local', pw: demoPw, code: 'KTV002', role: 'technician', fn: 'technicalSupport', org: 'SGE Vietnam', phone: '0902222222' },
-    { name: 'KTV Phạm Quốc Cường', email: 'ktv3@demo.local', pw: demoPw, code: 'KTV003', role: 'technician', fn: 'sale', org: 'SGE Vietnam', phone: '0903333333' },
+    { name: 'SSE Developer', email: DEV_EMAIL, pw: demoPw, code: 'DEV001', role: 'dev', fn: 'management', org: 'SS ENERGY' },
+    { name: 'Admin Trần Minh', email: 'admin@demo.local', pw: demoPw, code: 'ADM001', role: 'admin', fn: 'management', org: 'SS ENERGY' },
+    { name: 'Kế toán SS ENERGY', email: 'ketoan@demo.local', pw: demoPw, code: 'KT001', role: 'accounting', fn: 'management', org: 'SS ENERGY', phone: '0238388888' },
+    { name: 'Thủ kho Nguyễn Thị Dung', email: 'warehouse@demo.local', pw: demoPw, code: 'WH001', role: 'warehouse', fn: null, org: 'SS ENERGY', phone: '0904444444' },
+    { name: 'Trung tâm Dịch vụ', email: 'service@demo.local', pw: demoPw, code: 'SVC001', role: 'service_center', fn: 'management', org: 'SS ENERGY' },
+    { name: 'KTV Nguyễn Văn An', email: 'ktv1@demo.local', pw: demoPw, code: 'KTV001', role: 'technician', fn: 'repair', org: 'SS ENERGY', phone: '0901111111' },
+    { name: 'KTV Lê Thị Bảo', email: 'ktv2@demo.local', pw: demoPw, code: 'KTV002', role: 'technician', fn: 'technicalSupport', org: 'SS ENERGY', phone: '0902222222' },
+    { name: 'KTV Phạm Quốc Cường', email: 'ktv3@demo.local', pw: demoPw, code: 'KTV003', role: 'technician', fn: 'sale', org: 'SS ENERGY', phone: '0903333333' },
     { name: 'Nhà PP Năng Lượng Xanh', email: 'npp@demo.local', pw: demoPw, code: 'NPP001', role: 'distributor', fn: null, org: 'Năng Lượng Xanh Co.', phone: '0281234567' },
     { name: 'Đại lý Solar Miền Nam', email: 'dl@demo.local', pw: demoPw, code: 'DL001', role: 'distributor', fn: null, org: 'Solar Miền Nam', phone: '0289876543' },
     { name: 'Công ty ABC Solar', email: 'contact@demo.local', pw: demoPw, code: 'END001', role: 'end_user', fn: null, org: 'ABC Solar Co.' },
@@ -63,7 +131,7 @@ const seedModels = () => {
   log('\n📦 Seeding inverter models...')
   const insert = db.prepare(`
     INSERT INTO models (name, manufacturer, type, description, status)
-    VALUES (?, 'SGE', ?, ?, 'active')
+    VALUES (?, 'SSE', ?, ?, 'active')
     ON CONFLICT(name) DO NOTHING
   `)
   const models = [
@@ -128,8 +196,7 @@ const seedDistributors = () => {
 
 const seedInverters = () => {
   log('\n⚡ Seeding inverters...')
-  const existing = (db.prepare('SELECT COUNT(*) as c FROM inverters').get() as any).c
-  if (existing >= 12) { log('  ℹ️  Already seeded, skipping'); return }
+  if (shouldSkip('inverters', 12)) { log('  ℹ️  Already seeded, skipping'); return }
 
   const insert = db.prepare(`
     INSERT OR IGNORE INTO inverters
@@ -172,8 +239,7 @@ const seedInverters = () => {
 
 const seedTickets = () => {
   log('\n🎫 Seeding tickets...')
-  const existing = (db.prepare('SELECT COUNT(*) as c FROM tickets').get() as any).c
-  if (existing >= 20) { log('  ℹ️  Already seeded, skipping'); return }
+  if (shouldSkip('tickets', 20)) { log('  ℹ️  Already seeded, skipping'); return }
 
   const devUser = db.prepare('SELECT id FROM users WHERE role = ?').get('dev') as any
   const adminUser = db.prepare('SELECT id FROM users WHERE role = ?').get('admin') as any
@@ -216,7 +282,7 @@ const seedTickets = () => {
     ['TKT-2025-000009', inv('GW-2024-MID-002'), cust('admin@thptnguyendu.edu.vn'), 'Yêu cầu kiểm tra định kỳ', 'Bảo dưỡng định kỳ theo hợp đồng bảo trì 6 tháng một lần.', 'medium', 'initialized', 'technical_support', null, creatorId, dt(5), dt(0)],
     ['TKT-2025-000010', inv('GW-2024-MAX-003'), cust('info@phumyenergy.vn'), 'Tư vấn nâng cấp công suất hệ thống', 'Khách hàng muốn tư vấn bổ sung thêm 2 inverter và tăng tổng công suất lên 30kW.', 'medium', 'initialized', 'product_consultation', null, creatorId, dt(6), dt(0)],
     // Low - new/initialized
-    ['TKT-2025-000011', inv('GW-2024-SPF-002'), cust('thuanphat.factory@gmail.com'), 'Cập nhật firmware máy biến tần', 'Yêu cầu cập nhật firmware lên phiên bản mới nhất theo thông báo của SGE.', 'low', 'initialized', 'technical_support', null, creatorId, dt(10), dt(-1)],
+    ['TKT-2025-000011', inv('GW-2024-SPF-002'), cust('thuanphat.factory@gmail.com'), 'Cập nhật firmware máy biến tần', 'Yêu cầu cập nhật firmware lên phiên bản mới nhất theo thông báo của SSE.', 'low', 'initialized', 'technical_support', null, creatorId, dt(10), dt(-1)],
     ['TKT-2025-000012', null, cust('contact@abcsolar.vn'), 'Đăng ký bảo hành thiết bị mới', 'Công ty vừa lắp thêm 2 inverter mới, cần đăng ký bảo hành chính hãng.', 'low', 'initialized', 'warranty', null, creatorId, dt(12), dt(0)],
     // Completed
     ['TKT-2025-000013', inv('GW-2024-MAX-001'), cust('contact@abcsolar.vn'), 'Thay thế quạt tản nhiệt', 'Quạt tản nhiệt hỏng gây quá nhiệt. Đã thay thế thành công.', 'high', 'completed', 'warranty', techRepair?.id, creatorId, dt(-30), dt(-60)],
@@ -240,13 +306,12 @@ const seedTickets = () => {
 
 const seedWarehouseParts = () => {
   log('\n🏭 Seeding warehouse parts...')
-  const existing = (db.prepare('SELECT COUNT(*) as c FROM warehouse_parts').get() as any).c
-  if (existing >= 10) { log('  ℹ️  Already seeded, skipping'); return }
+  if (shouldSkip('warehouse_parts', 10)) { log('  ℹ️  Already seeded, skipping'); return }
 
   const insert = db.prepare(`
     INSERT OR IGNORE INTO warehouse_parts
       (part_number, name, category, description, manufacturer, quantity, min_quantity, unit_price, unit, supplier, status)
-    VALUES (?, ?, ?, ?, 'SGE', ?, ?, ?, ?, 'SGE Vietnam', 'active')
+    VALUES (?, ?, ?, ?, 'SSE', ?, ?, ?, ?, 'SS ENERGY', 'active')
   `)
   const parts = [
     ['PN-MPPT-001', 'Bộ điều khiển MPPT', 'Electronics', 'MPPT Controller 60A cho biến tần MAX', 25, 10, 2500000, 'pcs'],
@@ -258,7 +323,7 @@ const seedWarehouseParts = () => {
     ['PN-FUSE-001', 'Cầu chì DC 15A', 'Protection', 'Cầu chì DC 15A 1000V loại string', 200, 50, 45000, 'pcs'],
     ['PN-SURGE-001', 'Thiết bị chống sét SPD', 'Protection', 'Surge Protection Device 1000V DC type II', 30, 10, 850000, 'pcs'],
     ['PN-RELAY-001', 'Relay AC 10A', 'Electronics', 'AC Relay 10A 250V cho mạch điều khiển', 40, 15, 120000, 'pcs'],
-    ['PN-WIFI-001', 'Module WiFi Shine-GPRS-X', 'Communication', 'Wifi datalogger SGE Shine-GPRS-X', 20, 8, 950000, 'pcs'],
+    ['PN-WIFI-001', 'Module WiFi Shine-GPRS-X', 'Communication', 'Wifi datalogger SSE Shine-GPRS-X', 20, 8, 950000, 'pcs'],
   ]
   for (const p of parts) {
     insert.run(...p)
@@ -270,8 +335,7 @@ const seedWarehouseParts = () => {
 
 const seedSchedules = () => {
   log('\n📅 Seeding technician schedules...')
-  const existing = (db.prepare('SELECT COUNT(*) as c FROM technician_schedules').get() as any).c
-  if (existing >= 8) { log('  ℹ️  Already seeded, skipping'); return }
+  if (shouldSkip('technician_schedules', 8)) { log('  ℹ️  Already seeded, skipping'); return }
 
   const techRepair = db.prepare("SELECT id FROM users WHERE function = 'repair'").get() as any
   const techSupport = db.prepare("SELECT id FROM users WHERE function = 'technicalSupport'").get() as any
@@ -310,8 +374,7 @@ const seedSchedules = () => {
 
 const seedServiceReports = () => {
   log('\n📋 Seeding service reports...')
-  const existing = (db.prepare('SELECT COUNT(*) as c FROM service_reports').get() as any).c
-  if (existing >= 6) { log('  ℹ️  Already seeded, skipping'); return }
+  if (shouldSkip('service_reports', 6)) { log('  ℹ️  Already seeded, skipping'); return }
 
   const techRepair = db.prepare("SELECT id FROM users WHERE function = 'repair'").get() as any
   const techSupport = db.prepare("SELECT id FROM users WHERE function = 'technicalSupport'").get() as any
@@ -369,7 +432,200 @@ const seedServiceReports = () => {
   }
 }
 
-// ─── 10. SLA SETTINGS ───────────────────────────────────────────────────────
+// ─── 10. CONTRACTS ──────────────────────────────────────────────────────────
+
+const seedContracts = () => {
+  log('\n📄 Seeding contracts...')
+  if (shouldSkip('contracts', 6)) { log('  ℹ️  Already seeded, skipping'); return }
+
+  const creator = db.prepare('SELECT id FROM users WHERE email = ?').get(DEV_EMAIL) as { id: number } | undefined
+  const createdBy = creator?.id ?? (db.prepare('SELECT id FROM users WHERE role = ?').get('admin') as { id: number } | undefined)?.id ?? 1
+
+  const cust = (email: string) => (db.prepare('SELECT id FROM customers WHERE email = ?').get(email) as { id: number } | undefined)?.id
+  const inv = (serial: string) => (db.prepare('SELECT id FROM inverters WHERE serial_number = ?').get(serial) as { id: number } | undefined)?.id
+
+  const insertContract = db.prepare(`
+    INSERT INTO contracts
+      (contract_number, customer_id, title, contract_type, start_date, end_date, value, status,
+       description, signed_date, delivery_days, warranty_months, items, vat_rate, paperwork, created_by)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `)
+  const linkInverter = db.prepare(`
+    INSERT OR IGNORE INTO contract_inverters (contract_id, inverter_id) VALUES (?, ?)
+  `)
+
+  const today = new Date()
+  const day = (offset: number) => {
+    const d = new Date(today)
+    d.setDate(d.getDate() + offset)
+    return d.toISOString().split('T')[0]
+  }
+
+  const repairItems = JSON.stringify([
+    { description: 'Sửa chữa biến tần MAX 10KTL3-X', quantity: 2, unit: 'máy', unit_price: 35_000_000 },
+    { description: 'Thay linh kiện MPPT + quạt tản nhiệt', quantity: 1, unit: 'bộ', unit_price: 8_500_000 },
+  ])
+
+  const serviceItems = JSON.stringify([
+    { description: 'Bảo trì định kỳ hệ thống 15kW', quantity: 1, unit: 'lần', unit_price: 12_000_000 },
+  ])
+
+  const contracts: Array<{
+    number: string
+    customerEmail: string
+    title: string
+    type: string
+    start: string
+    end: string
+    value: number
+    status: string
+    signed: string | null
+    paperwork: Record<string, string | null>
+    items: string
+    inverters: string[]
+  }> = [
+    {
+      number: 'HD-2025-0001',
+      customerEmail: 'contact@abcsolar.vn',
+      title: 'Hợp đồng sửa chữa biến tần ABC Solar',
+      type: 'service',
+      start: day(-90),
+      end: day(-30),
+      value: 78_500_000,
+      status: 'active',
+      signed: day(-90),
+      paperwork: { invoice_date: day(-85), payment_received_date: null, device_delivery_date: null },
+      items: repairItems,
+      inverters: ['GW-2024-MAX-001', 'GW-2024-MAX-002'],
+    },
+    {
+      number: 'HD-2025-0002',
+      customerEmail: 'admin@thptnguyendu.edu.vn',
+      title: 'Hợp đồng bảo trì THPT Nguyễn Du',
+      type: 'service',
+      start: day(-120),
+      end: day(-60),
+      value: 12_000_000,
+      status: 'active',
+      signed: day(-120),
+      paperwork: {
+        invoice_date: day(-115),
+        payment_received_date: day(-110),
+        device_delivery_date: day(-100),
+        paper_sent_date: day(-95),
+        contract_returned_date: day(-80),
+        verification_date: day(-75),
+      },
+      items: serviceItems,
+      inverters: ['GW-2024-MID-001', 'GW-2024-MID-002'],
+    },
+    {
+      number: 'HD-2025-0003',
+      customerEmail: 'management@vinhomesq9.com',
+      title: 'Hợp đồng sửa chữa chung cư Vinhomes Q9',
+      type: 'economic',
+      start: day(0),
+      end: day(90),
+      value: 145_000_000,
+      status: 'draft',
+      signed: null,
+      paperwork: {},
+      items: repairItems,
+      inverters: ['GW-2024-MAX-004', 'GW-2024-MID-003'],
+    },
+    {
+      number: 'HD-2025-0004',
+      customerEmail: 'info@phumyenergy.vn',
+      title: 'Hợp đồng sửa chữa Phú Mỹ Energy',
+      type: 'service',
+      start: day(-45),
+      end: day(15),
+      value: 42_000_000,
+      status: 'active',
+      signed: day(-45),
+      paperwork: { invoice_date: day(-40), payment_received_date: null, device_delivery_date: day(-35) },
+      items: JSON.stringify([
+        { description: 'Sửa chữa biến tần MAX 10KTL3-X', quantity: 1, unit: 'máy', unit_price: 42_000_000 },
+      ]),
+      inverters: ['GW-2024-MAX-003'],
+    },
+    {
+      number: 'HD-2025-0005',
+      customerEmail: 'hung.nguyen@gmail.com',
+      title: 'Hợp đồng sửa chữa hộ gia đình Nguyễn Văn Hùng',
+      type: 'service',
+      start: day(-60),
+      end: day(-10),
+      value: 18_500_000,
+      status: 'active',
+      signed: day(-60),
+      paperwork: {
+        invoice_date: day(-55),
+        payment_received_date: day(-50),
+        device_delivery_date: day(-48),
+        verification_date: day(-40),
+      },
+      items: JSON.stringify([
+        { description: 'Sửa hybrid SPH 6000 + cấu hình Zero Export', quantity: 1, unit: 'máy', unit_price: 18_500_000 },
+      ]),
+      inverters: ['GW-2024-SPH-001'],
+    },
+    {
+      number: 'HD-2025-0006',
+      customerEmail: 'thuanphat.factory@gmail.com',
+      title: 'Hợp đồng bảo trì nhà máy Thuận Phát',
+      type: 'other',
+      start: day(-180),
+      end: day(-90),
+      value: 65_000_000,
+      status: 'expired',
+      signed: day(-180),
+      paperwork: {
+        invoice_date: day(-175),
+        payment_received_date: day(-170),
+        device_delivery_date: day(-165),
+      },
+      items: JSON.stringify([
+        { description: 'Bảo trì 2 biến tần SPF 5000TL', quantity: 2, unit: 'máy', unit_price: 32_500_000 },
+      ]),
+      inverters: ['GW-2024-SPF-001', 'GW-2024-SPF-002'],
+    },
+  ]
+
+  for (const c of contracts) {
+    const customerId = cust(c.customerEmail)
+    if (!customerId) {
+      log(`  ⚠ Skipped ${c.number} — customer not found`)
+      continue
+    }
+    const result = insertContract.run(
+      c.number,
+      customerId,
+      c.title,
+      c.type,
+      c.start,
+      c.end,
+      c.value,
+      c.status,
+      c.title,
+      c.signed,
+      7,
+      12,
+      c.items,
+      8,
+      JSON.stringify(c.paperwork),
+      createdBy,
+    )
+    const contractId = Number(result.lastInsertRowid)
+    for (const serial of c.inverters) {
+      const inverterId = inv(serial)
+      if (inverterId) linkInverter.run(contractId, inverterId)
+    }
+    log(`  ✓ ${c.number} [${c.status}]`)
+  }
+}
+
+// ─── 11. SLA SETTINGS ───────────────────────────────────────────────────────
 
 const seedSlaSettings = () => {
   log('\n⚙️  Seeding SLA settings...')
@@ -382,10 +638,10 @@ const seedSlaSettings = () => {
   upsert.run('sla_hours_high', '24', 'SLA hours for high priority tickets')
   upsert.run('sla_hours_medium', '72', 'SLA hours for medium priority tickets')
   upsert.run('sla_hours_low', '168', 'SLA hours for low priority tickets')
-  upsert.run('company_name', 'SGE Vietnam', 'Tên công ty')
-  upsert.run('company_address', 'Tầng 15, Tòa nhà Vincom Center, 72 Lê Thánh Tôn, Q.1, TP.HCM', 'Địa chỉ công ty')
-  upsert.run('company_phone', '1800 6474', 'Hotline SGE Vietnam')
-  upsert.run('company_email', 'service@SGEvietnam.com', 'Email dịch vụ')
+  upsert.run('company_name', 'Công ty TNHH SS ENERGY', 'Tên công ty')
+  upsert.run('company_address', 'Số 13, ngõ Golden City 2A, đường Hải Thượng Lãn Ông, khối Yên Sơn, phường Vinh Phú, tỉnh Nghệ An', 'Địa chỉ công ty')
+  upsert.run('company_phone', '', 'Hotline SS ENERGY')
+  upsert.run('company_email', 'ketoan.ssenergy@gmail.com', 'Email dịch vụ')
   log('  ✓ SLA & company settings upserted')
 }
 
@@ -393,14 +649,17 @@ const seedSlaSettings = () => {
 
 const run = async () => {
   try {
-    log('🚀 Starting demo data seed...')
+    log(FRESH ? '🚀 Creating fresh mock database...' : '🚀 Starting demo data seed...')
     log('━'.repeat(50))
+
+    if (FRESH) clearDatabase()
 
     await seedUsers()
     seedModels()
     seedCustomers()
     seedDistributors()
     seedInverters()
+    seedContracts()
     seedTickets()
     seedWarehouseParts()
     seedSchedules()
@@ -408,8 +667,10 @@ const run = async () => {
     seedSlaSettings()
 
     log('\n' + '━'.repeat(50))
-    log('✅ Demo data seeded successfully!')
-    log('   Demo passwords were read from DEMO_SEED_PASSWORD (not stored in repo).')
+    log('✅ Mock database ready!')
+    log(`   Dev login: ${DEV_EMAIL}`)
+    log('   Password:  (giá trị DEV_SEED_PASSWORD bạn đã set)')
+    log('   Other demo accounts: *@demo.local — cùng mật khẩu')
 
     db.close()
     process.exit(0)

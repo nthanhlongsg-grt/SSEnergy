@@ -24,24 +24,10 @@
       </div>
 
       <!-- Stats Cards -->
-      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-        <div
-          v-for="card in statCards"
-          :key="card.key"
-          @click="card.filterable && applyStatusFilter(card.key)"
-          :class="[
-            'rounded-xl p-3 border transition-all',
-            card.filterable ? 'cursor-pointer' : '',
-            card.filterable && filters.status === card.key && !filters.unpaid
-              ? `${card.activeBg} border-transparent`
-              : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700',
-            card.filterable ? 'hover:border-gray-300 dark:hover:border-gray-500' : '',
-          ]"
-        >
-          <p class="text-xs text-gray-500 dark:text-gray-400">{{ card.label }}</p>
-          <p :class="['text-2xl font-bold mt-1', card.filterable && filters.status === card.key && !filters.unpaid ? card.activeText : 'text-gray-900 dark:text-white']">
-            {{ stats[card.key as keyof typeof stats] ?? 0 }}
-          </p>
+      <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        <div class="rounded-xl p-3 border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+          <p class="text-xs text-gray-500 dark:text-gray-400">Tổng cộng</p>
+          <p class="text-2xl font-bold mt-1 text-gray-900 dark:text-white">{{ stats.total ?? 0 }}</p>
         </div>
         <div
           class="rounded-xl p-3 border cursor-pointer transition-all hover:border-rose-300 dark:hover:border-rose-600"
@@ -50,7 +36,7 @@
             : 'bg-rose-50 dark:bg-rose-900/20 border-rose-200 dark:border-rose-700'"
           @click="toggleActiveUnpaidFilter"
         >
-          <p class="text-xs text-rose-600 dark:text-rose-400">Hiệu lực · chưa thanh toán</p>
+          <p class="text-xs text-rose-600 dark:text-rose-400">Chưa thanh toán</p>
           <p class="text-2xl font-bold mt-1 text-rose-700 dark:text-rose-300">{{ stats.active_unpaid ?? 0 }}</p>
         </div>
         <div class="rounded-xl p-3 border bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-700">
@@ -74,18 +60,6 @@
             class="w-full pl-9 pr-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
-        <!-- Status: half on mobile -->
-        <select
-          v-model="filters.status"
-          @change="onStatusFilterChange"
-          class="w-full sm:w-auto sm:shrink-0 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-        >
-          <option value="">Tất cả trạng thái</option>
-          <option value="draft">Bản nháp</option>
-          <option value="active">Đang hiệu lực</option>
-          <option value="expired">Hết hạn</option>
-          <option value="cancelled">Đã hủy</option>
-        </select>
         <!-- Contract type: half on mobile -->
         <select
           v-model="filters.contract_type"
@@ -166,7 +140,7 @@
                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase hidden md:table-cell whitespace-nowrap w-[5.5rem]">Loại</th>
                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase hidden lg:table-cell">Ngày ký HĐ / NT</th>
                 <th v-if="canViewContractFinance" class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase hidden lg:table-cell">Giá trị</th>
-                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Trạng thái / Thanh toán / Giao máy</th>
+                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Thanh toán</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
@@ -194,17 +168,9 @@
                   {{ formatCurrency(c.value) }}
                 </td>
                 <td class="px-4 py-3 text-center">
-                  <div class="flex flex-col items-center gap-1">
-                    <span :class="statusClass(c.status)" class="px-2 py-0.5 rounded-full text-xs font-medium">
-                      {{ statusLabel(c.status) }}
-                    </span>
-                    <span :class="paymentStatusClass(isContractPaid(c))" class="px-2 py-0.5 rounded-full text-xs font-medium">
-                      {{ getPaymentStatusLabel(c) }}
-                    </span>
-                    <span :class="deviceDeliveryStatusClass(isContractDeviceDelivered(c))" class="px-2 py-0.5 rounded-full text-xs font-medium">
-                      {{ getDeviceDeliveryStatusLabel(c) }}
-                    </span>
-                  </div>
+                  <span :class="paymentStatusClass(isContractPaid(c))" class="px-2 py-0.5 rounded-full text-xs font-medium">
+                    {{ getPaymentStatusLabel(c) }}
+                  </span>
                 </td>
               </tr>
               <tr v-if="!loading && contracts.length === 0">
@@ -331,8 +297,8 @@
                 </div>
               </div>
 
-              <!-- Số HĐ / Loại / Trạng thái -->
-              <div class="sm:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <!-- Số HĐ / Loại -->
+              <div class="sm:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <!-- Contract number -->
                 <div>
                   <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Số HĐ <span class="text-red-500">*</span></label>
@@ -346,17 +312,6 @@
                     <option value="service">Dịch vụ</option>
                     <option value="economic">Kinh tế</option>
                     <option value="other">Khác</option>
-                  </select>
-                </div>
-
-                <!-- Status -->
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Trạng thái</label>
-                  <select v-model="form.status" class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <option value="draft">Bản nháp</option>
-                    <option value="active">Đang hiệu lực</option>
-                    <option value="expired">Hết hạn</option>
-                    <option value="cancelled">Đã hủy</option>
                   </select>
                 </div>
               </div>
@@ -687,7 +642,7 @@ import flatPickr from 'vue-flatpickr-component'
 import 'flatpickr/dist/flatpickr.css'
 import { useFlatpickrConfig } from '@/composables/useFlatpickr'
 import { useAuth, UserRole } from '@/composables/useAuth'
-import { isContractPaid, getPaymentStatusLabel, paymentStatusClass, isContractDeviceDelivered, getDeviceDeliveryStatusLabel, deviceDeliveryStatusClass } from '@/utils/contractPaperwork'
+import { isContractPaid, getPaymentStatusLabel, paymentStatusClass } from '@/utils/contractPaperwork'
 import { getVietnamWeekRange, getVietnamFullMonthRange, getVietnamYearRange } from '@/utils/dateTime'
 import { useToast } from '@/composables/useToast'
 import { useI18n } from 'vue-i18n'
@@ -724,7 +679,6 @@ const selectedCustomerName = ref('')
 
 const filters = reactive({
   search: '',
-  status: '',
   contract_type: '',
   unpaid: false,
   page: 1,
@@ -878,13 +832,6 @@ function lineAmount(it: ContractItem) {
   return (Number(it.quantity) || 0) * (Number(it.unit_price) || 0)
 }
 
-const statCards = [
-  { key: 'total', label: 'Tổng cộng', activeBg: '', activeText: '', filterable: false },
-  { key: 'active', label: 'Đang hiệu lực', activeBg: 'bg-green-100 dark:bg-green-900/30', activeText: 'text-green-700 dark:text-green-300', filterable: true },
-  { key: 'draft', label: 'Bản nháp', activeBg: 'bg-gray-100 dark:bg-gray-700', activeText: 'text-gray-700 dark:text-gray-200', filterable: true },
-  { key: 'expired', label: 'Hết hạn', activeBg: 'bg-red-100 dark:bg-red-900/30', activeText: 'text-red-700 dark:text-red-300', filterable: true },
-]
-
 let debounceTimer: ReturnType<typeof setTimeout>
 const debouncedLoad = () => {
   clearTimeout(debounceTimer)
@@ -896,7 +843,6 @@ async function loadContracts() {
   error.value = ''
   try {
     const res = await contractService.list({
-      status: filters.status || undefined,
       contract_type: filters.contract_type || undefined,
       search: filters.search || undefined,
       unpaid: filters.unpaid || undefined,
@@ -914,27 +860,8 @@ async function loadContracts() {
   }
 }
 
-function applyStatusFilter(statusKey: string) {
-  filters.unpaid = false
-  filters.status = filters.status === statusKey ? '' : statusKey
-  filters.page = 1
-  loadContracts()
-}
-
 function toggleActiveUnpaidFilter() {
-  if (filters.unpaid) {
-    filters.unpaid = false
-    filters.status = ''
-  } else {
-    filters.unpaid = true
-    filters.status = 'active'
-  }
-  filters.page = 1
-  loadContracts()
-}
-
-function onStatusFilterChange() {
-  filters.unpaid = false
+  filters.unpaid = !filters.unpaid
   filters.page = 1
   loadContracts()
 }
@@ -1225,21 +1152,6 @@ async function saveContract() {
   } finally {
     saving.value = false
   }
-}
-
-function statusLabel(s: string) {
-  const map: Record<string, string> = { draft: 'Nháp', active: 'Hiệu lực', expired: 'Hết hạn', cancelled: 'Đã hủy' }
-  return map[s] ?? s
-}
-
-function statusClass(s: string) {
-  const map: Record<string, string> = {
-    draft: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300',
-    active: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300',
-    expired: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
-    cancelled: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300',
-  }
-  return map[s] ?? 'bg-gray-100 text-gray-600'
 }
 
 function typeLabel(t: string) {

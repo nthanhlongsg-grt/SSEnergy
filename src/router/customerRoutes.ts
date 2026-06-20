@@ -57,7 +57,7 @@ export const customerRoutes = [
   {
     path: '/customer/contracts/:id',
     name: 'CustomerContractDetail',
-    component: () => import('@/views/SGE/Contracts/ContractDetail.vue'),
+    component: () => import('@/views/SSE/Contracts/ContractDetail.vue'),
     meta: {
       title: 'Chi tiết Hợp đồng',
       requiresAuth: true,

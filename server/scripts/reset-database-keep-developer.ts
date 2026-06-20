@@ -11,7 +11,7 @@ const resetDatabase = async () => {
       password: devPassword,
       code: 'SYS001',
       role: 'dev',
-      organization: 'SGE',
+      organization: 'SSE',
       phone: '0900000000',
     }
 

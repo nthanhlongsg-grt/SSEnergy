@@ -1217,9 +1217,9 @@ const processCSV = async () => {
 const downloadCSVTemplate = () => {
   const headers = ['customer_email', 'title', 'description', 'priority', 'category', 'inverter_serial']
   const example = [
-    ['customer1@SGE.vn', 'Inverter không khởi động', 'Inverter không khởi động sau khi mất điện', 'high', 'Bảo hành', 'INV-2024-001'],
-    ['customer2@SGE.vn', 'Lỗi hiển thị LCD', 'Màn hình LCD không hiển thị thông tin', 'medium', 'Sửa chữa', 'INV-2024-002'],
-    ['customer3@SGE.vn', 'Quạt làm mát không chạy', 'Quạt làm mát không hoạt động, inverter quá nóng', 'urgent', 'Bảo hành', 'INV-2024-003'],
+    ['customer1@SSE.vn', 'Inverter không khởi động', 'Inverter không khởi động sau khi mất điện', 'high', 'Bảo hành', 'INV-2024-001'],
+    ['customer2@SSE.vn', 'Lỗi hiển thị LCD', 'Màn hình LCD không hiển thị thông tin', 'medium', 'Sửa chữa', 'INV-2024-002'],
+    ['customer3@SSE.vn', 'Quạt làm mát không chạy', 'Quạt làm mát không hoạt động, inverter quá nóng', 'urgent', 'Bảo hành', 'INV-2024-003'],
   ]
 
   const csvContent = [

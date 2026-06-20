@@ -23,13 +23,13 @@
         <img
           v-if="isExpanded || isHovered || isMobileOpen"
           src="/images/logo/logo.png"
-          alt="SGE VietNam"
+          alt="SSE VietNam"
           class="object-contain h-16 w-auto max-w-[200px]"
         />
         <img
           v-else
           src="/images/logo/logo.png"
-          alt="SGE"
+          alt="SSE"
           class="object-contain h-12 w-auto"
         />
       </router-link>
@@ -213,7 +213,6 @@ import {
   CalenderIcon,
   UserCircleIcon,
   ChatIcon,
-  PieChartIcon,
   ChevronDownIcon,
   HorizontalDots,
   BoxIcon,
@@ -272,12 +271,6 @@ const MENU_GROUPS: MenuGroupDefinition[] = [
         path: "/calendar",
         requiresPermission: "view_schedule",
       },
-      {
-        icon: PieChartIcon,
-        nameKey: "menu.reporting",
-        path: "/reports",
-        requiresPermission: "view_reports",
-      },
     ],
   },
   {
@@ -296,28 +289,6 @@ const MENU_GROUPS: MenuGroupDefinition[] = [
         path: "/contracts",
         requiresPermission: "view_contracts",
         excludedRoles: [UserRole.TECHNICIAN, UserRole.WAREHOUSE],
-      },
-      {
-        icon: DocsIcon,
-        nameKey: "menu.cashFlow",
-        requiresPermission: "view_payment_requests",
-        subItems: [
-          {
-            nameKey: "menu.paymentRequests",
-            path: "/payment-requests",
-            requiresPermission: "view_payment_requests",
-          },
-          {
-            nameKey: "menu.cashFund",
-            path: "/cash-fund",
-            requiresPermission: "view_cash_fund",
-          },
-          {
-            nameKey: "menu.cashFlowReport",
-            path: "/cash-flow-report",
-            requiresPermission: "view_cash_fund",
-          },
-        ],
       },
       {
         icon: BoxCubeIcon,

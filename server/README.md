@@ -1,6 +1,6 @@
-# SGE Backend API
+# SSE Backend API
 
-Backend API cho hệ thống quản lý hậu mãi SGE After-Sales Management System.
+Backend API cho hệ thống quản lý hậu mãi SSE After-Sales Management System.
 
 ## Công nghệ sử dụng
 
@@ -62,7 +62,7 @@ Server sẽ chạy tại `http://localhost:3000`
 
 ## Database
 
-Database được lưu tại `server/database/SGE.db` (SQLite)
+Database được lưu tại `server/database/SSE.db` (SQLite)
 
 ### Schema
 

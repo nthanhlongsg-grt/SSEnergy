@@ -8,9 +8,15 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
 // Use absolute path when DATABASE_PATH is provided (required on Linux hosting)
+const defaultDbPath = path.resolve(__dirname, '../../database/SSE.db')
+const legacyDbPath = path.resolve(__dirname, '../../database/SGE.db')
 const dbPath = process.env.DATABASE_PATH
   ? path.resolve(process.env.DATABASE_PATH)
-  : path.resolve(__dirname, '../../database/SGE.db')
+  : fs.existsSync(defaultDbPath)
+    ? defaultDbPath
+    : fs.existsSync(legacyDbPath)
+      ? legacyDbPath
+      : defaultDbPath
 
 const dbDir = path.dirname(dbPath)
 if (!fs.existsSync(dbDir)) {
@@ -801,37 +807,6 @@ try {
   }
 } catch (err: any) {
   console.log('ℹ️  ticket_comments is_internal migration:', err.message)
-}
-
-// Migration: cash_receipts table
-try {
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS cash_receipts (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      receipt_date TEXT NOT NULL,
-      amount REAL NOT NULL DEFAULT 0,
-      content TEXT NOT NULL,
-      notes TEXT,
-      managed_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
-      created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    );
-    CREATE INDEX IF NOT EXISTS idx_cash_receipts_date ON cash_receipts(receipt_date);
-  `)
-} catch (err: any) {
-  console.log('ℹ️  cash_receipts migration:', err.message)
-}
-
-// Migration: managed_by column on cash_receipts
-try {
-  const cols = db.prepare('PRAGMA table_info(cash_receipts)').all() as Array<{ name: string }>
-  if (!cols.some(c => c.name === 'managed_by')) {
-    db.prepare('ALTER TABLE cash_receipts ADD COLUMN managed_by INTEGER REFERENCES users(id) ON DELETE SET NULL').run()
-    console.log('✅ Added managed_by to cash_receipts')
-  }
-} catch (err: any) {
-  console.log('ℹ️  cash_receipts managed_by migration:', err.message)
 }
 
 // Full schema sync (idempotent — adds any columns/tables missing vs current code)

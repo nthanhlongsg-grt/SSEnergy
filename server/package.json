@@ -1,7 +1,7 @@
 {
-  "name": "SGE-backend",
+  "name": "SSE-backend",
   "version": "1.0.0",
-  "description": "SGE After-Sales Management System Backend API",
+  "description": "SSE After-Sales Management System Backend API",
   "main": "dist/index.js",
   "type": "module",
   "engines": {
@@ -13,6 +13,8 @@
     "start": "node dist/index.js",
     "start:prod": "NODE_ENV=production TZ=Asia/Ho_Chi_Minh node dist/index.js",
     "db:migrate": "tsx src/database/migrate.ts",
+    "db:migrate:dist": "node dist/database/migrate.js",
+    "db:sync:dist": "node dist/database/runSchemaSync.js",
     "db:import": "tsx scripts/import-production-db.ts",
     "db:migrate:attachments": "tsx scripts/migrate-attachments-to-disk.ts",
     "smoke:ticket-attachments": "tsx scripts/smoke-ticket-attachments.ts",
@@ -45,7 +47,8 @@
     "db:seed:customers": "tsx scripts/seed-customers.ts",
     "db:list:customers": "tsx scripts/list-customers.ts",
     "db:reset:keep-developer": "tsx scripts/reset-database-keep-developer.ts",
-    "db:seed:demo": "tsx scripts/seed-demo-data.ts"
+    "db:seed:demo": "tsx scripts/seed-demo-data.ts",
+    "db:mock": "tsx scripts/seed-demo-data.ts --fresh"
   },
   "dependencies": {
     "@types/bcryptjs": "^2.4.6",

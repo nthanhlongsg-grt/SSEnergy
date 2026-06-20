@@ -823,20 +823,24 @@ const getRoleLabel = (role: UserRole | string) => {
     [UserRole.TECHNICIAN]: t('users.management.roleOptions.technician'),
     [UserRole.ACCOUNTING]: t('users.management.roleOptions.accounting'),
     [UserRole.DISTRIBUTOR]: t('users.management.roleOptions.distributor'),
+    [UserRole.DEALER]: t('users.management.roleOptions.dealer'),
     [UserRole.END_USER]: t('users.management.roleOptions.endUser'),
+    [UserRole.WAREHOUSE]: t('users.management.roleOptions.warehouse'),
   }
   return labels[role] || role
 }
 
 const getRoleColor = (role: UserRole) => {
-  const colors = {
+  const colors: Record<UserRole, string> = {
     [UserRole.ADMIN]: 'text-purple-500',
     [UserRole.DEV]: 'text-indigo-500',
     [UserRole.SERVICE_CENTER]: 'text-blue-500',
     [UserRole.TECHNICIAN]: 'text-green-500',
     [UserRole.ACCOUNTING]: 'text-teal-500',
     [UserRole.DISTRIBUTOR]: 'text-yellow-500',
+    [UserRole.DEALER]: 'text-orange-500',
     [UserRole.END_USER]: 'text-gray-500',
+    [UserRole.WAREHOUSE]: 'text-cyan-500',
   }
   return colors[role] || 'text-gray-500'
 }
@@ -1235,8 +1239,8 @@ const processCSV = async () => {
 const downloadCSVTemplate = () => {
   const headers = ['name', 'email', 'code', 'role', 'organization', 'password', 'status', 'phone', 'address']
   const example = [
-    ['Nguyễn Văn A', 'user1@SGE.vn', 'USR001', 'technician', 'Phòng kỹ thuật', 'password123', 'active', '0901234567', '123 Điện Biên Phủ, Q1'],
-    ['Trần Thị B', 'user2@SGE.vn', 'USR002', 'service_center', 'Trung tâm dịch vụ', 'password123', 'active', '0909876543', '456 Hai Bà Trưng, Q3'],
+    ['Nguyễn Văn A', 'user1@SSE.vn', 'USR001', 'technician', 'Phòng kỹ thuật', 'password123', 'active', '0901234567', '123 Điện Biên Phủ, Q1'],
+    ['Trần Thị B', 'user2@SSE.vn', 'USR002', 'service_center', 'Trung tâm dịch vụ', 'password123', 'active', '0909876543', '456 Hai Bà Trưng, Q3'],
   ]
 
   let csvContent = headers.join(',') + '\n'

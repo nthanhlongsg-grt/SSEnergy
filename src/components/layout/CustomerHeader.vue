@@ -5,7 +5,7 @@
         <!-- Logo -->
         <router-link to="/customer/dashboard" class="flex items-center gap-3">
           <div class="text-xl font-bold text-gray-900 dark:text-white">
-            SGE
+            SSE
           </div>
         </router-link>
 

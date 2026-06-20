@@ -128,16 +128,13 @@
                 {{ t('customers.dashboard.incompletePaperwork.columns.contractType') }}
               </th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
-                {{ t('customers.dashboard.incompletePaperwork.columns.status') }}
-              </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
                 {{ t('customers.dashboard.incompletePaperwork.columns.missingItems') }}
               </th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
             <tr v-if="incompletePaperworkContracts.length === 0">
-              <td colspan="5" class="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
+              <td colspan="4" class="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
                 {{ t('customers.dashboard.incompletePaperwork.empty') }}
               </td>
             </tr>
@@ -158,11 +155,6 @@
               <td class="px-6 py-4 whitespace-nowrap">
                 <span :class="contractTypeClass(contract.contract_type)" class="px-2 py-0.5 rounded-full text-xs font-medium">
                   {{ contractTypeLabel(contract.contract_type) }}
-                </span>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap">
-                <span :class="contractStatusClass(contract.status)" class="px-2 py-0.5 rounded-full text-xs font-medium">
-                  {{ contractStatusLabel(contract.status) }}
                 </span>
               </td>
               <td class="px-6 py-4">
@@ -191,9 +183,6 @@
               <p class="font-mono text-sm font-semibold text-blue-600 dark:text-blue-400">{{ contract.contract_number }}</p>
               <p class="text-sm text-gray-900 dark:text-white mt-0.5 truncate">{{ contract.title || '—' }}</p>
             </div>
-            <span :class="contractStatusClass(contract.status)" class="px-2 py-0.5 rounded-full text-xs font-medium flex-shrink-0">
-              {{ contractStatusLabel(contract.status) }}
-            </span>
           </div>
           <div class="flex flex-wrap items-center gap-2 mb-2">
             <span :class="contractTypeClass(contract.contract_type)" class="px-2 py-0.5 rounded-full text-xs font-medium">
@@ -476,23 +465,10 @@ const formatDate = (dateString: string) => {
   return date.toLocaleDateString('vi-VN')
 }
 
-const contractStatusLabel = (status: string) =>
-  t(`customers.dashboard.incompletePaperwork.contractStatus.${status}`) || status
-
 const customerMissingPaperworkText = (contract: Contract) =>
   getCustomerMissingPaperworkItemIds(contract)
     .map((id) => t(`customers.dashboard.incompletePaperwork.items.${id}`))
     .join(', ')
-
-const contractStatusClass = (status: string) => {
-  const map: Record<string, string> = {
-    draft: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300',
-    active: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300',
-    expired: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
-    cancelled: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300',
-  }
-  return map[status] ?? 'bg-gray-100 text-gray-600'
-}
 
 const contractTypeLabel = (type: string) =>
   t(`customers.dashboard.incompletePaperwork.contractType.${type}`) || type

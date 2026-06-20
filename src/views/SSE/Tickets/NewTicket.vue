@@ -727,7 +727,7 @@ const createNewInverter = async () => {
       // Create new model
       const modelResponse = await apiClient.post('/models', {
         name: newModelName.value.trim(),
-        manufacturer: 'SGE',
+        manufacturer: 'SSE',
         type: null, // Type will be set based on model selection
       })
 

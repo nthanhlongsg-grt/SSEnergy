@@ -1,6 +1,6 @@
 @echo off
 echo ========================================
-echo Starting SGE Demo Servers
+echo Starting SSE Demo Servers
 echo ========================================
 echo.
 

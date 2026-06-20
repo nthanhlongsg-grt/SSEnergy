@@ -1,4 +1,4 @@
-# API Documentation - SGE After-Sales Management System
+# API Documentation - SSE After-Sales Management System
 
 Base URL: `http://localhost:3000/api`
 
@@ -19,7 +19,7 @@ Authorization: Bearer <token>
 **Request Body:**
 ```json
 {
-  "email": "admin@SGE.vn",
+  "email": "admin@SSE.vn",
   "password": "admin123"
 }
 ```
@@ -31,7 +31,7 @@ Authorization: Bearer <token>
   "user": {
     "id": 1,
     "name": "Nguyễn Văn Admin",
-    "email": "admin@SGE.vn",
+    "email": "admin@SSE.vn",
     "role": "admin"
   }
 }

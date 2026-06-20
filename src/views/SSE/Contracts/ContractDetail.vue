@@ -25,38 +25,13 @@
         </div>
 
         <div v-if="contract" class="flex flex-wrap gap-1.5 sm:gap-2">
-          <span :class="statusClass(contract.status)" class="px-2.5 py-0.5 rounded-full text-xs font-semibold">
-            {{ statusLabel(contract.status) }}
-          </span>
           <span :class="paymentStatusClass(isContractPaid(contract))" class="px-2.5 py-0.5 rounded-full text-xs font-semibold">
             {{ getPaymentStatusLabel(contract) }}
           </span>
-          <span :class="deviceDeliveryStatusClass(isContractDeviceDelivered(contract))" class="px-2.5 py-0.5 rounded-full text-xs font-semibold">
-            {{ getDeviceDeliveryStatusLabel(contract) }}
-          </span>
-          <span
-            v-if="isStaff && paperworkComplete"
-            class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300"
-          >
-            Hoàn thành giấy tờ
-          </span>
         </div>
 
         <div
-          v-if="isStaff && contract && !paperworkComplete"
-          class="flex items-start gap-1.5 rounded-lg border border-amber-200 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 px-3 py-2 text-xs text-amber-800 dark:text-amber-200"
-        >
-          <svg class="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-          </svg>
-          <span class="min-w-0">
-            <span class="font-semibold">Thiếu giấy tờ:</span>
-            {{ missingPaperworkLabels.join(', ') }}
-          </span>
-        </div>
-
-        <div
-          v-if="contract && (canViewContractFinance || canManageContracts || canCreateTicket || canCreatePaymentRequest)"
+          v-if="contract && (canViewContractFinance || canManageContracts || canCreateTicket)"
           class="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:justify-end"
         >
           <button
@@ -68,17 +43,6 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
             </svg>
             <span class="truncate">Xuất báo giá</span>
-          </button>
-          <button
-            v-if="canCreatePaymentRequest"
-            type="button"
-            @click="goCreatePaymentRequest"
-            class="inline-flex items-center justify-center gap-1.5 px-3 py-2.5 text-sm bg-amber-600 hover:bg-amber-700 active:bg-amber-800 text-white rounded-lg transition-colors touch-manipulation min-h-[44px]"
-          >
-            <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/>
-            </svg>
-            <span class="truncate">Chi phí</span>
           </button>
           <router-link
             v-if="canCreateTicket"
@@ -126,33 +90,10 @@
               <h2 class="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-4">Thông tin hợp đồng</h2>
               <dl class="space-y-3">
                 <div>
-                  <dt class="text-xs text-gray-400 dark:text-gray-500">Trạng thái</dt>
-                  <dd class="flex flex-wrap items-center gap-2 mt-0.5">
-                    <span :class="statusClass(contract.status)" class="px-2 py-0.5 rounded-full text-xs font-medium">
-                      {{ statusLabel(contract.status) }}
-                    </span>
-                    <button
-                      type="button"
-                      @click="openStatusModal"
-                      class="text-xs text-blue-600 dark:text-blue-400 hover:underline touch-manipulation min-h-[44px] inline-flex items-center py-1"
-                    >
-                      Đổi trạng thái
-                    </button>
-                  </dd>
-                </div>
-                <div>
                   <dt class="text-xs text-gray-400 dark:text-gray-500">Trạng thái thanh toán</dt>
                   <dd class="mt-0.5">
                     <span :class="paymentStatusClass(isContractPaid(contract))" class="px-2 py-0.5 rounded-full text-xs font-medium">
                       {{ getPaymentStatusLabel(contract) }}
-                    </span>
-                  </dd>
-                </div>
-                <div>
-                  <dt class="text-xs text-gray-400 dark:text-gray-500">Trạng thái giao máy</dt>
-                  <dd class="mt-0.5">
-                    <span :class="deviceDeliveryStatusClass(isContractDeviceDelivered(contract))" class="px-2 py-0.5 rounded-full text-xs font-medium">
-                      {{ getDeviceDeliveryStatusLabel(contract) }}
                     </span>
                   </dd>
                 </div>
@@ -376,7 +317,7 @@
                   </div>
 
                   <!-- Device info grid -->
-                  <div class="grid grid-cols-2 gap-2 sm:gap-3 sm:grid-cols-3 lg:grid-cols-5 mb-3">
+                  <div class="grid grid-cols-2 gap-2 sm:gap-3 sm:grid-cols-2 mb-3">
                     <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-2.5 sm:p-3">
                       <p class="text-xs text-gray-400 dark:text-gray-500 mb-1">Hãng</p>
                       <p class="text-sm font-medium text-gray-900 dark:text-white">{{ inv.manufacturer || '—' }}</p>
@@ -390,14 +331,6 @@
                       <p :class="isExpired(inv.warranty_end_date) ? 'text-red-500' : 'text-gray-900 dark:text-white'" class="text-sm font-medium">
                         {{ fmt(inv.warranty_end_date) || '—' }}
                       </p>
-                    </div>
-                    <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-2.5 sm:p-3">
-                      <p class="text-xs text-gray-400 dark:text-gray-500 mb-1">Lần sửa gần nhất</p>
-                      <p class="text-sm font-medium text-gray-900 dark:text-white">{{ fmt(inv.last_repair_date) || '—' }}</p>
-                    </div>
-                    <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-2.5 sm:p-3 col-span-2 sm:col-span-1">
-                      <p class="text-xs text-gray-400 dark:text-gray-500 mb-1">Số lần sửa</p>
-                      <p class="text-sm font-bold text-gray-900 dark:text-white">{{ inv.repair_count || 0 }}</p>
                     </div>
                   </div>
 
@@ -435,130 +368,7 @@
           </div>
 
         </div>
-
-        <!-- Checklist hồ sơ giấy tờ — chỉ nội bộ -->
-        <div v-if="isStaff" class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 sm:p-5">
-          <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
-            <h2 class="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Hồ sơ giấy tờ</h2>
-            <span
-              v-if="paperworkComplete"
-              class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300"
-            >
-              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-              </svg>
-              Hoàn thành giấy tờ
-            </span>
-          </div>
-
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
-            <div
-              v-for="item in paperworkChecklist"
-              :key="item.id"
-              :class="item.id === 'paper_sent' ? 'md:col-span-2' : ''"
-              class="space-y-1.5"
-            >
-              <div class="flex items-center gap-2 min-w-0">
-                <span
-                  :class="hasCheckDate(item) ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-400' : 'bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500'"
-                  class="w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0"
-                >
-                  <svg v-if="hasCheckDate(item)" class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
-                  </svg>
-                </span>
-                <span class="text-xs font-medium text-gray-700 dark:text-gray-300 truncate">{{ item.label }}</span>
-              </div>
-
-              <template v-if="isStaff">
-                <AppDatePicker
-                  v-if="item.source === 'contract'"
-                  v-model="paperworkForm[item.dateField as 'signed_date' | 'end_date']"
-                />
-                <AppDatePicker
-                  v-else
-                  v-model="paperworkForm[item.dateField as keyof typeof paperworkForm]"
-                />
-                <div v-if="item.id === 'paper_sent'" class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  <input
-                    v-model="paperworkForm.shipping_carrier"
-                    type="text"
-                    placeholder="Đơn vị vận chuyển"
-                    class="w-full px-2.5 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                  <input
-                    v-model="paperworkForm.tracking_number"
-                    type="text"
-                    placeholder="Mã vận đơn"
-                    class="w-full px-2.5 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-              </template>
-              <template v-else>
-                <p class="text-sm text-gray-900 dark:text-white pl-6">
-                  {{ fmtCheckDate(item) || '—' }}
-                </p>
-                <p v-if="item.id === 'paper_sent' && (contract.paperwork?.shipping_carrier || contract.paperwork?.tracking_number)" class="text-xs text-gray-500 dark:text-gray-400 pl-6">
-                  <span v-if="contract.paperwork?.shipping_carrier">{{ contract.paperwork.shipping_carrier }}</span>
-                  <span v-if="contract.paperwork?.shipping_carrier && contract.paperwork?.tracking_number"> · </span>
-                  <span v-if="contract.paperwork?.tracking_number">MVD: {{ contract.paperwork.tracking_number }}</span>
-                </p>
-              </template>
-            </div>
-          </div>
-
-          <div v-if="isStaff" class="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700 flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-3">
-            <button
-              type="button"
-              :disabled="paperworkSaving || !paperworkDirty"
-              @click="savePaperwork"
-              class="w-full sm:w-auto px-4 py-2.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors touch-manipulation min-h-[44px]"
-            >
-              {{ paperworkSaving ? 'Đang lưu...' : 'Lưu hồ sơ giấy tờ' }}
-            </button>
-            <p v-if="paperworkError" class="text-sm text-red-600 dark:text-red-400">{{ paperworkError }}</p>
-            <p v-else-if="paperworkSaved" class="text-sm text-emerald-600 dark:text-emerald-400">Đã lưu hồ sơ giấy tờ</p>
-          </div>
-        </div>
       </template>
-
-      <!-- Modal cập nhật trạng thái -->
-      <div v-if="showStatusModal" class="fixed inset-0 z-[100000] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/50">
-        <div class="bg-white dark:bg-gray-800 rounded-t-2xl sm:rounded-2xl shadow-xl w-full max-w-md p-5 sm:p-6 max-h-[90vh] overflow-y-auto pb-[max(1.25rem,env(safe-area-inset-bottom))]">
-          <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-1">Cập nhật trạng thái hợp đồng</h3>
-          <p class="text-sm text-gray-500 dark:text-gray-400 mb-5">
-            Trạng thái hiện tại:
-            <span v-if="contract" :class="statusClass(contract.status)" class="ml-1 px-2 py-0.5 rounded-full text-xs font-semibold">
-              {{ statusLabel(contract.status) }}
-            </span>
-          </p>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Trạng thái mới</label>
-          <select
-            v-model="statusForm"
-            class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 mb-2"
-          >
-            <option v-for="opt in statusOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
-          </select>
-          <p v-if="statusError" class="text-sm text-red-600 dark:text-red-400 mb-4">{{ statusError }}</p>
-          <div class="flex flex-col-reverse sm:flex-row gap-2 sm:gap-3 sm:justify-end mt-4">
-            <button
-              type="button"
-              @click="closeStatusModal"
-              class="w-full sm:w-auto px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors touch-manipulation min-h-[44px]"
-            >
-              Hủy
-            </button>
-            <button
-              type="button"
-              :disabled="statusSaving || !contract || statusForm === contract.status"
-              @click="saveStatus"
-              class="w-full sm:w-auto px-4 py-2.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors touch-manipulation min-h-[44px]"
-            >
-              {{ statusSaving ? 'Đang lưu...' : 'Lưu' }}
-            </button>
-          </div>
-        </div>
-      </div>
 
       <!-- Modal xuất báo giá -->
       <div v-if="showExportModal" class="fixed inset-0 z-[100000] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/50">
@@ -631,34 +441,21 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
-import AppDatePicker from '@/components/forms/AppDatePicker.vue'
 import { contractService, type Contract } from '@/services/contractService'
 import { amountToVietnameseWords } from '@/utils/numberToWords'
 import { exportQuotation } from '@/utils/quotation'
 import { zaloChatUrl } from '@/utils/zalo'
 import { useAuth, UserRole, Permission } from '@/composables/useAuth'
 import {
-  PAPERWORK_CHECKLIST,
-  emptyPaperworkForm,
-  getPaperworkDate,
-  hasPaperworkDate,
-  isPaperworkComplete,
-  getMissingPaperworkLabels,
-  getContractTotalAmount,
   isContractPaid,
   getPaymentStatusLabel,
   paymentStatusClass,
-  isContractDeviceDelivered,
-  getDeviceDeliveryStatusLabel,
-  deviceDeliveryStatusClass,
-  type PaperworkCheckItem,
 } from '@/utils/contractPaperwork'
 
 const route = useRoute()
 const router = useRouter()
 const { getUserRole, getUser, canViewContractFinance, canManageContracts, hasPermission } = useAuth()
 const canCreateTicket = computed(() => hasPermission(Permission.CREATE_TICKET))
-const canCreatePaymentRequest = computed(() => hasPermission(Permission.CREATE_PAYMENT_REQUEST))
 const isStaff = computed(() => getUserRole.value !== UserRole.END_USER && getUserRole.value !== UserRole.DISTRIBUTOR)
 const isDev = computed(() => getUserRole.value === UserRole.DEV)
 const contract = ref<any>(null)
@@ -668,89 +465,9 @@ const showExportModal = ref(false)
 const showDeleteConfirm = ref(false)
 const deleting = ref(false)
 const deleteError = ref('')
-const showStatusModal = ref(false)
 const exportShowContact = ref(true)
-const statusForm = ref<Contract['status']>('draft')
-const statusSaving = ref(false)
-const statusError = ref('')
-const paperworkForm = ref(emptyPaperworkForm())
-const paperworkBaseline = ref('')
-const paperworkSaving = ref(false)
-const paperworkError = ref('')
-const paperworkSaved = ref(false)
 
-const paperworkChecklist = PAPERWORK_CHECKLIST
-
-const paperworkComplete = computed(() =>
-  contract.value ? isPaperworkComplete(contract.value) : false
-)
-
-const missingPaperworkLabels = computed(() =>
-  contract.value ? getMissingPaperworkLabels(contract.value) : []
-)
-
-const paperworkDirty = computed(() => JSON.stringify(paperworkForm.value) !== paperworkBaseline.value)
-
-function toInputDate(v?: string | null): string {
-  if (!v) return ''
-  return String(v).slice(0, 10)
-}
-
-function syncPaperworkForm() {
-  if (!contract.value) return
-  const pw = contract.value.paperwork || {}
-  paperworkForm.value = {
-    signed_date: toInputDate(contract.value.signed_date),
-    end_date: toInputDate(contract.value.end_date),
-    invoice_date: toInputDate(pw.invoice_date),
-    payment_received_date: toInputDate(pw.payment_received_date),
-    device_delivery_date: toInputDate(pw.device_delivery_date),
-    paper_sent_date: toInputDate(pw.paper_sent_date),
-    shipping_carrier: pw.shipping_carrier || '',
-    tracking_number: pw.tracking_number || '',
-    contract_returned_date: toInputDate(pw.contract_returned_date),
-    verification_date: toInputDate(pw.verification_date),
-  }
-  paperworkBaseline.value = JSON.stringify(paperworkForm.value)
-  paperworkSaved.value = false
-}
-
-function hasCheckDate(item: PaperworkCheckItem): boolean {
-  if (!contract.value) return false
-  return hasPaperworkDate(getPaperworkDate(contract.value, item))
-}
-
-function fmtCheckDate(item: PaperworkCheckItem): string | null {
-  if (!contract.value) return null
-  const d = getPaperworkDate(contract.value, item)
-  return d ? fmt(d) : null
-}
-
-async function savePaperwork() {
-  if (!contract.value) return
-  paperworkSaving.value = true
-  paperworkError.value = ''
-  paperworkSaved.value = false
-  try {
-    const updated = await contractService.updatePaperwork(contract.value.id, { ...paperworkForm.value })
-    contract.value = { ...contract.value, ...updated }
-    syncPaperworkForm()
-    paperworkSaved.value = true
-  } catch (e: any) {
-    paperworkError.value = e.message || 'Không thể lưu hồ sơ giấy tờ'
-  } finally {
-    paperworkSaving.value = false
-  }
-}
-
-const statusOptions = [
-  { value: 'draft', label: 'Nháp' },
-  { value: 'active', label: 'Hiệu lực' },
-  { value: 'expired', label: 'Hết hạn' },
-  { value: 'cancelled', label: 'Đã hủy' },
-] as const
-
-function ticketDetailPath(ticketId: number) {
+const ticketDetailPath = (ticketId: number) => {
   return isStaff.value ? `/tickets/${ticketId}` : `/customer/tickets/${ticketId}`
 }
 
@@ -770,68 +487,12 @@ const createTicketPath = computed(() => {
   return `/tickets/new?${q.toString()}`
 })
 
-function goCreatePaymentRequest() {
-  if (!contract.value?.id) {
-    router.push('/payment-requests?create=1')
-    return
-  }
-  const q = new URLSearchParams({
-    create: '1',
-    contract_id: String(contract.value.id),
-  })
-  const amount = getContractTotalAmount(contract.value)
-  if (amount > 0) {
-    q.set('amount', String(amount))
-  }
-  router.push(`/payment-requests?${q.toString()}`)
-}
-
-const createPaymentRequestPath = computed(() => {
-  if (!contract.value?.id) return '/payment-requests?create=1'
-  const q = new URLSearchParams({
-    create: '1',
-    contract_id: String(contract.value.id),
-  })
-  const amount = getContractTotalAmount(contract.value)
-  if (amount > 0) {
-    q.set('amount', String(amount))
-  }
-  return `/payment-requests?${q.toString()}`
-})
-
 function inverterDetailPath(inverterId: number) {
   const base = isStaff.value ? `/inverters/${inverterId}` : `/customer/inverters/${inverterId}`
   if (contract.value?.id) {
     return `${base}?contract_id=${contract.value.id}`
   }
   return base
-}
-
-function openStatusModal() {
-  if (!contract.value) return
-  statusForm.value = contract.value.status
-  statusError.value = ''
-  showStatusModal.value = true
-}
-
-function closeStatusModal() {
-  showStatusModal.value = false
-  statusError.value = ''
-}
-
-async function saveStatus() {
-  if (!contract.value || statusForm.value === contract.value.status) return
-  statusSaving.value = true
-  statusError.value = ''
-  try {
-    const updated = await contractService.updateStatus(contract.value.id, statusForm.value)
-    contract.value = { ...contract.value, ...updated }
-    showStatusModal.value = false
-  } catch (e: any) {
-    statusError.value = e.message || 'Không thể cập nhật trạng thái'
-  } finally {
-    statusSaving.value = false
-  }
 }
 
 const itemsSubtotal = computed(() =>
@@ -857,7 +518,6 @@ async function load() {
   error.value = ''
   try {
     contract.value = await contractService.get(Number(route.params.id))
-    syncPaperworkForm()
   } catch (e: any) {
     error.value = e.message
   } finally {
@@ -910,21 +570,6 @@ function fmtCurrency(v: number | null | undefined) {
 function isExpired(d?: string) {
   if (!d) return false
   return new Date(d) < new Date()
-}
-
-function statusLabel(s: string) {
-  const m: Record<string,string> = { draft: 'Nháp', active: 'Hiệu lực', expired: 'Hết hạn', cancelled: 'Đã hủy' }
-  return m[s] ?? s
-}
-
-function statusClass(s: string) {
-  const m: Record<string,string> = {
-    draft: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300',
-    active: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300',
-    expired: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
-    cancelled: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300',
-  }
-  return m[s] ?? 'bg-gray-100 text-gray-600'
 }
 
 function typeLabel(t: string) {

@@ -1,4 +1,4 @@
-# Script to setup Windows Firewall rules for SGE LAN access
+# Script to setup Windows Firewall rules for SSE LAN access
 # This script requires Administrator privileges
 
 # Check if running as Administrator
@@ -14,34 +14,34 @@ if (-not $isAdmin) {
     exit
 }
 
-Write-Host "`n=== SGE Firewall Setup ===" -ForegroundColor Cyan
+Write-Host "`n=== SSE Firewall Setup ===" -ForegroundColor Cyan
 Write-Host "Setting up firewall rules for LAN access...`n" -ForegroundColor Yellow
 
 # Remove existing rules if they exist
 Write-Host "Checking for existing rules..." -ForegroundColor Gray
-$existingFrontend = Get-NetFirewallRule -DisplayName "SGE Frontend" -ErrorAction SilentlyContinue
-$existingBackend = Get-NetFirewallRule -DisplayName "SGE Backend" -ErrorAction SilentlyContinue
+$existingFrontend = Get-NetFirewallRule -DisplayName "SSE Frontend" -ErrorAction SilentlyContinue
+$existingBackend = Get-NetFirewallRule -DisplayName "SSE Backend" -ErrorAction SilentlyContinue
 
 if ($existingFrontend) {
-    Write-Host "  Removing existing 'SGE Frontend' rule..." -ForegroundColor Gray
-    Remove-NetFirewallRule -DisplayName "SGE Frontend" -ErrorAction SilentlyContinue
+    Write-Host "  Removing existing 'SSE Frontend' rule..." -ForegroundColor Gray
+    Remove-NetFirewallRule -DisplayName "SSE Frontend" -ErrorAction SilentlyContinue
 }
 
 if ($existingBackend) {
-    Write-Host "  Removing existing 'SGE Backend' rule..." -ForegroundColor Gray
-    Remove-NetFirewallRule -DisplayName "SGE Backend" -ErrorAction SilentlyContinue
+    Write-Host "  Removing existing 'SSE Backend' rule..." -ForegroundColor Gray
+    Remove-NetFirewallRule -DisplayName "SSE Backend" -ErrorAction SilentlyContinue
 }
 
 # Create Frontend rule (port 5173)
 Write-Host "`nCreating firewall rule for Frontend (port 5173)..." -ForegroundColor Yellow
 try {
-    New-NetFirewallRule -DisplayName "SGE Frontend" `
+    New-NetFirewallRule -DisplayName "SSE Frontend" `
         -Direction Inbound `
         -LocalPort 5173 `
         -Protocol TCP `
         -Action Allow `
         -Profile Domain,Private,Public `
-        -Description "Allow inbound connections for SGE Frontend on port 5173"
+        -Description "Allow inbound connections for SSE Frontend on port 5173"
     Write-Host "  ✅ Frontend rule created successfully!" -ForegroundColor Green
 } catch {
     Write-Host "  ❌ Failed to create Frontend rule: $_" -ForegroundColor Red
@@ -50,13 +50,13 @@ try {
 # Create Backend rule (port 3000)
 Write-Host "`nCreating firewall rule for Backend (port 3000)..." -ForegroundColor Yellow
 try {
-    New-NetFirewallRule -DisplayName "SGE Backend" `
+    New-NetFirewallRule -DisplayName "SSE Backend" `
         -Direction Inbound `
         -LocalPort 3000 `
         -Protocol TCP `
         -Action Allow `
         -Profile Domain,Private,Public `
-        -Description "Allow inbound connections for SGE Backend on port 3000"
+        -Description "Allow inbound connections for SSE Backend on port 3000"
     Write-Host "  ✅ Backend rule created successfully!" -ForegroundColor Green
 } catch {
     Write-Host "  ❌ Failed to create Backend rule: $_" -ForegroundColor Red
@@ -64,8 +64,8 @@ try {
 
 # Verify rules
 Write-Host "`n=== Verification ===" -ForegroundColor Cyan
-$frontendRule = Get-NetFirewallRule -DisplayName "SGE Frontend" -ErrorAction SilentlyContinue
-$backendRule = Get-NetFirewallRule -DisplayName "SGE Backend" -ErrorAction SilentlyContinue
+$frontendRule = Get-NetFirewallRule -DisplayName "SSE Frontend" -ErrorAction SilentlyContinue
+$backendRule = Get-NetFirewallRule -DisplayName "SSE Backend" -ErrorAction SilentlyContinue
 
 if ($frontendRule -and $backendRule) {
     Write-Host "✅ Both firewall rules are active!" -ForegroundColor Green

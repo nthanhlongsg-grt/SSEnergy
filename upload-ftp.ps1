@@ -1,5 +1,5 @@
 # Script Upload Frontend lên cPanel qua FTP
-# Sử dụng: .\upload-ftp.ps1 -FtpHost "SGEvietnam.com" -FtpUser "username" -FtpPass "password"
+# Sử dụng: .\upload-ftp.ps1 -FtpHost "SSEvietnam.com" -FtpUser "username" -FtpPass "password"
 
 param(
     [Parameter(Mandatory=$true)]

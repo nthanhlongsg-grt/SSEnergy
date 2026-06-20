@@ -1,4 +1,4 @@
-# SGE Inverter ERP — Database schema (draft)
+# SSE Inverter ERP — Database schema (draft)
 
 Tài liệu tham chiếu cho **PostgreSQL** + **Prisma**: danh sách bảng, cột chính và quan hệ. Bản nháp để team chỉnh trước khi `prisma migrate`. Đồng bộ với [SKILL.md](./SKILL.md).
 
@@ -132,7 +132,7 @@ erDiagram
 | `customer_id` | FK → `customers` | NULL — bắt buộc khác NULL khi user chỉ dùng **portal KH** (mọi API portal filter theo cột này). |
 | `created_at`, `updated_at` | TIMESTAMPTZ | |
 
-**Ghi chú:** có thể thêm `is_superuser` cho tài khoản `dev` thay vì gán full permission — policy SGE quyết định. Nếu một email cần vừa staff vừa đại diện KH, dùng **hai user** hoặc bảng nối `customer_users` (`user_id`, `customer_id`) thay vì một `customer_id` duy nhất — team chốt.
+**Ghi chú:** có thể thêm `is_superuser` cho tài khoản `dev` thay vì gán full permission — policy SSE quyết định. Nếu một email cần vừa staff vừa đại diện KH, dùng **hai user** hoặc bảng nối `customer_users` (`user_id`, `customer_id`) thay vì một `customer_id` duy nhất — team chốt.
 
 **Portal KH — truy vấn an toàn**
 
@@ -170,8 +170,8 @@ erDiagram
 | `contract_kind` | Ý nghĩa (UI i18n) | Dòng HĐ & công nợ |
 |-----------------|-------------------|-------------------|
 | `repair_service` | Hợp đồng **sửa chữa** (một máy) | `line_fee_kind` **repair** / **warranty**; công nợ theo từng loại phí. |
-| `equipment_purchase` | **Mua vào** thiết bị (SGE ← NCC) | Dòng có **`part_id`** + SL + đơn giá; công nợ **phải trả** NCC (chi/expense/`payment_out` tùy team). |
-| `equipment_sale` | **Bán ra** thiết bị (SGE → KH) | Dòng có **`part_id`** + SL + đơn giá; thu **`payment_in`**; công nợ KH. |
+| `equipment_purchase` | **Mua vào** thiết bị (SSE ← NCC) | Dòng có **`part_id`** + SL + đơn giá; công nợ **phải trả** NCC (chi/expense/`payment_out` tùy team). |
+| `equipment_sale` | **Bán ra** thiết bị (SSE → KH) | Dòng có **`part_id`** + SL + đơn giá; thu **`payment_in`**; công nợ KH. |
 
 **Hợp đồng sửa một máy — hai loại phí (`line_fee_kind`, chỉ khi `contract_kind = repair_service`)**
 
@@ -221,7 +221,7 @@ erDiagram
 | `service_case_activities` | Nhật ký + comment: `service_case_id`, `actor_user_id`, `activity_type` (status_change \| comment \| assignment \| …), `body`, **`is_internal`** (comment nội bộ), `metadata` JSONB, `created_at`. |
 | `tasks` | Task: `service_case_id`, `title`, `status`, `assignee_user_id`, `due_at`. |
 | `repair_warranties` | Bảo hành sau sửa: bắt buộc `service_case_id`, `device_id`; optional `contract_line_id` (**phải** là dòng HĐ `line_fee_kind = warranty` trên HĐ **`contract_kind = repair_service`** khi có liên kết); `starts_at`, `ends_at` hoặc `duration_months`; `warranty_type`, `terms_text`; optional `supersedes_warranty_id` → self. |
-| `repair_warranty_covered_parts` | **Bổ sung spare khi có BH:** mỗi dòng = một `part_id` (linh kiện) thuộc phạm vi đổi/thay trong gói BH, optional `max_quantity` / `notes`. Khi không cần chi tiết từng part, có thể dùng một dòng `part_id` NULL + `coverage_notes` (policy SGE). |
+| `repair_warranty_covered_parts` | **Bổ sung spare khi có BH:** mỗi dòng = một `part_id` (linh kiện) thuộc phạm vi đổi/thay trong gói BH, optional `max_quantity` / `notes`. Khi không cần chi tiết từng part, có thể dùng một dòng `part_id` NULL + `coverage_notes` (policy SSE). |
 | `business_trips` | Công tác: `requester_user_id`, `status`, `purpose`, `date_from`, `date_to`, optional `approved_by_user_id`. |
 | `trip_expenses` | Chi phí chuyến: `business_trip_id`, `category`, `amount`, ghi chú/chứng từ. |
 
@@ -267,7 +267,7 @@ erDiagram
 
 **Nguyên tắc:** mọi thay đổi tồn spare đi qua `stock_movements` + `movement_lines`; `stock_balances` là **ẩn số phụ** (cache), không sửa tay ngoài luồng.
 
-**Phân loại part & chuỗi sửa chữa (SGE)**
+**Phân loại part & chuỗi sửa chữa (SSE)**
 
 Danh mục `parts` chia **ba cấp** (một cột phân biệt — không phải hai bảng riêng):
 
@@ -275,7 +275,7 @@ Danh mục `parts` chia **ba cấp** (một cột phân biệt — không phải
 |-------------|-------------------|
 | `component` | **Linh kiện** — nhập từ NCC, có **ngày nhập** và **người nhập** trên từng phiếu nhập (`stock_movements.movement_at` + `created_by_user_id`). |
 | `board` | **Board** — thành phẩm / tầng trung gian **được sửa / lắp từ linh kiện**; cấu thành khai báo trong `part_structure` (con là các `component`). |
-| `inverter` | **Inverter** (mức máy) — **được sửa / lắp từ board** (+ có thể thêm linh kiện); quan hệ con trong `part_structure` (con là `board` và/hoặc `component` tùy quy trình SGE). |
+| `inverter` | **Inverter** (mức máy) — **được sửa / lắp từ board** (+ có thể thêm linh kiện); quan hệ con trong `part_structure` (con là `board` và/hoặc `component` tùy quy trình SSE). |
 
 ```mermaid
 flowchart LR
@@ -353,7 +353,7 @@ Unique tuỳ chọn: `(repair_warranty_id, part_id)` khi `part_id` NOT NULL.
 | `quantity` | NUMERIC(18,4) | Số lượng con cho một đơn vị cha |
 | `created_at` | TIMESTAMPTZ | |
 
-Ràng buộc logic (ứng dụng hoặc trigger): `parent_part_id` ≠ `child_part_id`; quy tắc SGE — ví dụ **board** chỉ có con là **component**; **inverter** có con là **board** (và tùy chọn thêm **component**). Tránh chu trình (cycle) trong đồ thị BOM.
+Ràng buộc logic (ứng dụng hoặc trigger): `parent_part_id` ≠ `child_part_id`; quy tắc SSE — ví dụ **board** chỉ có con là **component**; **inverter** có con là **board** (và tùy chọn thêm **component**). Tránh chu trình (cycle) trong đồ thị BOM.
 
 ---
 
@@ -374,7 +374,7 @@ Ràng buộc logic (ứng dụng hoặc trigger): `parent_part_id` ≠ `child_pa
 | User thường | Là thành viên **active** (`left_at IS NULL`) của `conversation_id`. |
 | **Admin / giám sát** | Permission **`chat.conversation:read_all`** — được **list và đọc mọi** `chat_conversations` + `chat_messages` **không cần** dòng trong `chat_conversation_members`. Nên ghi **`audit_logs`** khi supervisor mở cuộc (vd. `action = chat_supervisor_open`, `entity_type = chat_conversation`). |
 
-**Gửi tin:** chỉ nếu có **`chat.message:write`** và (thành viên active **hoặc** policy SGE cho phép bot/system user).
+**Gửi tin:** chỉ nếu có **`chat.message:write`** và (thành viên active **hoặc** policy SSE cho phép bot/system user).
 
 **Nhóm mới:** user có **`chat.group:create`** tạo `conversation_type = group`, `title`, tự thêm vào `members` với `member_role = owner`, mời user khác.
 
@@ -467,7 +467,7 @@ Ràng buộc logic (ứng dụng hoặc trigger): `parent_part_id` ≠ `child_pa
 
 1. Chuyển bảng/cột sang `schema.prisma` với `@@map("table_name")` nếu model dùng PascalCase.  
 2. Thêm enum Prisma cho `service_cases.status`, `service_cases.case_kind`, `service_cases.priority`, `contracts.status`, **`contracts.contract_kind`**, `contract_lines.line_fee_kind` (nullable khi dòng thuộc HĐ thiết bị), `stock_movements.movement_type`, `parts.part_kind`, `service_case_activities.activity_type`, `notifications.notification_type`, **`chat_conversations.conversation_type`**, **`chat_conversation_members.member_role`**, …  
-3. Migration đầu tiên; seed `roles`, `permissions`, `role_permissions` cho SGE (**gồm quyền chat**; **`chat.conversation:read_all`** → `admin`, tuỳ chọn `dev`).
+3. Migration đầu tiên; seed `roles`, `permissions`, `role_permissions` cho SSE (**gồm quyền chat**; **`chat.conversation:read_all`** → `admin`, tuỳ chọn `dev`).
 
 ---
 

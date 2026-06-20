@@ -54,7 +54,7 @@
           </div>
 
           <template v-else>
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 p-4 sm:p-5 border-b border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/20">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 sm:p-5 border-b border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/20">
               <button
                 type="button"
                 :class="[
@@ -79,30 +79,6 @@
                     </p>
                   </div>
                   <WarningIcon class="h-5 w-5 text-red-500 shrink-0" />
-                </div>
-              </button>
-
-              <button
-                type="button"
-                :class="[
-                  'rounded-lg p-3 sm:p-4 text-left transition-all outline-none focus-visible:ring-2 focus-visible:ring-brand-500',
-                  contractTab === 'undelivered'
-                    ? 'bg-white dark:bg-gray-800 ring-2 ring-sky-500 border border-sky-200 dark:border-sky-800 shadow-sm'
-                    : 'bg-white/80 dark:bg-gray-800/80 border border-sky-100 dark:border-sky-900/50 hover:border-sky-200',
-                ]"
-                @click="contractTab = 'undelivered'"
-              >
-                <div class="flex items-center justify-between gap-2">
-                  <div>
-                    <p class="text-xs text-gray-500 dark:text-gray-400">{{ t('dashboard.contracts.undeliveredDevices') }}</p>
-                    <p class="mt-1 text-lg sm:text-xl font-bold text-sky-600 dark:text-sky-400">
-                      {{ contractMetrics.undeliveredDevices }}
-                    </p>
-                    <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
-                      {{ t('dashboard.contracts.contractCount', { count: contractMetrics.undeliveredContractCount }) }}
-                    </p>
-                  </div>
-                  <BoxCubeIcon class="h-5 w-5 text-sky-500 shrink-0" />
                 </div>
               </button>
 
@@ -149,19 +125,6 @@
                 type="button"
                 :class="[
                   'px-3 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 -mb-px transition-colors',
-                  contractTab === 'undelivered'
-                    ? 'border-sky-500 text-sky-600 dark:text-sky-400'
-                    : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300',
-                ]"
-                @click="contractTab = 'undelivered'"
-              >
-                {{ t('dashboard.contracts.undeliveredList') }}
-                <span class="ml-1 text-xs opacity-75">({{ undeliveredContractsTotal }})</span>
-              </button>
-              <button
-                type="button"
-                :class="[
-                  'px-3 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 -mb-px transition-colors',
                   contractTab === 'draft'
                     ? 'border-gray-500 text-gray-900 dark:text-white'
                     : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300',
@@ -198,168 +161,6 @@
                   <tr v-if="activeContractList.length === 0">
                     <td :colspan="canViewContractFinance ? 4 : 3" class="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
                       {{ activeContractEmptyText }}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </template>
-        </section>
-
-        <!-- Chi phí chưa xong — admin / dev / kế toán -->
-        <section
-          v-if="showPaymentRequestSection"
-          class="rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden"
-        >
-          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-4 sm:p-5 border-b border-gray-200 dark:border-gray-700">
-            <div>
-              <h2 class="text-base font-semibold text-gray-900 dark:text-white">
-                {{ t('dashboard.sections.paymentRequests') }}
-              </h2>
-              <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                {{ t('dashboard.paymentRequests.summaryHint') }}
-              </p>
-            </div>
-            <router-link
-              to="/payment-requests"
-              class="text-sm text-blue-600 dark:text-blue-400 hover:underline shrink-0"
-            >
-              {{ t('dashboard.paymentRequests.viewAll') }}
-            </router-link>
-          </div>
-
-          <div v-if="paymentRequestLoading" class="flex items-center justify-center py-10">
-            <div class="text-sm text-gray-500 dark:text-gray-400">{{ t('common.loading') }}</div>
-          </div>
-
-          <template v-else>
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 p-4 sm:p-5 border-b border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/20">
-              <button
-                type="button"
-                :class="[
-                  'rounded-lg p-3 sm:p-4 text-left transition-all outline-none focus-visible:ring-2 focus-visible:ring-brand-500',
-                  paymentRequestTab === 'pending'
-                    ? 'bg-white dark:bg-gray-800 ring-2 ring-blue-500 border border-blue-200 dark:border-blue-800 shadow-sm'
-                    : 'bg-white/80 dark:bg-gray-800/80 border border-blue-100 dark:border-blue-900/50 hover:border-blue-200',
-                ]"
-                @click="paymentRequestTab = 'pending'"
-              >
-                <div class="flex items-center justify-between gap-2">
-                  <div>
-                    <p class="text-xs text-gray-500 dark:text-gray-400">{{ t('dashboard.paymentRequests.pendingCount') }}</p>
-                    <p class="mt-1 text-lg sm:text-xl font-bold text-blue-600 dark:text-blue-400">
-                      {{ paymentRequestMetrics.pendingCount }}
-                    </p>
-                    <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
-                      {{ formatContractCurrency(paymentRequestMetrics.pendingTotalAmount) }}
-                    </p>
-                  </div>
-                  <InfoCircleIcon class="h-5 w-5 text-blue-500 shrink-0" />
-                </div>
-              </button>
-
-              <button
-                type="button"
-                :class="[
-                  'rounded-lg p-3 sm:p-4 text-left transition-all outline-none focus-visible:ring-2 focus-visible:ring-brand-500',
-                  paymentRequestTab === 'approved'
-                    ? 'bg-white dark:bg-gray-800 ring-2 ring-amber-500 border border-amber-200 dark:border-amber-800 shadow-sm'
-                    : 'bg-white/80 dark:bg-gray-800/80 border border-amber-100 dark:border-amber-900/50 hover:border-amber-200',
-                ]"
-                @click="paymentRequestTab = 'approved'"
-              >
-                <div class="flex items-center justify-between gap-2">
-                  <div>
-                    <p class="text-xs text-gray-500 dark:text-gray-400">{{ t('dashboard.paymentRequests.approvedCount') }}</p>
-                    <p class="mt-1 text-lg sm:text-xl font-bold text-amber-600 dark:text-amber-400">
-                      {{ paymentRequestMetrics.approvedCount }}
-                    </p>
-                    <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
-                      {{ formatContractCurrency(paymentRequestMetrics.approvedTotalAmount) }}
-                    </p>
-                  </div>
-                  <WarningIcon class="h-5 w-5 text-amber-500 shrink-0" />
-                </div>
-              </button>
-
-              <div class="rounded-lg p-3 sm:p-4 bg-white/80 dark:bg-gray-800/80 border border-violet-100 dark:border-violet-900/50">
-                <div class="flex items-center justify-between gap-2">
-                  <div>
-                    <p class="text-xs text-gray-500 dark:text-gray-400">{{ t('dashboard.paymentRequests.openTotalAmount') }}</p>
-                    <p class="mt-1 text-lg sm:text-xl font-bold text-violet-600 dark:text-violet-400 truncate">
-                      {{ formatContractCurrency(paymentRequestMetrics.openTotalAmount) }}
-                    </p>
-                    <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
-                      {{ t('dashboard.paymentRequests.requestCount', { count: paymentRequestMetrics.openCount }) }}
-                    </p>
-                  </div>
-                  <BarChartIcon class="h-5 w-5 text-violet-500 shrink-0" />
-                </div>
-              </div>
-            </div>
-
-            <div class="flex overflow-x-auto border-b border-gray-200 dark:border-gray-700 px-4 sm:px-5">
-              <button
-                type="button"
-                :class="[
-                  'px-3 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 -mb-px transition-colors',
-                  paymentRequestTab === 'pending'
-                    ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                    : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300',
-                ]"
-                @click="paymentRequestTab = 'pending'"
-              >
-                {{ t('dashboard.paymentRequests.pendingList') }}
-                <span class="ml-1 text-xs opacity-75">({{ paymentRequestMetrics.pendingCount }})</span>
-              </button>
-              <button
-                type="button"
-                :class="[
-                  'px-3 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 -mb-px transition-colors',
-                  paymentRequestTab === 'approved'
-                    ? 'border-amber-500 text-amber-600 dark:text-amber-400'
-                    : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300',
-                ]"
-                @click="paymentRequestTab = 'approved'"
-              >
-                {{ t('dashboard.paymentRequests.approvedList') }}
-                <span class="ml-1 text-xs opacity-75">({{ paymentRequestMetrics.approvedCount }})</span>
-              </button>
-            </div>
-
-            <div class="overflow-x-auto max-h-[320px] overflow-y-auto">
-              <table class="w-full text-sm">
-                <thead class="bg-gray-50 dark:bg-gray-700/50 sticky top-0 z-10">
-                  <tr>
-                    <th class="px-4 py-2.5 text-left text-xs font-medium text-gray-500 dark:text-gray-400">{{ t('dashboard.paymentRequests.columns.number') }}</th>
-                    <th class="px-4 py-2.5 text-left text-xs font-medium text-gray-500 dark:text-gray-400">{{ t('dashboard.paymentRequests.columns.date') }}</th>
-                    <th class="px-4 py-2.5 text-left text-xs font-medium text-gray-500 dark:text-gray-400">{{ t('dashboard.paymentRequests.columns.content') }}</th>
-                    <th class="px-4 py-2.5 text-right text-xs font-medium text-gray-500 dark:text-gray-400">{{ t('dashboard.paymentRequests.columns.amount') }}</th>
-                    <th class="px-4 py-2.5 text-left text-xs font-medium text-gray-500 dark:text-gray-400">{{ t('dashboard.paymentRequests.columns.requester') }}</th>
-                    <th class="px-4 py-2.5 text-left text-xs font-medium text-gray-500 dark:text-gray-400">{{ t('dashboard.paymentRequests.columns.status') }}</th>
-                  </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
-                  <tr
-                    v-for="item in activePaymentRequestList"
-                    :key="item.id"
-                    class="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/30"
-                    @click="router.push(`/payment-requests/${item.id}`)"
-                  >
-                    <td class="px-4 py-2.5 font-mono text-blue-600 dark:text-blue-400 whitespace-nowrap">{{ item.request_number }}</td>
-                    <td class="px-4 py-2.5 text-gray-500 dark:text-gray-400 whitespace-nowrap">{{ formatPaymentRequestDate(item.payment_date || item.created_at) }}</td>
-                    <td class="px-4 py-2.5 text-gray-900 dark:text-white truncate max-w-[200px]">{{ item.payment_content }}</td>
-                    <td class="px-4 py-2.5 text-right font-medium text-gray-900 dark:text-white whitespace-nowrap">{{ formatContractCurrency(item.amount) }}</td>
-                    <td class="px-4 py-2.5 text-gray-900 dark:text-white truncate max-w-[140px]">{{ item.requested_by_name || '—' }}</td>
-                    <td class="px-4 py-2.5">
-                      <span :class="['inline-flex px-2 py-0.5 rounded-full text-xs font-medium', paymentRequestStatusClass(item.status)]">
-                        {{ paymentRequestStatusLabel(item.status) }}
-                      </span>
-                    </td>
-                  </tr>
-                  <tr v-if="activePaymentRequestList.length === 0">
-                    <td colspan="6" class="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
-                      {{ activePaymentRequestEmptyText }}
                     </td>
                   </tr>
                 </tbody>
@@ -721,7 +522,6 @@ import { useI18n } from 'vue-i18n'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import {
   ChatIcon,
-  BoxCubeIcon,
   WarningIcon,
   UserCircleIcon,
   ErrorIcon,
@@ -729,8 +529,6 @@ import {
   CalenderIcon,
   TaskIcon,
   DocsIcon,
-  InfoCircleIcon,
-  BarChartIcon,
 } from '../../icons'
 import { apiClient } from '@/services/api'
 import { formatDateTime } from '@/utils/dateTime'
@@ -745,12 +543,6 @@ import { useChangeDetection } from '@/composables/useChangeDetection'
 import { ticketService } from '@/services/ticketService'
 import { scheduleService } from '@/services/scheduleService'
 import { contractService, type Contract } from '@/services/contractService'
-import {
-  paymentRequestService,
-  type PaymentRequest,
-  type PaymentRequestStatus,
-} from '@/services/paymentRequestService'
-import VueApexCharts from 'vue3-apexcharts'
 import { useRouter } from 'vue-router'
 import { hasPermission, Permission, hasAnyRole, UserRole, getUser } from '@/composables/useAuth'
 import { useSlaSettings } from '@/composables/useSlaSettings'
@@ -780,52 +572,30 @@ const isLimitedStaff = computed(() => {
 
 const canViewContractFinance = computed(() => hasPermission(Permission.VIEW_CONTRACT_FINANCE))
 
-const showPaymentRequestSection = computed(() => hasPermission(Permission.REVIEW_PAYMENT_REQUEST))
-
 const contractLoading = ref(false)
 const contractMetrics = ref({
   totalDebt: 0,
   unpaidCount: 0,
-  undeliveredDevices: 0,
-  undeliveredContractCount: 0,
   draftCount: 0,
 })
 const unpaidContracts = ref<Contract[]>([])
 const unpaidContractsTotal = ref(0)
-const undeliveredContracts = ref<Contract[]>([])
-const undeliveredContractsTotal = ref(0)
 const draftContracts = ref<Contract[]>([])
 const draftContractsTotal = ref(0)
 
-type ContractTab = 'unpaid' | 'undelivered' | 'draft'
+type ContractTab = 'unpaid' | 'draft'
 const contractTab = ref<ContractTab>('unpaid')
-
-type PaymentRequestTab = 'pending' | 'approved'
-const paymentRequestTab = ref<PaymentRequestTab>('pending')
-const paymentRequestLoading = ref(false)
-const paymentRequestMetrics = ref({
-  pendingCount: 0,
-  approvedCount: 0,
-  openCount: 0,
-  openTotalAmount: 0,
-  pendingTotalAmount: 0,
-  approvedTotalAmount: 0,
-})
-const pendingPaymentRequests = ref<PaymentRequest[]>([])
-const approvedPaymentRequests = ref<PaymentRequest[]>([])
 
 type OperationsTab = 'tickets' | 'tasks'
 const operationsTab = ref<OperationsTab>('tickets')
 
 const activeContractList = computed(() => {
   if (contractTab.value === 'unpaid') return unpaidContracts.value
-  if (contractTab.value === 'undelivered') return undeliveredContracts.value
   return draftContracts.value
 })
 
 const activeContractEmptyText = computed(() => {
   if (contractTab.value === 'unpaid') return t('dashboard.contracts.emptyUnpaid')
-  if (contractTab.value === 'undelivered') return t('dashboard.contracts.emptyUndelivered')
   return t('dashboard.contracts.emptyDraft')
 })
 
@@ -854,75 +624,14 @@ const contractDateForRow = (contract: Contract) => {
     : formatContractDate(contract.signed_date)
 }
 
-const activePaymentRequestList = computed(() =>
-  paymentRequestTab.value === 'pending' ? pendingPaymentRequests.value : approvedPaymentRequests.value,
-)
-
-const activePaymentRequestEmptyText = computed(() =>
-  paymentRequestTab.value === 'pending'
-    ? t('dashboard.paymentRequests.emptyPending')
-    : t('dashboard.paymentRequests.emptyApproved'),
-)
-
-const formatPaymentRequestDate = (value?: string | null) => {
-  if (!value) return '—'
-  return formatDateTime(value, false)
-}
-
-const paymentRequestStatusLabel = (status: PaymentRequestStatus) => t(`paymentRequests.status.${status}`)
-
-const paymentRequestStatusClass = (status: PaymentRequestStatus) => {
-  const map: Record<PaymentRequestStatus, string> = {
-    pending: 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300',
-    approved: 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300',
-    rejected: 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300',
-    paid: 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300',
-  }
-  return map[status] || 'bg-gray-100 text-gray-800'
-}
-
-const loadPaymentRequestDashboard = async () => {
-  if (!showPaymentRequestSection.value) return
-
-  paymentRequestLoading.value = true
-  try {
-    const data = await paymentRequestService.getDashboardSummary()
-    paymentRequestMetrics.value = {
-      pendingCount: data.pending_count,
-      approvedCount: data.approved_count,
-      openCount: data.open_count,
-      openTotalAmount: data.open_total_amount,
-      pendingTotalAmount: data.pending_total_amount,
-      approvedTotalAmount: data.approved_total_amount,
-    }
-    pendingPaymentRequests.value = data.pending_list || []
-    approvedPaymentRequests.value = data.approved_list || []
-  } catch (err) {
-    console.error('Error loading payment request dashboard:', err)
-    paymentRequestMetrics.value = {
-      pendingCount: 0,
-      approvedCount: 0,
-      openCount: 0,
-      openTotalAmount: 0,
-      pendingTotalAmount: 0,
-      approvedTotalAmount: 0,
-    }
-    pendingPaymentRequests.value = []
-    approvedPaymentRequests.value = []
-  } finally {
-    paymentRequestLoading.value = false
-  }
-}
-
 const loadContractDashboard = async () => {
   if (!showContractSection.value) return
 
   contractLoading.value = true
   try {
-    const [metricsRes, unpaidRes, undeliveredRes, draftRes] = await Promise.all([
-      apiClient.get('/reports/contracts'),
+    const [metricsRes, unpaidRes, draftRes] = await Promise.all([
+      apiClient.get('/contracts/dashboard-metrics'),
       contractService.list({ unpaid: true, limit: 10, page: 1 }),
-      contractService.list({ undelivered: true, limit: 10, page: 1 }),
       contractService.list({ status: 'draft', limit: 10, page: 1 }),
     ])
 
@@ -930,23 +639,17 @@ const loadContractDashboard = async () => {
       const data = metricsRes.data as {
         total_unpaid_debt?: number
         unpaid_count?: number
-        undelivered_device_count?: number
-        undelivered_contract_count?: number
         draft_count?: number
       }
       contractMetrics.value = {
         totalDebt: data.total_unpaid_debt || 0,
         unpaidCount: data.unpaid_count || 0,
-        undeliveredDevices: data.undelivered_device_count || 0,
-        undeliveredContractCount: data.undelivered_contract_count || 0,
         draftCount: data.draft_count || 0,
       }
     }
 
     unpaidContracts.value = unpaidRes.contracts || []
     unpaidContractsTotal.value = unpaidRes.total || 0
-    undeliveredContracts.value = undeliveredRes.contracts || []
-    undeliveredContractsTotal.value = undeliveredRes.total || 0
     draftContracts.value = draftRes.contracts || []
     draftContractsTotal.value = draftRes.total || 0
   } catch (err) {
@@ -954,14 +657,10 @@ const loadContractDashboard = async () => {
     contractMetrics.value = {
       totalDebt: 0,
       unpaidCount: 0,
-      undeliveredDevices: 0,
-      undeliveredContractCount: 0,
       draftCount: 0,
     }
     unpaidContracts.value = []
     unpaidContractsTotal.value = 0
-    undeliveredContracts.value = []
-    undeliveredContractsTotal.value = 0
     draftContracts.value = []
     draftContractsTotal.value = 0
   } finally {
@@ -1713,7 +1412,6 @@ watch(
 
 onMounted(() => {
   loadContractDashboard()
-  loadPaymentRequestDashboard()
   loadDashboardData()
 })
 

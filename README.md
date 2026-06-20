@@ -1,6 +1,6 @@
-# SGE After-Sales Management System
+# SSE After-Sales Management System
 
-Hệ thống quản lý hậu mãi cho sản phẩm SGE - Quản lý tickets, kỹ thuật viên, lịch trình, kho hàng và báo cáo dịch vụ.
+Hệ thống quản lý hậu mãi cho sản phẩm SSE - Quản lý tickets, kỹ thuật viên, lịch trình, kho hàng và báo cáo dịch vụ.
 
 ## 🚀 Tính năng chính
 
@@ -162,7 +162,7 @@ MIT License
 
 ## 👨‍💻 Tác giả
 
-SGE Development Team
+SSE Development Team
 
 ---
 

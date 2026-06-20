@@ -75,16 +75,6 @@ export enum Permission {
   VIEW_CONTRACTS = 'view_contracts',
   MANAGE_CONTRACTS = 'manage_contracts',
   VIEW_CONTRACT_FINANCE = 'view_contract_finance',
-
-  // Payment Requests
-  VIEW_PAYMENT_REQUESTS = 'view_payment_requests',
-  CREATE_PAYMENT_REQUEST = 'create_payment_request',
-  REVIEW_PAYMENT_REQUEST = 'review_payment_request',
-  DELETE_PAYMENT_REQUEST = 'delete_payment_request',
-
-  // Cash Fund
-  VIEW_CASH_FUND = 'view_cash_fund',
-  MANAGE_CASH_FUND = 'manage_cash_fund',
 }
 
 // Permissions kế toán không có — toàn bộ mục "Cài đặt thêm"
@@ -95,7 +85,6 @@ const ACCOUNTING_DENIED_PERMISSIONS: Permission[] = [
   Permission.EDIT_USER,
   Permission.DELETE_USER,
   Permission.VIEW_TECHNICIANS,
-  Permission.DELETE_PAYMENT_REQUEST,
 ]
 
 // Role permissions mapping
@@ -120,18 +109,8 @@ const rolePermissions: Record<UserRole, Permission[]> = {
     Permission.ASSIGN_TECHNICIAN,
     Permission.VIEW_SCHEDULE,
     Permission.VIEW_WAREHOUSE,
-    Permission.VIEW_REPORTS,
-    Permission.CREATE_REPORT,
-    Permission.EDIT_REPORT,
-    Permission.EXPORT_REPORT,
-    Permission.VIEW_ANALYTICS,
-    Permission.EXPORT_DATA,
     Permission.VIEW_CONTRACTS,
     Permission.MANAGE_CONTRACTS,
-    Permission.VIEW_PAYMENT_REQUESTS,
-    Permission.CREATE_PAYMENT_REQUEST,
-    Permission.VIEW_CASH_FUND,
-    Permission.MANAGE_CASH_FUND,
   ],
   [UserRole.TECHNICIAN]: [
     Permission.VIEW_INVERTERS,
@@ -142,8 +121,6 @@ const rolePermissions: Record<UserRole, Permission[]> = {
     Permission.VIEW_REPORTS,
     Permission.CREATE_REPORT,
     Permission.EDIT_REPORT,
-    Permission.VIEW_PAYMENT_REQUESTS,
-    Permission.CREATE_PAYMENT_REQUEST,
   ],
   [UserRole.DISTRIBUTOR]: [
     Permission.VIEW_INVERTERS,
@@ -159,8 +136,6 @@ const rolePermissions: Record<UserRole, Permission[]> = {
     Permission.VIEW_TICKETS,
     Permission.CREATE_TICKET,
     Permission.VIEW_REPORTS,
-    Permission.VIEW_PAYMENT_REQUESTS,
-    Permission.CREATE_PAYMENT_REQUEST,
   ],
   [UserRole.END_USER]: [
     Permission.VIEW_INVERTERS,
@@ -177,8 +152,6 @@ const rolePermissions: Record<UserRole, Permission[]> = {
     Permission.EXPORT_PARTS,
     Permission.VIEW_TICKETS,
     Permission.VIEW_INVERTERS,
-    Permission.VIEW_PAYMENT_REQUESTS,
-    Permission.CREATE_PAYMENT_REQUEST,
   ],
   [UserRole.ACCOUNTING]: Object.values(Permission).filter(
     (permission) => !ACCOUNTING_DENIED_PERMISSIONS.includes(permission),
@@ -305,6 +278,16 @@ export const logout = async () => {
   localStorage.removeItem('token')
 }
 
+const AUTH_SESSION_ERRORS = [
+  'User not found',
+  'Invalid or expired token',
+  'Access token required',
+  'Account is not active',
+]
+
+const isAuthSessionError = (message: string): boolean =>
+  AUTH_SESSION_ERRORS.some((part) => message.includes(part))
+
 // Fetch and update user info from API
 export const refreshUserInfo = async () => {
   try {
@@ -332,8 +315,11 @@ export const refreshUserInfo = async () => {
     localStorage.setItem('user', JSON.stringify(authenticatedUser))
     return authenticatedUser
   } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
     console.error('Error refreshing user info:', error)
-    // If API fails, keep existing user from localStorage
+    if (isAuthSessionError(message)) {
+      await logout()
+    }
     return currentUser.value
   }
 }

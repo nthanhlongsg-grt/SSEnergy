@@ -2,7 +2,7 @@
  * Import production SQLite DB for local dev.
  *
  * Usage:
- *   npm run db:import -- "C:/Users/.../Downloads/SGE.db"
+ *   npm run db:import -- "C:/Users/.../Downloads/SSE.db"
  *
  * Or set PRODUCTION_DB_PATH in env / .env
  */
@@ -19,13 +19,13 @@ const serverRoot = path.resolve(__dirname, '..')
 const sourceArg = process.argv[2] || process.env.PRODUCTION_DB_PATH
 if (!sourceArg) {
   console.error('❌ Thiếu đường dẫn file DB production.')
-  console.error('   npm run db:import -- "C:/Users/.../Downloads/SGE.db"')
+  console.error('   npm run db:import -- "C:/Users/.../Downloads/SSE.db"')
   process.exit(1)
 }
 
 const sourcePath = path.resolve(sourceArg)
 const targetDir = path.resolve(serverRoot, 'database')
-const targetPath = path.join(targetDir, 'SGE.db')
+const targetPath = path.join(targetDir, 'SSE.db')
 const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
 
 if (!fs.existsSync(sourcePath)) {
@@ -58,7 +58,7 @@ if (!fs.existsSync(targetDir)) {
 }
 
 if (fs.existsSync(targetPath)) {
-  const backupPath = path.join(targetDir, `SGE.db.local-backup-${timestamp}.db`)
+  const backupPath = path.join(targetDir, `SSE.db.local-backup-${timestamp}.db`)
   fs.copyFileSync(targetPath, backupPath)
   console.log(`💾 Backup DB local cũ → ${backupPath}`)
 }
@@ -80,7 +80,7 @@ function runNpmScript(script: string) {
     cwd: serverRoot,
     stdio: 'inherit',
     shell: true,
-    env: { ...process.env, DATABASE_PATH: './database/SGE.db' },
+    env: { ...process.env, DATABASE_PATH: './database/SSE.db' },
   })
   if (result.status !== 0) {
     throw new Error(`Script failed: ${script}`)

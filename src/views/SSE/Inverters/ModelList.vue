@@ -1010,7 +1010,7 @@ const closeImportModal = () => {
 
 const downloadTemplate = () => {
   const headers = ['name', 'type', 'description', 'manufacturer', 'capacity', 'status']
-  const exampleRow = ['MAX 10KTL3-X', 'Hòa lưới', 'Grid-tie inverter 10kW', 'SGE', '10', 'active']
+  const exampleRow = ['MAX 10KTL3-X', 'Hòa lưới', 'Grid-tie inverter 10kW', 'SSE', '10', 'active']
   
   const csvContent = [
     headers.join(','),

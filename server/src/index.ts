@@ -15,13 +15,10 @@ import technicianRoutes from './routes/technicians.js'
 import notificationRoutes from './routes/notifications.js'
 import syncRoutes from './routes/sync.js'
 import distributorRoutes from './routes/distributors.js'
-import reportRoutes from './routes/reports.js'
 import slaSettingsRoutes from './routes/sla-settings.js'
 import autoAssignSettingsRoutes from './routes/auto-assign-settings.js'
 import contractRoutes from './routes/contracts.js'
 import quotationRoutes from './routes/quotation.js'
-import paymentRequestRoutes from './routes/payment-requests.js'
-import cashFundRoutes from './routes/cash-fund.js'
 import { formatTimestampsInResponse } from './utils/dateTime.js'
 import { maskSystemData } from './utils/systemUser.js'
 import './database/db.js' // Initialize database
@@ -117,10 +114,10 @@ app.use((req, res, next) => {
 
 // Health check
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', message: 'SGE API is running' })
+  res.json({ status: 'ok', message: 'SSE API is running' })
 })
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', message: 'SGE API is running' })
+  res.json({ status: 'ok', message: 'SSE API is running' })
 })
 
 // Routes
@@ -138,13 +135,10 @@ app.use('/api/technicians', technicianRoutes)
 app.use('/api/notifications', notificationRoutes)
 app.use('/api/sync', syncRoutes)
 app.use('/api/distributors', distributorRoutes)
-app.use('/api/reports', reportRoutes)
 app.use('/api/sla-settings', slaSettingsRoutes)
 app.use('/api/auto-assign-settings', autoAssignSettingsRoutes)
 app.use('/api/contracts', contractRoutes)
 app.use('/api/quotation', quotationRoutes)
-app.use('/api/payment-requests', paymentRequestRoutes)
-app.use('/api/cash-fund', cashFundRoutes)
 
 // Error handling middleware
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {

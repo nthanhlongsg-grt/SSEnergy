@@ -1760,7 +1760,7 @@ const generateSignature = async (name: string): Promise<string> => {
       resolve(signatureBase64)
     }
     
-    // Load SGE logo
+    // Load SSE logo
     const logoImg = new Image()
     logoImg.crossOrigin = 'anonymous'
     
@@ -2575,7 +2575,7 @@ const loadTicket = async () => {
     applyReportFromTicket(ticketData as { report_url?: string; id?: number; status?: string })
     
     // Debug: ticket-level attachments vs comment-linked images
-    const commentImageCount = (ticketData.comments || []).reduce(
+    const commentImageCount = ((ticketData as any).comments || []).reduce(
       (sum: number, c: { images?: unknown[] }) => sum + (c.images?.length || 0),
       0,
     )

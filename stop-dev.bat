@@ -1,6 +1,6 @@
 @echo off
 echo ========================================
-echo Stopping All SGE Demo Servers
+echo Stopping All SSE Demo Servers
 echo ========================================
 echo.
 

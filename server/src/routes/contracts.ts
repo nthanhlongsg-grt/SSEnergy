@@ -337,6 +337,52 @@ router.get('/stats', authenticateToken, (req, res) => {
   }
 })
 
+// GET /api/contracts/dashboard-metrics — tóm tắt HĐ cho dashboard
+router.get('/dashboard-metrics', authenticateToken, (req, res) => {
+  try {
+    const user = (req as AuthRequest).user!
+    if (!isStaffRole(user.role)) {
+      return res.status(403).json({ error: 'Không có quyền xem thống kê hợp đồng' })
+    }
+
+    const allUnpaid = db
+      .prepare(
+        `SELECT COUNT(*) as unpaid_count, COALESCE(SUM(c.value), 0) as total_unpaid_debt
+         FROM contracts c WHERE ${ACTIVE_UNPAID_SQL}`,
+      )
+      .get() as { unpaid_count: number; total_unpaid_debt: number }
+
+    const draftStats = db
+      .prepare(`SELECT COUNT(*) as draft_count FROM contracts WHERE status = 'draft'`)
+      .get() as { draft_count: number }
+
+    const undeliveredContracts = db
+      .prepare(`SELECT COUNT(*) as undelivered_contract_count FROM contracts c WHERE ${ACTIVE_UNDELIVERED_SQL}`)
+      .get() as { undelivered_contract_count: number }
+
+    const undeliveredDevices = db
+      .prepare(
+        `SELECT COUNT(DISTINCT ci.inverter_id) as undelivered_device_count
+         FROM contract_inverters ci
+         JOIN contracts c ON c.id = ci.contract_id
+         WHERE ${ACTIVE_UNDELIVERED_SQL}`,
+      )
+      .get() as { undelivered_device_count: number }
+
+    const showFinance = canViewContractFinance(user.role)
+
+    res.json({
+      total_unpaid_debt: showFinance ? allUnpaid.total_unpaid_debt : 0,
+      unpaid_count: allUnpaid.unpaid_count,
+      draft_count: draftStats.draft_count,
+      undelivered_contract_count: undeliveredContracts.undelivered_contract_count,
+      undelivered_device_count: undeliveredDevices.undelivered_device_count,
+    })
+  } catch (err: any) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
 // GET /api/contracts/:id
 router.get('/:id', authenticateToken, (req, res) => {
   try {

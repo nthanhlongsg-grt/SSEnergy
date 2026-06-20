@@ -2,19 +2,19 @@ cd ~
 export PATH="$HOME/.nodenv/versions/18/bin:$PATH"
 
 # Xóa thư mục cũ, clone mới
-rm -rf ~/SGE
-git clone https://github.com/nthanhlongsg-grt/SGE.git SGE
+rm -rf ~/SSE
+git clone https://github.com/nthanhlongsg-grt/SSE.git SSE
 
 # Build
-cd ~/SGE/server
+cd ~/SSE/server
 npm install
 npm run build
 
 # Copy dist mới vào app đang chạy
-cp -r ~/SGE/server/dist/* ~/baohanh.sgesolartech.vn/sge-api/dist/
+cp -r ~/SSE/server/dist/* ~/baohanh.sgesolartech.vn/sge-api/dist/
 
 # Dọn dẹp
-rm -rf ~/SGE
+rm -rf ~/SSE
 
 kill process
 

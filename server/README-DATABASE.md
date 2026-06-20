@@ -1,8 +1,8 @@
-# Database Schema - SGE After-Sales Management System
+# Database Schema - SSE After-Sales Management System
 
 ## Tổng quan
 
-Database sử dụng SQLite để lưu trữ dữ liệu cho hệ thống quản lý hậu mãi SGE.
+Database sử dụng SQLite để lưu trữ dữ liệu cho hệ thống quản lý hậu mãi SSE.
 
 ## Các bảng chính
 
@@ -18,7 +18,7 @@ Thông tin khách hàng
 
 ### 3. distributors
 Thông tin đại lý/nhà phân phối
-- Quản lý các đại lý phân phối sản phẩm SGE
+- Quản lý các đại lý phân phối sản phẩm SSE
 
 ### 4. inverters
 Thông tin thiết bị inverter
@@ -107,7 +107,7 @@ npm run db:seed
 
 ## Database Location
 
-Database file: `server/database/SGE.db`
+Database file: `server/database/SSE.db`
 
 File này sẽ tự động được tạo khi chạy server lần đầu.
 
@@ -115,13 +115,13 @@ File này sẽ tự động được tạo khi chạy server lần đầu.
 
 ```bash
 # Copy database file
-cp server/database/SGE.db server/database/SGE.db.backup
+cp server/database/SSE.db server/database/SSE.db.backup
 ```
 
 ## Reset Database
 
 ```bash
 # Xóa database và tạo lại
-rm server/database/SGE.db
+rm server/database/SSE.db
 npm run db:seed:full
 ```

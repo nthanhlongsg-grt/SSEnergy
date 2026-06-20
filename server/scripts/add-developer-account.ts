@@ -30,7 +30,7 @@ const addDeveloperAccount = async () => {
       db.prepare(`
         INSERT INTO users (name, email, password, code, role, organization, status)
         VALUES (?, ?, ?, ?, ?, ?, ?)
-      `).run(name, email, hashedPassword, 'DEV001', role, 'SGE Development', 'active')
+      `).run(name, email, hashedPassword, 'DEV001', role, 'SSE Development', 'active')
       console.log(`  ✓ Created developer account: ${email}`)
     }
 

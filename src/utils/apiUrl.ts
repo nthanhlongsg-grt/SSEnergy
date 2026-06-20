@@ -10,8 +10,8 @@ const SAME_ORIGIN_API_HOSTS = new Set([
   'baohanh.sgesolartech.vn',
   'sgesolartech.vn',
   'www.sgesolartech.vn',
-  'SGEvietnam.com',
-  'www.SGEvietnam.com',
+  'SSEvietnam.com',
+  'www.SSEvietnam.com',
 ])
 
 function stripTrailingSlash(url: string): string {

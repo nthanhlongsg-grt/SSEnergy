@@ -8,7 +8,7 @@
             Quản lý RMA (Return Merchandise Authorization)
           </h1>
           <p class="text-gray-500 dark:text-gray-400 mt-1">
-            Quản lý RMA gửi về Trung Quốc - Trung tâm dịch vụ SGE
+            Quản lý RMA gửi về Trung Quốc - Trung tâm dịch vụ SSE
           </p>
         </div>
         <button

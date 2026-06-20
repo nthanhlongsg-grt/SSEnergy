@@ -16,13 +16,16 @@
           <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
             <div class="space-y-1">
               <p class="text-sm font-semibold text-gray-800 dark:text-white">
-                CÔNG TY TNHH THƯƠNG MẠI VÀ DỊCH VỤ SGE
+                {{ COMPANY.name }}
               </p>
               <p class="text-xs text-gray-500 dark:text-gray-400">
-                MST: <span class="font-mono">3703455937</span>
+                MST: <span class="font-mono">{{ COMPANY.taxCode }}</span>
               </p>
               <p class="text-xs text-gray-500 dark:text-gray-400">
-                12E1 đường số 4, KDC Vĩnh Phú 1, Phường Bình Hòa, TP Hồ Chí Minh, Việt Nam
+                {{ COMPANY.address }}
+              </p>
+              <p class="text-xs text-gray-500 dark:text-gray-400">
+                Người đại diện: {{ COMPANY.representative }}
               </p>
             </div>
             <div class="space-y-1.5 md:text-right">
@@ -30,16 +33,16 @@
                 <svg class="h-3.5 w-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
                 </svg>
-                <a href="mailto:sge.company2026@gmail.com" class="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
-                  sge.company2026@gmail.com
+                <a :href="`mailto:${COMPANY.email}`" class="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+                  {{ COMPANY.email }}
                 </a>
               </p>
               <p class="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1.5 md:justify-end">
                 <svg class="h-3.5 w-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
                 </svg>
-                TK: <span class="font-mono font-medium text-gray-700 dark:text-gray-300 mx-1">67852068</span>
-                – MB Bank (CN Thuận An)
+                TK: <span class="font-mono font-medium text-gray-700 dark:text-gray-300 mx-1">{{ COMPANY.bankAccount }}</span>
+                – {{ COMPANY.bankLabel }}
               </p>
             </div>
           </div>
@@ -52,6 +55,7 @@
 
 <script setup lang="ts">
 import { useSidebar } from '@/composables/useSidebar'
+import { COMPANY } from '@/constants/company'
 import AppHeader from './AppHeader.vue'
 import AppSidebar from './AppSidebar.vue'
 import Backdrop from './Backdrop.vue'

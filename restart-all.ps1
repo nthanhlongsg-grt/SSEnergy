@@ -1,7 +1,7 @@
 # Script to restart all servers (backend and frontend)
 
 Write-Host "========================================" -ForegroundColor Cyan
-Write-Host "Restarting All SGE Servers" -ForegroundColor Yellow
+Write-Host "Restarting All SSE Servers" -ForegroundColor Yellow
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
 

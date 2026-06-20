@@ -1,14 +1,6 @@
 import { amountToVietnameseWords } from './numberToWords'
 import { getApiBaseUrl } from './apiUrl'
-
-// Thông tin công ty (cố định theo mẫu báo giá SGE)
-const COMPANY = {
-  name: 'CÔNG TY TNHH THƯƠNG MẠI VÀ DỊCH VỤ SGE',
-  address: '12A1 đường số 4, KDC Vĩnh Phú 1, Phường Bình Hòa, TP Hồ Chí Minh, Việt Nam',
-  taxCode: '3703455937',
-  email: 'sge.company2026@gmail.com',
-  director: 'ĐINH THỊ THU NGA',
-}
+import { COMPANY } from '@/constants/company'
 
 interface QuotationItem {
   description?: string
@@ -81,7 +73,7 @@ export function buildQuotationHtml(
 ): string {
   const showContact = options.showContact !== false
   const origin = typeof window !== 'undefined' ? window.location.origin : ''
-  const logoUrl = `${origin}/images/logo/SGElogo.png`
+  const logoUrl = `${origin}/images/logo/SSElogo.png`
   const stampSrc = stampDataUrl || ''
 
   const items = Array.isArray(contract.items) ? contract.items : []
@@ -209,7 +201,7 @@ export function buildQuotationHtml(
 
   <div class="page">
   <div class="header">
-    <img class="logo" src="${logoUrl}" alt="SGE" />
+    <img class="logo" src="${logoUrl}" alt="SSE" />
     <div class="company">
       <div class="name">${esc(COMPANY.name)}</div>
       <div class="line"><b>Địa chỉ:</b> ${esc(COMPANY.address)}</div>
@@ -288,7 +280,7 @@ export function buildQuotationHtml(
       <div class="role">Giám đốc</div>
       <div class="sub">(Ký, họ tên, đóng dấu)</div>
       ${stampSrc ? `<img class="stamp" src="${stampSrc}" alt="stamp" />` : ''}
-      <div class="director-name">${esc(COMPANY.director)}</div>
+      <div class="director-name">${esc(COMPANY.representative)}</div>
     </div>
   </div>
   </div>

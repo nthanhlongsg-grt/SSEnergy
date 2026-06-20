@@ -1,6 +1,6 @@
 # Deploy — https://baohanh.sgesolartech.vn/
 
-Portal bảo hành SGE: Vue 3 (Vite) + Express (SQLite), chạy trên Linux với Nginx reverse proxy.
+Portal bảo hành SSE: Vue 3 (Vite) + Express (SQLite), chạy trên Linux với Nginx reverse proxy.
 
 ## Kiến trúc
 
@@ -60,7 +60,7 @@ npm run smoke:api:baohanh
 curl https://baohanh.sgesolartech.vn/api/health
 ```
 
-Kỳ vọng: `{"status":"ok","message":"SGE API is running"}`
+Kỳ vọng: `{"status":"ok","message":"SSE API is running"}`
 
 ## cPanel / Mắt Bão
 
@@ -73,5 +73,5 @@ Kỳ vọng: `{"status":"ok","message":"SGE API is running"}`
 
 - Đổi `JWT_SECRET` mạnh trên production
 - Không commit `server/.env`
-- SQLite: backup định kỳ `database/SGE.db`
+- SQLite: backup định kỳ `database/SSE.db`
 - `better-sqlite3`: trên server chạy `npm rebuild better-sqlite3` nếu đổi phiên bản Node

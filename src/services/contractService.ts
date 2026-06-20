@@ -20,7 +20,6 @@ export interface ContractItem {
 export interface ContractPaperwork {
   invoice_date?: string | null
   payment_received_date?: string | null
-  device_delivery_date?: string | null
   paper_sent_date?: string | null
   shipping_carrier?: string | null
   tracking_number?: string | null
@@ -73,7 +72,6 @@ export interface ContractListParams {
   search?: string
   contract_type?: string
   unpaid?: boolean
-  undelivered?: boolean
   from?: string
   to?: string
   page?: number
@@ -88,7 +86,6 @@ export const contractService = {
     if (params.customer_id) query.set('customer_id', String(params.customer_id))
     if (params.search) query.set('search', params.search)
     if (params.unpaid) query.set('unpaid', '1')
-    if (params.undelivered) query.set('undelivered', '1')
     if (params.from) query.set('from', params.from)
     if (params.to) query.set('to', params.to)
     if (params.page) query.set('page', String(params.page))
@@ -128,16 +125,6 @@ export const contractService = {
       body: JSON.stringify(data),
     })
     if (!res.ok) throw new Error((await res.json()).error || 'Lỗi cập nhật hợp đồng')
-    return res.json() as Promise<Contract>
-  },
-
-  async updateStatus(id: number, status: Contract['status']) {
-    const res = await fetch(`${BASE}/${id}/status`, {
-      method: 'PATCH',
-      headers: authHeaders(),
-      body: JSON.stringify({ status }),
-    })
-    if (!res.ok) throw new Error((await res.json()).error || 'Lỗi cập nhật trạng thái hợp đồng')
     return res.json() as Promise<Contract>
   },
 

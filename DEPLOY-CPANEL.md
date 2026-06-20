@@ -85,7 +85,7 @@ Tạo file `.env` với nội dung:
 PORT=3000
 NODE_ENV=production
 JWT_SECRET=your-secret-key-here
-CORS_ORIGIN=https://SGEvietnam.com
+CORS_ORIGIN=https://SSEvietnam.com
 TZ=Asia/Ho_Chi_Minh
 ```
 
@@ -114,7 +114,7 @@ npm install --production
 2. Chọn app → **Edit**
 3. Cấu hình:
    - **Application startup file**: `dist/index.js`
-   - **Application URL**: `/api` (hoặc subdomain như `api.SGEvietnam.com`)
+   - **Application URL**: `/api` (hoặc subdomain như `api.SSEvietnam.com`)
    - **Environment variables**: Thêm các biến từ `.env`
 4. Click **Save** và **Restart App**
 
@@ -165,7 +165,7 @@ Tạo file `.htaccess` với nội dung:
 Tạo file `.env.production` trong thư mục root (trước khi build):
 
 ```env
-VITE_API_URL=https://SGEvietnam.com/api
+VITE_API_URL=https://SSEvietnam.com/api
 ```
 
 Sau đó build lại:
@@ -208,10 +208,10 @@ node dist/database/migrate.js
 
 ## ✅ Bước 8: Kiểm tra
 
-1. **Backend**: Truy cập `https://SGEvietnam.com/api/health`
-   - Kết quả mong đợi: `{"status":"ok","message":"SGE API is running"}`
+1. **Backend**: Truy cập `https://SSEvietnam.com/api/health`
+   - Kết quả mong đợi: `{"status":"ok","message":"SSE API is running"}`
 
-2. **Frontend**: Truy cập `https://SGEvietnam.com`
+2. **Frontend**: Truy cập `https://SSEvietnam.com`
    - Kiểm tra trang load thành công
    - Kiểm tra login/register hoạt động
    - Kiểm tra API calls trong DevTools > Network

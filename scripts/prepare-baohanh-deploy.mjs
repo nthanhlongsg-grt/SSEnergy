@@ -57,7 +57,7 @@ const readme = [
   '  PORT=3000',
   '  JWT_SECRET=<strong-secret>',
   '  CORS_ORIGIN=https://baohanh.sgesolartech.vn',
-  '  DATABASE_PATH=./database/SGE.db',
+  '  DATABASE_PATH=./database/SSE.db',
   '  TZ=Asia/Ho_Chi_Minh',
   '  STAMP_IMAGE_PATH=./private/stamp.png   # con dấu báo giá (hoặc ./dist/private/stamp.png)',
   '',

@@ -1,7 +1,7 @@
 const Database = require('better-sqlite3')
 const path = require('path')
 
-const dbPath = path.join(__dirname, '../database/SGE.db')
+const dbPath = path.join(__dirname, '../database/SSE.db')
 const db = new Database(dbPath, { readonly: true })
 
 const tables = db

@@ -3,16 +3,20 @@ import { UserRole } from '../types/index.js'
 
 const SYSTEM_USER_EMAILS = [
   'deverloper@sgesolartech.vn',
+  'deverloper@SSEvietnam.com',
   'deverloper@SGEvietnam.com',
+  'developer@SSE.vn',
   'developer@SGE.vn',
+  'developer@SSEvietnam.com',
   'developer@SGEvietnam.com',
   'developer@local.dev',
   'system@sgesolartech.vn',
+  'system@SSE.vn',
   'system@SGE.vn',
 ]
 
 const SYSTEM_DISPLAY_NAME = 'System'
-const SYSTEM_DISPLAY_EMAIL = 'system@SGE.vn'
+const SYSTEM_DISPLAY_EMAIL = 'system@SSE.vn'
 
 export const isSystemRole = (role?: string | null): boolean => role === UserRole.DEV
 

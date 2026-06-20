@@ -8,7 +8,7 @@
             Quản lý Linh kiện (Function đang phát triển, dữ liệu ở dưới chỉ để minh họa giao diện.)
           </h1>
           <p class="text-gray-500 dark:text-gray-400 mt-1">
-            Quản lý tồn kho linh kiện thay thế theo mã SGE()
+            Quản lý tồn kho linh kiện thay thế theo mã SSE()
           </p>
         </div>
         <div class="flex gap-2">

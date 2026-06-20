@@ -3,7 +3,7 @@
     <div class="space-y-6 px-4 sm:px-0">
       <div>
         <h1 class="text-xl font-bold text-gray-900 dark:text-white">Hợp đồng của tôi</h1>
-        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Theo dõi trạng thái và chi tiết hợp đồng</p>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Theo dõi chi tiết hợp đồng</p>
       </div>
 
       <div class="flex flex-col sm:flex-row gap-3">
@@ -19,17 +19,6 @@
             class="w-full pl-9 pr-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
-        <select
-          v-model="filters.status"
-          @change="loadContracts"
-          class="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-        >
-          <option value="">Tất cả trạng thái</option>
-          <option value="draft">Nháp</option>
-          <option value="active">Hiệu lực</option>
-          <option value="expired">Hết hạn</option>
-          <option value="cancelled">Đã hủy</option>
-        </select>
       </div>
 
       <div v-if="error" class="rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-4">
@@ -49,7 +38,7 @@
                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase hidden sm:table-cell">Loại</th>
                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase hidden md:table-cell">Ngày ký</th>
                 <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase hidden lg:table-cell">Giá trị</th>
-                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Trạng thái / Thanh toán / Giao máy</th>
+                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Thanh toán</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
@@ -75,17 +64,9 @@
                   {{ formatCurrency(c.value) }}
                 </td>
                 <td class="px-4 py-3 text-center">
-                  <div class="flex flex-col items-center gap-1">
-                    <span :class="statusClass(c.status)" class="px-2 py-0.5 rounded-full text-xs font-medium">
-                      {{ statusLabel(c.status) }}
-                    </span>
-                    <span :class="paymentStatusClass(isContractPaid(c))" class="px-2 py-0.5 rounded-full text-xs font-medium">
-                      {{ getPaymentStatusLabel(c) }}
-                    </span>
-                    <span :class="deviceDeliveryStatusClass(isContractDeviceDelivered(c))" class="px-2 py-0.5 rounded-full text-xs font-medium">
-                      {{ getDeviceDeliveryStatusLabel(c) }}
-                    </span>
-                  </div>
+                  <span :class="paymentStatusClass(isContractPaid(c))" class="px-2 py-0.5 rounded-full text-xs font-medium">
+                    {{ getPaymentStatusLabel(c) }}
+                  </span>
                 </td>
               </tr>
               <tr v-if="!loading && contracts.length === 0">
@@ -106,13 +87,13 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import { contractService, type Contract } from '@/services/contractService'
-import { isContractPaid, getPaymentStatusLabel, paymentStatusClass, isContractDeviceDelivered, getDeviceDeliveryStatusLabel, deviceDeliveryStatusClass } from '@/utils/contractPaperwork'
+import { isContractPaid, getPaymentStatusLabel, paymentStatusClass } from '@/utils/contractPaperwork'
 
 const router = useRouter()
 const contracts = ref<Contract[]>([])
 const loading = ref(true)
 const error = ref('')
-const filters = ref({ search: '', status: '', page: 1, limit: 50 })
+const filters = ref({ search: '', page: 1, limit: 50 })
 
 let debounceTimer: ReturnType<typeof setTimeout> | null = null
 
@@ -129,7 +110,6 @@ async function loadContracts() {
   error.value = ''
   try {
     const res = await contractService.list({
-      status: filters.value.status || undefined,
       search: filters.value.search || undefined,
       page: filters.value.page,
       limit: filters.value.limit,
@@ -149,21 +129,6 @@ function formatDate(d: string) {
 function formatCurrency(v: number) {
   if (!v) return '—'
   return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(v)
-}
-
-function statusLabel(s: string) {
-  const map: Record<string, string> = { draft: 'Nháp', active: 'Hiệu lực', expired: 'Hết hạn', cancelled: 'Đã hủy' }
-  return map[s] ?? s
-}
-
-function statusClass(s: string) {
-  const map: Record<string, string> = {
-    draft: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300',
-    active: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300',
-    expired: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
-    cancelled: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300',
-  }
-  return map[s] ?? 'bg-gray-100 text-gray-600'
 }
 
 function typeLabel(t: string) {

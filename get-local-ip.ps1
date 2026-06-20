@@ -8,7 +8,7 @@ param(
 
 Write-Host ""
 Write-Host ("=" * 60) -ForegroundColor Cyan
-Write-Host "SGE LAN Access Information".PadRight(60) -ForegroundColor Cyan
+Write-Host "SSE LAN Access Information".PadRight(60) -ForegroundColor Cyan
 Write-Host ("=" * 60) -ForegroundColor Cyan
 Write-Host ""
 
