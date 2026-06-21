@@ -13,6 +13,30 @@
       </div>
     </div>
 
+    <!-- Stats -->
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+      <div class="rounded-xl p-3 border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+        <p class="text-xs text-gray-500 dark:text-gray-400">{{ t('customers.inverters.list.stats.total') }}</p>
+        <p class="text-2xl font-bold mt-1 text-gray-900 dark:text-white">{{ stats.total }}</p>
+      </div>
+      <div class="rounded-xl p-3 border bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-700">
+        <p class="text-xs text-green-600 dark:text-green-400">{{ t('customers.inverters.list.stats.active') }}</p>
+        <p class="text-2xl font-bold mt-1 text-green-700 dark:text-green-300">{{ stats.active }}</p>
+      </div>
+      <div class="rounded-xl p-3 border bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-700">
+        <p class="text-xs text-red-600 dark:text-red-400">{{ t('customers.inverters.list.stats.expired') }}</p>
+        <p class="text-2xl font-bold mt-1 text-red-700 dark:text-red-300">{{ stats.expired }}</p>
+      </div>
+      <div class="rounded-xl p-3 border bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-700">
+        <p class="text-xs text-amber-600 dark:text-amber-400">{{ t('customers.inverters.list.stats.expiringSoon') }}</p>
+        <p class="text-2xl font-bold mt-1 text-amber-700 dark:text-amber-300">{{ stats.expiring_soon }}</p>
+      </div>
+      <div class="rounded-xl p-3 border bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-700 col-span-2 sm:col-span-1">
+        <p class="text-xs text-yellow-700 dark:text-yellow-400">{{ t('customers.inverters.list.stats.pending') }}</p>
+        <p class="text-2xl font-bold mt-1 text-yellow-800 dark:text-yellow-300">{{ stats.pending }}</p>
+      </div>
+    </div>
+
     <!-- Filters -->
     <div class="rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-3 sm:p-4 shadow-sm">
       <div class="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
@@ -184,7 +208,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onActivated } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
@@ -197,11 +221,26 @@ const router = useRouter()
 const loading = ref(true)
 const error = ref<string | null>(null)
 const inverters = ref<Inverter[]>([])
+const stats = ref({
+  total: 0,
+  active: 0,
+  expired: 0,
+  pending: 0,
+  expiring_soon: 0,
+})
 const filters = ref({
   search: '',
   model: '',
   status: '',
 })
+
+const loadStats = async () => {
+  try {
+    stats.value = await inverterService.getStats()
+  } catch (err) {
+    console.error('Error loading inverter stats:', err)
+  }
+}
 
 const loadInverters = async () => {
   try {
@@ -239,6 +278,12 @@ const formatDate = (dateString?: string | null) => {
 }
 
 onMounted(() => {
+  loadStats()
+  loadInverters()
+})
+
+onActivated(() => {
+  loadStats()
   loadInverters()
 })
 </script>

@@ -904,6 +904,13 @@ const vi = {
         all: 'Tất cả',
         filter: 'Lọc',
       },
+      stats: {
+        total: 'Tổng thiết bị',
+        active: 'Đang bảo hành',
+        expired: 'Hết bảo hành',
+        pending: 'Chờ kích hoạt',
+        expiringSoon: 'Sắp hết BH (45 ngày)',
+      },
       table: {
         serialNumber: 'Serial Number',
         model: 'Model',
@@ -1807,6 +1814,13 @@ const vi = {
         status: {
           active: 'Hoạt động',
           inactive: 'Không hoạt động',
+        },
+        stats: {
+          total: 'Tổng thiết bị',
+          active: 'Đang bảo hành',
+          expired: 'Hết bảo hành',
+          pending: 'Chờ kích hoạt',
+          expiringSoon: 'Sắp hết BH (45 ngày)',
         },
         table: {
           columns: {

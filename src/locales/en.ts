@@ -902,6 +902,13 @@ const en = {
         all: 'All',
         filter: 'Filter',
       },
+      stats: {
+        total: 'Total Devices',
+        active: 'Under Warranty',
+        expired: 'Warranty Expired',
+        pending: 'Pending Activation',
+        expiringSoon: 'Expiring Soon (45 days)',
+      },
       table: {
         serialNumber: 'Serial Number',
         model: 'Model',
@@ -1801,6 +1808,13 @@ const en = {
         status: {
           active: 'Active',
           inactive: 'Inactive',
+        },
+        stats: {
+          total: 'Total Devices',
+          active: 'Under Warranty',
+          expired: 'Warranty Expired',
+          pending: 'Pending Activation',
+          expiringSoon: 'Expiring Soon (45 days)',
         },
         table: {
           columns: {

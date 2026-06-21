@@ -9,9 +9,9 @@ const sharedDateLocale = {
 }
 
 /** Parse dd/mm/yyyy, dd-mm-yyyy hoặc yyyy-mm-dd khi gõ/dán tay */
-function parseFlexibleDateInput(datestr: string): Date | undefined {
+function parseFlexibleDateInput(datestr: string): Date {
   const s = datestr.trim()
-  if (!s) return undefined
+  if (!s) return new Date(NaN)
   if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
     const [y, m, d] = s.split('-').map(Number)
     return new Date(y, m - 1, d)
@@ -21,7 +21,7 @@ function parseFlexibleDateInput(datestr: string): Date | undefined {
     return new Date(Number(dmY[3]), Number(dmY[2]) - 1, Number(dmY[1]))
   }
   const parsed = new Date(s)
-  return Number.isNaN(parsed.getTime()) ? undefined : parsed
+  return Number.isNaN(parsed.getTime()) ? new Date(NaN) : parsed
 }
 
 export const useFlatpickrConfig = () => {

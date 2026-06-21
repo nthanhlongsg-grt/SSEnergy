@@ -141,6 +141,29 @@ export const inverterService = {
     }
     return response.data
   },
+
+  async getStats(): Promise<{
+    total: number
+    active: number
+    expired: number
+    pending: number
+    expiring_soon: number
+  }> {
+    const response = await apiClient.get<{
+      total: number
+      active: number
+      expired: number
+      pending: number
+      expiring_soon: number
+    }>('/inverters/stats')
+    if (response.error) {
+      throw new Error(response.error)
+    }
+    if (!response.data) {
+      throw new Error('Failed to fetch inverter stats')
+    }
+    return response.data
+  },
 }
 
 

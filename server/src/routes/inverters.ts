@@ -232,6 +232,63 @@ router.get('/', authenticateToken, (req: AuthRequest, res) => {
   }
 })
 
+// Get inverter statistics
+router.get('/stats', authenticateToken, (req: AuthRequest, res) => {
+  try {
+    const user = req.user!
+
+    let baseQuery = `
+      FROM inverters i
+      LEFT JOIN customers c ON i.customer_id = c.id
+      WHERE EXISTS (
+        SELECT 1 FROM contract_inverters ci WHERE ci.inverter_id = i.id
+      )
+    `
+    const params: unknown[] = []
+    baseQuery = appendContractPortalAccessFilter(user, baseQuery, params)
+
+    const row = db.prepare(`
+      SELECT
+        COUNT(*) AS total,
+        SUM(CASE
+          WHEN i.warranty_start_date IS NOT NULL AND i.warranty_end_date IS NOT NULL
+           AND i.warranty_end_date >= DATE('now')
+          THEN 1 ELSE 0 END) AS active,
+        SUM(CASE
+          WHEN i.warranty_start_date IS NOT NULL AND i.warranty_end_date IS NOT NULL
+           AND i.warranty_end_date < DATE('now')
+          THEN 1 ELSE 0 END) AS expired,
+        SUM(CASE
+          WHEN i.warranty_start_date IS NULL OR i.warranty_end_date IS NULL
+          THEN 1 ELSE 0 END) AS pending,
+        SUM(CASE
+          WHEN i.warranty_end_date IS NOT NULL
+           AND i.warranty_end_date >= DATE('now')
+           AND i.warranty_end_date <= DATE('now', '+45 days')
+          THEN 1 ELSE 0 END) AS expiring_soon
+      ${baseQuery}
+    `).get(...params) as {
+      total: number
+      active: number | null
+      expired: number | null
+      pending: number | null
+      expiring_soon: number | null
+    }
+
+    res.json({
+      total: row?.total ?? 0,
+      active: row?.active ?? 0,
+      expired: row?.expired ?? 0,
+      pending: row?.pending ?? 0,
+      expiring_soon: row?.expiring_soon ?? 0,
+    })
+  } catch (error) {
+    console.error('Get inverter stats error:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Internal server error'
+    res.status(500).json({ error: errorMessage })
+  }
+})
+
 // Get inverter by ID
 router.get('/:id', authenticateToken, (req: AuthRequest, res) => {
   try {
