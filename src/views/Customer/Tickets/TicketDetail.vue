@@ -1,9 +1,8 @@
 <template>
-  <admin-layout>
-    <div class="space-y-6">
-      <!-- Header -->
-    <div>
-      <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
+  <customer-layout>
+    <div class="space-y-4 sm:space-y-6 overflow-x-hidden">
+      <div>
+        <h1 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
         {{ t('customers.tickets.detail.header.title') }}
       </h1>
       <p class="text-gray-500 dark:text-gray-400 mt-1">
@@ -25,11 +24,9 @@
     </div>
 
     <!-- Content -->
-    <div v-else-if="ticket" class="space-y-6">
-      <!-- Ticket Info and Device Info Side by Side -->
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <!-- Ticket Info -->
-        <div class="rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
+    <div v-else-if="ticket" class="space-y-4 sm:space-y-6">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+        <div class="rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-4 sm:p-6 shadow-sm">
           <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
             {{ t('customers.tickets.detail.sections.ticketInfo') }}
           </h2>
@@ -303,21 +300,21 @@
               />
               <button
                 @click="removeImage(index)"
-                class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600 transition-colors opacity-0 group-hover:opacity-100"
+                class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-7 h-7 flex items-center justify-center text-sm hover:bg-red-600 transition-colors opacity-100 sm:opacity-0 sm:group-hover:opacity-100 touch-manipulation"
               >
                 ×
               </button>
             </div>
           </div>
           
-          <div class="mt-3 flex items-center justify-between">
+          <div class="mt-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <span v-if="selectedImages.length > 0" class="text-sm text-gray-500 dark:text-gray-400">
               {{ t('customers.tickets.detail.comments.selectedImages', { count: selectedImages.length }) }}
             </span>
             <button
               @click="addComment"
               :disabled="(!newComment.trim() && selectedImages.length === 0) || submittingComment"
-              class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              class="w-full sm:w-auto min-h-[44px] px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 active:bg-blue-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation sm:ml-auto"
             >
               {{ submittingComment ? t('customers.tickets.detail.comments.sending') : t('customers.tickets.detail.comments.send') }}
             </button>
@@ -361,7 +358,7 @@
         </div>
       </div>
     </div>
-  </admin-layout>
+  </customer-layout>
 </template>
 
 <script setup lang="ts">
@@ -370,7 +367,7 @@ import { useAutoRefresh } from '@/composables/useAutoRefresh'
 import { useChangeDetection } from '@/composables/useChangeDetection'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import AdminLayout from '@/components/layout/AdminLayout.vue'
+import CustomerLayout from '@/components/layout/CustomerLayout.vue'
 import { ticketService } from '@/services/ticketService'
 import { getApiBaseUrlWithoutApi } from '@/utils/apiUrl'
 import { resolveAttachmentUrl, resolveCommentImageSrc } from '@/utils/attachmentUrl'

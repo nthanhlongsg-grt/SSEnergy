@@ -1,5 +1,5 @@
 <template>
-  <admin-layout>
+  <customer-layout>
     <div class="max-w-4xl mx-auto space-y-4 sm:space-y-6">
       <!-- Header -->
       <div>
@@ -193,14 +193,14 @@
         </div>
       </form>
     </div>
-  </admin-layout>
+  </customer-layout>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import AdminLayout from '@/components/layout/AdminLayout.vue'
+import CustomerLayout from '@/components/layout/CustomerLayout.vue'
 import { inverterService } from '@/services/inverterService'
 import { apiClient } from '@/services/api'
 import flatPickr from 'vue-flatpickr-component'

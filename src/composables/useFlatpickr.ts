@@ -8,6 +8,22 @@ const sharedDateLocale = {
   firstDayOfWeek: 1,
 }
 
+/** Parse dd/mm/yyyy, dd-mm-yyyy hoặc yyyy-mm-dd khi gõ/dán tay */
+function parseFlexibleDateInput(datestr: string): Date | undefined {
+  const s = datestr.trim()
+  if (!s) return undefined
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
+    const [y, m, d] = s.split('-').map(Number)
+    return new Date(y, m - 1, d)
+  }
+  const dmY = s.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/)
+  if (dmY) {
+    return new Date(Number(dmY[3]), Number(dmY[2]) - 1, Number(dmY[1]))
+  }
+  const parsed = new Date(s)
+  return Number.isNaN(parsed.getTime()) ? undefined : parsed
+}
+
 export const useFlatpickrConfig = () => {
   // Date picker config (date only, no time) — hiển thị dd/mm/yyyy qua altInput
   const dateConfig = {
@@ -16,6 +32,8 @@ export const useFlatpickrConfig = () => {
     altFormat: 'd/m/Y',
     altInputPlaceholder: 'dd/mm/yyyy',
     disableMobile: true,
+    allowInput: true,
+    parseDate: (datestr: string) => parseFlexibleDateInput(datestr),
     locale: sharedDateLocale,
   }
 

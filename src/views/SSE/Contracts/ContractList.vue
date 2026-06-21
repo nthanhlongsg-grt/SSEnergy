@@ -523,7 +523,13 @@
                     placeholder="VD: NMT 500kWp"
                     class="px-2.5 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 w-full min-w-0"
                   />
-                  <AppDatePicker v-model="dev.warranty_start_date" input-class="w-full min-w-0 px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  <input
+                    v-model="dev.warranty_start_date"
+                    type="text"
+                    inputmode="numeric"
+                    placeholder="dd/mm/yyyy"
+                    class="w-full min-w-0 px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono"
+                  />
                   <input
                     v-model.number="dev.warranty_months"
                     type="number"
@@ -595,7 +601,13 @@
                     placeholder="VD: NMT 500kWp"
                     class="px-2.5 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 w-full min-w-0"
                   />
-                  <AppDatePicker v-model="dev.warranty_start_date" input-class="w-full min-w-0 px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  <input
+                    v-model="dev.warranty_start_date"
+                    type="text"
+                    inputmode="numeric"
+                    placeholder="dd/mm/yyyy"
+                    class="w-full min-w-0 px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono"
+                  />
                   <input
                     v-model.number="dev.warranty_months"
                     type="number"
@@ -683,9 +695,8 @@ import 'flatpickr/dist/flatpickr.css'
 import { useFlatpickrConfig } from '@/composables/useFlatpickr'
 import { useAuth, UserRole } from '@/composables/useAuth'
 import { isContractPaid, getPaymentStatusLabel, paymentStatusClass } from '@/utils/contractPaperwork'
-import { getVietnamWeekRange, getVietnamFullMonthRange, getVietnamYearRange } from '@/utils/dateTime'
+import { getVietnamWeekRange, getVietnamFullMonthRange, getVietnamYearRange, formatIsoToDdMmYyyy, parseDdMmYyyyToIso } from '@/utils/dateTime'
 import { useToast } from '@/composables/useToast'
-import AppDatePicker from '@/components/forms/AppDatePicker.vue'
 import { useI18n } from 'vue-i18n'
 
 const DEVICE_GRID = 'grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_9rem_5rem_minmax(0,1fr)_4.5rem]'
@@ -994,10 +1005,11 @@ function toggleInverter(id: number) {
   else form.inverter_ids.splice(idx, 1)
 }
 
-function computeWarrantyEnd(startDate: string, months: number): string | undefined {
-  if (!startDate?.trim() || months <= 0) return undefined
-  const end = new Date(startDate)
-  if (Number.isNaN(end.getTime())) return undefined
+function computeWarrantyEnd(startDateIso: string, months: number): string | undefined {
+  if (!startDateIso?.trim() || months <= 0) return undefined
+  const parts = startDateIso.slice(0, 10).split('-').map(Number)
+  if (parts.length !== 3 || parts.some((n) => Number.isNaN(n))) return undefined
+  const end = new Date(parts[0], parts[1] - 1, parts[2])
   end.setMonth(end.getMonth() + months)
   return end.toISOString().slice(0, 10)
 }
@@ -1008,7 +1020,7 @@ function createEmptyDevice(): NewDevice {
     model: '',
     serial_number: '',
     project_name: '',
-    warranty_start_date: form.end_date || '',
+    warranty_start_date: '',
     warranty_months: Number(form.warranty_months) || DEFAULT_WARRANTY_MONTHS,
     notes: '',
   }
@@ -1039,7 +1051,7 @@ function duplicateExistingDevice(idx: number) {
     model: src.model,
     serial_number: '',
     project_name: src.project_name,
-    warranty_start_date: src.warranty_start_date || form.end_date || '',
+    warranty_start_date: src.warranty_start_date || '',
     warranty_months: src.warranty_months,
     notes: src.notes,
   })
@@ -1100,7 +1112,7 @@ async function openEdit(c: Contract) {
       model: i.model ?? '',
       serial_number: i.serial_number ?? '',
       project_name: i.project_name ?? '',
-      warranty_start_date: i.warranty_start_date ? String(i.warranty_start_date).slice(0, 10) : '',
+      warranty_start_date: i.warranty_start_date ? formatIsoToDdMmYyyy(String(i.warranty_start_date).slice(0, 10)) : '',
       warranty_months: Number(i.warranty_months) || 0,
       notes: i.notes ?? '',
     }))
@@ -1152,8 +1164,8 @@ async function saveContract() {
       const token = localStorage.getItem('token')
       for (const d of form.existing_devices) {
         const months = Number(d.warranty_months) || 0
-        const startDate = d.warranty_start_date?.trim() || form.end_date || ''
-        const warrantyEnd = computeWarrantyEnd(startDate, months)
+        const startDate = parseDdMmYyyyToIso(d.warranty_start_date) || ''
+        const warrantyEnd = startDate ? computeWarrantyEnd(startDate, months) : undefined
         try {
           await fetch(`${getApiBaseUrl()}/api/inverters/${d.id}`, {
             method: 'PUT',
@@ -1165,8 +1177,8 @@ async function saveContract() {
               project_name: d.project_name.trim() || undefined,
               notes: d.notes.trim() || undefined,
               warranty_months: months || undefined,
-              warranty_start_date: startDate || undefined,
-              warranty_end_date: warrantyEnd,
+              warranty_start_date: startDate || null,
+              warranty_end_date: startDate && months > 0 ? warrantyEnd : null,
             }),
           })
         } catch {}
@@ -1183,17 +1195,14 @@ async function saveContract() {
       const token = localStorage.getItem('token')
       const newInverterIds: number[] = []
 
-      // Ngày bắt đầu bảo hành = Ngày ký nghiệm thu (end_date).
-      // Nếu chưa có ngày nghiệm thu -> để trống, máy xem như chưa trong thời hạn bảo hành.
-      const acceptanceDate = form.end_date || ''
       for (const d of form.new_devices) {
         const months = Number(d.warranty_months) || 0
-        const startDate = d.warranty_start_date?.trim() || acceptanceDate
+        const startDate = parseDdMmYyyyToIso(d.warranty_start_date) || ''
         let warrantyStart: string | undefined
         let warrantyEnd: string | undefined
-        if (startDate && months > 0) {
+        if (startDate) {
           warrantyStart = startDate
-          warrantyEnd = computeWarrantyEnd(startDate, months)
+          if (months > 0) warrantyEnd = computeWarrantyEnd(startDate, months)
         }
         try {
           const res = await fetch(`${getApiBaseUrl()}/api/inverters`, {

@@ -1,5 +1,5 @@
 <template>
-  <admin-layout>
+  <portal-shell>
     <div class="space-y-4 sm:space-y-6 px-4 sm:px-0 pb-6">
 
       <!-- Back + Header -->
@@ -87,14 +87,72 @@
 
             <!-- Contract Info -->
             <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 sm:p-5">
-              <h2 class="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-4">Thông tin hợp đồng</h2>
+              <div class="flex items-center justify-between gap-3 mb-4">
+                <h2 class="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Thông tin hợp đồng</h2>
+                <button
+                  v-if="canManageContracts"
+                  type="button"
+                  :disabled="savingContractInfo || !contractInfoDirty"
+                  @click="saveContractInfo"
+                  class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors flex-shrink-0"
+                >
+                  <span v-if="savingContractInfo" class="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                  {{ savingContractInfo ? 'Đang lưu...' : 'Lưu' }}
+                </button>
+              </div>
               <dl class="space-y-3">
                 <div>
                   <dt class="text-xs text-gray-400 dark:text-gray-500">Trạng thái thanh toán</dt>
-                  <dd class="mt-0.5">
-                    <span :class="paymentStatusClass(isContractPaid(contract))" class="px-2 py-0.5 rounded-full text-xs font-medium">
+                  <dd class="mt-0.5 space-y-2">
+                    <span :class="paymentStatusClass(isContractPaid(contract))" class="inline-block px-2 py-0.5 rounded-full text-xs font-medium">
                       {{ getPaymentStatusLabel(contract) }}
                     </span>
+                    <p
+                      v-if="isContractPaid(contract) && contract.paperwork?.payment_received_date"
+                      class="text-xs text-gray-500 dark:text-gray-400"
+                    >
+                      Ngày nhận: {{ fmt(contract.paperwork.payment_received_date) }}
+                    </p>
+                    <div v-if="canManageContracts" class="flex flex-wrap gap-2">
+                      <button
+                        v-if="!isContractPaid(contract)"
+                        type="button"
+                        :disabled="markingPayment"
+                        @click="setPaymentStatus(true)"
+                        class="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-white bg-green-600 hover:bg-green-700 disabled:opacity-50 rounded-lg transition-colors"
+                      >
+                        <span v-if="markingPayment" class="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                        Đánh dấu đã thanh toán
+                      </button>
+                      <button
+                        v-else
+                        type="button"
+                        :disabled="markingPayment"
+                        @click="setPaymentStatus(false)"
+                        class="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 hover:bg-amber-100 dark:hover:bg-amber-900/50 disabled:opacity-50 rounded-lg transition-colors"
+                      >
+                        <span v-if="markingPayment" class="w-3 h-3 border-2 border-amber-600 border-t-transparent rounded-full animate-spin"></span>
+                        Chuyển chưa thanh toán
+                      </button>
+                    </div>
+                  </dd>
+                </div>
+                <div>
+                  <dt class="text-xs text-gray-400 dark:text-gray-500">Ngày ký hợp đồng</dt>
+                  <dd class="mt-0.5">
+                    <div v-if="canManageContracts">
+                      <input
+                        v-model="signedDateInput"
+                        type="text"
+                        inputmode="numeric"
+                        placeholder="dd/mm/yyyy"
+                        :disabled="savingContractInfo"
+                        class="w-full max-w-[9.5rem] px-2.5 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono disabled:opacity-50"
+                      />
+                    </div>
+                    <p v-else class="text-sm text-gray-700 dark:text-gray-300">
+                      {{ fmt(contract.signed_date) || '—' }}
+                    </p>
                   </dd>
                 </div>
                 <div>
@@ -297,45 +355,49 @@
 
               <!-- Device cards -->
               <div v-else class="divide-y divide-gray-100 dark:divide-gray-700">
-                <div v-for="inv in contract.inverters" :key="inv.id" class="p-4 sm:p-5">
-                  <!-- Device header -->
-                  <div class="flex items-start justify-between gap-2 sm:gap-3 mb-3">
-                    <div class="min-w-0 flex-1">
-                      <div class="flex items-center gap-2 flex-wrap">
-                        <span class="text-sm font-semibold text-gray-900 dark:text-white">{{ inv.model }}</span>
-                        <span v-if="inv.manufacturer" class="px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded">{{ inv.manufacturer }}</span>
-                        <span :class="inv.status === 'active' ? 'text-green-600 dark:text-green-400' : 'text-gray-400'" class="text-xs">● {{ inv.status === 'active' ? 'Hoạt động' : inv.status }}</span>
+                <div v-for="inv in contract.inverters" :key="inv.id" class="p-3 sm:p-4">
+                  <div class="flex items-start gap-2 sm:gap-3">
+                    <div class="grid grid-cols-4 flex-1 min-w-0 gap-2 sm:gap-4 text-xs overflow-x-auto">
+                      <div class="min-w-[7rem] flex flex-col gap-0.5">
+                        <p class="text-sm font-bold font-mono text-gray-900 dark:text-white truncate">
+                          SN: {{ inv.serial_number }}
+                        </p>
+                        <p class="text-sm text-gray-700 dark:text-gray-300 truncate">{{ inv.model }}</p>
+                        <span
+                          :class="inv.status === 'active' ? 'text-green-600 dark:text-green-400' : 'text-gray-400'"
+                          class="text-[10px] sm:text-xs whitespace-nowrap"
+                        >
+                          ● {{ inv.status === 'active' ? 'Hoạt động' : inv.status }}
+                        </span>
                       </div>
-                      <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 font-mono break-all">SN: {{ inv.serial_number }}</p>
+                      <div class="min-w-[4.5rem]">
+                        <p class="text-gray-400 dark:text-gray-500">Hãng</p>
+                        <p class="font-medium text-gray-900 dark:text-white truncate">{{ inv.manufacturer || '—' }}</p>
+                      </div>
+                      <div class="min-w-[4.5rem]">
+                        <p class="text-gray-400 dark:text-gray-500">Dự án</p>
+                        <p class="font-medium text-gray-900 dark:text-white truncate">{{ inv.project_name || '—' }}</p>
+                      </div>
+                      <div class="min-w-[4.5rem]">
+                        <p class="text-gray-400 dark:text-gray-500">BH đến</p>
+                        <p
+                          :class="isExpired(inv.warranty_end_date) ? 'text-red-500' : 'text-gray-900 dark:text-white'"
+                          class="font-medium truncate"
+                        >
+                          {{ fmt(inv.warranty_end_date) || '—' }}
+                        </p>
+                      </div>
                     </div>
                     <router-link
                       :to="inverterDetailPath(inv.id)"
-                      class="flex-shrink-0 inline-flex items-center min-h-[44px] px-2 text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline touch-manipulation"
+                      class="flex-shrink-0 inline-flex items-center min-h-[32px] px-1 text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline touch-manipulation whitespace-nowrap"
                     >
                       Chi tiết →
                     </router-link>
                   </div>
 
-                  <!-- Device info grid -->
-                  <div class="grid grid-cols-2 gap-2 sm:gap-3 sm:grid-cols-2 mb-3">
-                    <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-2.5 sm:p-3">
-                      <p class="text-xs text-gray-400 dark:text-gray-500 mb-1">Hãng</p>
-                      <p class="text-sm font-medium text-gray-900 dark:text-white">{{ inv.manufacturer || '—' }}</p>
-                    </div>
-                    <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-2.5 sm:p-3">
-                      <p class="text-xs text-gray-400 dark:text-gray-500 mb-1">Bảo hành từ</p>
-                      <p class="text-sm font-medium text-gray-900 dark:text-white">{{ fmt(inv.warranty_start_date) || '—' }}</p>
-                    </div>
-                    <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-2.5 sm:p-3">
-                      <p class="text-xs text-gray-400 dark:text-gray-500 mb-1">Bảo hành đến</p>
-                      <p :class="isExpired(inv.warranty_end_date) ? 'text-red-500' : 'text-gray-900 dark:text-white'" class="text-sm font-medium">
-                        {{ fmt(inv.warranty_end_date) || '—' }}
-                      </p>
-                    </div>
-                  </div>
-
                   <!-- Tickets -->
-                  <div v-if="inv.tickets?.length">
+                  <div v-if="inv.tickets?.length" class="mt-1.5">
                     <p class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">
                       Ticket đính kèm ({{ inv.ticket_count }})
                     </p>
@@ -360,7 +422,7 @@
                       </router-link>
                     </div>
                   </div>
-                  <p v-else class="text-xs text-gray-400 dark:text-gray-500 italic">Chưa có ticket nào</p>
+                  <p v-else class="text-xs text-gray-400 dark:text-gray-500 italic mt-1.5">Chưa có ticket nào</p>
 
                 </div>
               </div>
@@ -434,17 +496,18 @@
         </div>
       </div>
     </div>
-  </admin-layout>
+  </portal-shell>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import AdminLayout from '@/components/layout/AdminLayout.vue'
+import PortalShell from '@/components/layout/PortalShell.vue'
 import { contractService, type Contract } from '@/services/contractService'
 import { amountToVietnameseWords } from '@/utils/numberToWords'
 import { exportQuotation } from '@/utils/quotation'
 import { zaloChatUrl } from '@/utils/zalo'
+import { getVietnamDateString, formatIsoToDdMmYyyy, parseDdMmYyyyToIso } from '@/utils/dateTime'
 import { useAuth, UserRole, Permission } from '@/composables/useAuth'
 import {
   isContractPaid,
@@ -466,6 +529,20 @@ const showDeleteConfirm = ref(false)
 const deleting = ref(false)
 const deleteError = ref('')
 const exportShowContact = ref(true)
+const markingPayment = ref(false)
+const signedDateInput = ref('')
+const savingContractInfo = ref(false)
+
+const contractInfoDirty = computed(() => {
+  if (!contract.value) return false
+  const currentIso = contract.value.signed_date
+    ? String(contract.value.signed_date).slice(0, 10)
+    : null
+  const trimmed = signedDateInput.value.trim()
+  if (!trimmed) return currentIso !== null
+  const newIso = parseDdMmYyyyToIso(trimmed)
+  return newIso !== currentIso
+})
 
 const ticketDetailPath = (ticketId: number) => {
   return isStaff.value ? `/tickets/${ticketId}` : `/customer/tickets/${ticketId}`
@@ -518,10 +595,64 @@ async function load() {
   error.value = ''
   try {
     contract.value = await contractService.get(Number(route.params.id))
+    signedDateInput.value = contract.value?.signed_date
+      ? formatIsoToDdMmYyyy(String(contract.value.signed_date).slice(0, 10))
+      : ''
   } catch (e: any) {
     error.value = e.message
   } finally {
     loading.value = false
+  }
+}
+
+watch(
+  () => contract.value?.signed_date,
+  (signed) => {
+    if (savingContractInfo.value) return
+    signedDateInput.value = signed ? formatIsoToDdMmYyyy(String(signed).slice(0, 10)) : ''
+  },
+)
+
+async function saveContractInfo() {
+  if (!contract.value || savingContractInfo.value || !canManageContracts.value) return
+
+  const trimmed = signedDateInput.value.trim()
+  const currentIso = contract.value.signed_date
+    ? String(contract.value.signed_date).slice(0, 10)
+    : null
+  const newIso = trimmed ? parseDdMmYyyyToIso(trimmed) : null
+
+  if (trimmed && !newIso) {
+    alert('Ngày không hợp lệ. Dùng định dạng dd/mm/yyyy')
+    return
+  }
+  if (newIso === currentIso) return
+
+  savingContractInfo.value = true
+  try {
+    await contractService.updatePaperwork(contract.value.id, {
+      signed_date: newIso,
+    })
+    contract.value = await contractService.get(contract.value.id)
+  } catch (e: any) {
+    alert(e.message || 'Không thể lưu thông tin hợp đồng')
+  } finally {
+    savingContractInfo.value = false
+  }
+}
+
+async function setPaymentStatus(paid: boolean) {
+  if (!contract.value || markingPayment.value) return
+  markingPayment.value = true
+  try {
+    const updated = await contractService.updatePaperwork(contract.value.id, {
+      payment_received_date: paid ? getVietnamDateString() : null,
+    })
+    contract.value = await contractService.get(updated.id)
+  } catch (e: any) {
+    alert(e.message || 'Không thể cập nhật trạng thái thanh toán')
+  } finally {
+    markingPayment.value = false
   }
 }
 

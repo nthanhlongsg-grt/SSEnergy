@@ -1,6 +1,6 @@
 <template>
-  <admin-layout>
-    <div class="space-y-4 sm:space-y-6">
+  <customer-layout>
+    <div class="space-y-4 sm:space-y-6 overflow-x-hidden">
     <!-- Header -->
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0">
       <div class="flex-1 min-w-0">
@@ -24,7 +24,7 @@
             v-model="filters.search"
             type="text"
             :placeholder="t('customers.inverters.list.filters.searchPlaceholder')"
-            class="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+            class="w-full min-h-[44px] px-3 sm:px-4 py-2 text-base sm:text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white touch-manipulation"
           />
         </div>
         <div>
@@ -35,7 +35,7 @@
             v-model="filters.model"
             type="text"
             :placeholder="t('customers.inverters.list.filters.modelPlaceholder')"
-            class="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+            class="w-full min-h-[44px] px-3 sm:px-4 py-2 text-base sm:text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white touch-manipulation"
           />
         </div>
         <div>
@@ -44,7 +44,7 @@
           </label>
           <select
             v-model="filters.status"
-            class="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+            class="w-full min-h-[44px] px-3 sm:px-4 py-2 text-base sm:text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white touch-manipulation"
           >
             <option value="">{{ t('customers.inverters.list.filters.all') }}</option>
             <option value="active">{{ t('customers.inverters.list.status.active') }}</option>
@@ -68,10 +68,7 @@
                 {{ t('customers.inverters.list.table.columns.model') }}
               </th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
-                {{ t('customers.inverters.list.table.columns.installationDate') }}
-              </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
-                {{ t('customers.inverters.list.table.columns.installationAddress') }}
+                {{ t('customers.inverters.list.table.columns.contract') }}
               </th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
                 {{ t('customers.inverters.list.table.columns.warrantyEndDate') }}
@@ -83,17 +80,17 @@
           </thead>
           <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
             <tr v-if="loading">
-              <td colspan="6" class="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
+              <td colspan="5" class="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
                 {{ t('customers.inverters.list.table.loading') }}
               </td>
             </tr>
             <tr v-else-if="error">
-              <td colspan="6" class="px-6 py-8 text-center text-red-500 dark:text-red-400">
+              <td colspan="5" class="px-6 py-8 text-center text-red-500 dark:text-red-400">
                 {{ error }}
               </td>
             </tr>
             <tr v-else-if="inverters.length === 0">
-              <td colspan="6" class="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
+              <td colspan="5" class="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
                 Chưa có thiết bị nào trong hợp đồng
               </td>
             </tr>
@@ -101,7 +98,7 @@
               v-for="inverter in inverters"
               :key="inverter.id"
               class="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
-              @click="router.push(`/customer/inverters/${inverter.id}`)"
+              @click="goToDetail(inverter)"
             >
               <td class="px-6 py-4 whitespace-nowrap">
                 <span class="font-medium text-gray-900 dark:text-white">
@@ -112,10 +109,7 @@
                 {{ inverter.model }}
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                {{ formatDate(inverter.installation_date) }}
-              </td>
-              <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
-                {{ inverter.installation_address || '-' }}
+                {{ getContractLabel(inverter) }}
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                 {{ formatDate(inverter.warranty_end_date) }}
@@ -138,21 +132,22 @@
       </div>
 
       <!-- Mobile Card View -->
-      <div class="md:hidden">
-        <div v-if="loading" class="p-6 text-center text-gray-500 dark:text-gray-400 text-sm">
+      <div class="md:hidden space-y-3 p-3 sm:p-0">
+        <div v-if="loading" class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-6 text-center text-gray-500 dark:text-gray-400 text-sm">
           {{ t('customers.inverters.list.table.loading') }}
         </div>
-        <div v-else-if="error" class="p-6 text-center text-red-500 dark:text-red-400 text-sm">
+        <div v-else-if="error" class="rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 p-6 text-center text-red-500 dark:text-red-400 text-sm">
           {{ error }}
         </div>
-        <div v-else-if="inverters.length === 0" class="p-6 text-center text-gray-500 dark:text-gray-400 text-sm">
+        <div v-else-if="inverters.length === 0" class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-6 text-center text-gray-500 dark:text-gray-400 text-sm">
           Chưa có thiết bị nào trong hợp đồng
         </div>
-        <div
+        <button
           v-for="inverter in inverters"
           :key="inverter.id"
-          class="p-4 border-b border-gray-200 dark:border-gray-700 last:border-b-0 active:bg-gray-50 dark:active:bg-gray-700 cursor-pointer"
-          @click="router.push(`/customer/inverters/${inverter.id}`)"
+          type="button"
+          @click="goToDetail(inverter)"
+          class="w-full text-left rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 shadow-sm active:bg-gray-50 dark:active:bg-gray-700/50 transition-colors touch-manipulation"
         >
           <div class="flex items-start justify-between gap-2 mb-2">
             <div class="flex-1 min-w-0">
@@ -174,38 +169,35 @@
           </div>
           <div class="space-y-1.5 mt-2">
             <div class="flex items-center gap-2 text-xs">
-              <span class="text-gray-500 dark:text-gray-400 min-w-[100px]">{{ t('customers.inverters.list.table.columns.installationDate') }}:</span>
-              <span class="text-gray-900 dark:text-white">{{ formatDate(inverter.installation_date) }}</span>
-            </div>
-            <div class="flex items-start gap-2 text-xs">
-              <span class="text-gray-500 dark:text-gray-400 min-w-[100px]">{{ t('customers.inverters.list.table.columns.installationAddress') }}:</span>
-              <span class="text-gray-900 dark:text-white flex-1">{{ inverter.installation_address || '-' }}</span>
+              <span class="text-gray-500 dark:text-gray-400 min-w-[100px]">{{ t('customers.inverters.list.table.columns.contract') }}:</span>
+              <span class="text-gray-900 dark:text-white">{{ getContractLabel(inverter) }}</span>
             </div>
             <div class="flex items-center gap-2 text-xs">
               <span class="text-gray-500 dark:text-gray-400 min-w-[100px]">{{ t('customers.inverters.list.table.columns.warrantyEndDate') }}:</span>
               <span class="text-gray-900 dark:text-white">{{ formatDate(inverter.warranty_end_date) }}</span>
             </div>
           </div>
-        </div>
+        </button>
       </div>
     </div>
     </div>
-  </admin-layout>
+  </customer-layout>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import AdminLayout from '@/components/layout/AdminLayout.vue'
-import { inverterService } from '@/services/inverterService'
+import CustomerLayout from '@/components/layout/CustomerLayout.vue'
+import { inverterService, type Inverter } from '@/services/inverterService'
+import { formatDate as formatDateUtil } from '@/utils/dateTime'
 
 const { t } = useI18n()
 const router = useRouter()
 
 const loading = ref(true)
 const error = ref<string | null>(null)
-const inverters = ref<any[]>([])
+const inverters = ref<Inverter[]>([])
 const filters = ref({
   search: '',
   model: '',
@@ -234,10 +226,17 @@ const loadInverters = async () => {
   }
 }
 
-const formatDate = (dateString: string) => {
-  if (!dateString) return '-'
-  const date = new Date(dateString)
-  return date.toLocaleDateString('vi-VN')
+const getContractLabel = (inverter: Inverter) =>
+  inverter.contract_number || inverter.contract_numbers || t('common.na')
+
+const goToDetail = (inverter: Inverter) => {
+  const query = inverter.contract_id ? `?contract_id=${inverter.contract_id}` : ''
+  router.push(`/customer/inverters/${inverter.id}${query}`)
+}
+
+const formatDate = (dateString?: string | null) => {
+  if (!dateString) return t('common.na')
+  return formatDateUtil(dateString)
 }
 
 onMounted(() => {

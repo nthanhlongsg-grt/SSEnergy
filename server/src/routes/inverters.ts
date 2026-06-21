@@ -28,12 +28,30 @@ const contractCustomerColumn = (column: string): string => `
    ORDER BY ct_ct.updated_at DESC, ci_ct.contract_id DESC
    LIMIT 1)`
 
+/** Người liên hệ từ users qua customers.contact_user_id (hợp đồng liên kết gần nhất) */
+const contractContactUserColumn = (userColumn: string): string => `
+  (SELECT u_ct.${userColumn}
+   FROM contract_inverters ci_ct
+   JOIN contracts ct_ct ON ct_ct.id = ci_ct.contract_id
+   JOIN customers cu_ct ON cu_ct.id = ct_ct.customer_id
+   JOIN users u_ct ON u_ct.id = cu_ct.contact_user_id
+   WHERE ci_ct.inverter_id = i.id AND cu_ct.contact_user_id IS NOT NULL
+   ORDER BY ct_ct.updated_at DESC, ci_ct.contract_id DESC
+   LIMIT 1)`
+
+const directContactUserColumn = (userColumn: string): string =>
+  `(SELECT u_dc.${userColumn} FROM users u_dc WHERE u_dc.id = c.contact_user_id)`
+
 const inverterCustomerSelect = `
   COALESCE(${contractCustomerColumn('id')}, i.customer_id) AS customer_id,
   COALESCE(${contractCustomerColumn('name')}, c.name) AS customer_name,
   COALESCE(${contractCustomerColumn('email')}, c.email) AS customer_email,
   COALESCE(${contractCustomerColumn('phone')}, c.phone) AS customer_phone,
   COALESCE(${contractCustomerColumn('address')}, c.address) AS customer_address,
+  COALESCE(${contractContactUserColumn('id')}, c.contact_user_id) AS contact_user_id,
+  COALESCE(${contractContactUserColumn('name')}, ${directContactUserColumn('name')}) AS contact_user_name,
+  COALESCE(${contractContactUserColumn('email')}, ${directContactUserColumn('email')}) AS contact_user_email,
+  COALESCE(${contractContactUserColumn('phone')}, ${directContactUserColumn('phone')}) AS contact_user_phone,
   (SELECT ct_ct.contract_number
    FROM contract_inverters ci_ct
    JOIN contracts ct_ct ON ct_ct.id = ci_ct.contract_id
@@ -248,10 +266,15 @@ router.get('/:id', authenticateToken, (req: AuthRequest, res) => {
         cu.name AS customer_name,
         cu.email AS customer_email,
         cu.phone AS customer_phone,
-        cu.address AS customer_address
+        cu.address AS customer_address,
+        cu.contact_user_id,
+        u.name AS contact_user_name,
+        u.email AS contact_user_email,
+        u.phone AS contact_user_phone
       FROM contract_inverters ci
       JOIN contracts ct ON ct.id = ci.contract_id
       JOIN customers cu ON cu.id = ct.customer_id
+      LEFT JOIN users u ON u.id = cu.contact_user_id
       WHERE ci.inverter_id = ?
       ORDER BY ct.updated_at DESC, ci.contract_id DESC
     `).all(inverterId) as Array<{
@@ -261,6 +284,10 @@ router.get('/:id', authenticateToken, (req: AuthRequest, res) => {
       customer_email: string | null
       customer_phone: string | null
       customer_address: string | null
+      contact_user_id: number | null
+      contact_user_name: string | null
+      contact_user_email: string | null
+      contact_user_phone: string | null
     }>
 
     inverter.contracts = linkedContracts
@@ -278,6 +305,10 @@ router.get('/:id', authenticateToken, (req: AuthRequest, res) => {
         inverter.customer_email = ctx.customer_email
         inverter.customer_phone = ctx.customer_phone
         inverter.customer_address = ctx.customer_address
+        inverter.contact_user_id = ctx.contact_user_id
+        inverter.contact_user_name = ctx.contact_user_name
+        inverter.contact_user_email = ctx.contact_user_email
+        inverter.contact_user_phone = ctx.contact_user_phone
       }
     }
 

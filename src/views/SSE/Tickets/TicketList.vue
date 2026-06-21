@@ -71,58 +71,6 @@
         <div class="text-sm sm:text-base text-gray-500 dark:text-gray-400">{{ t('common.loading') }}</div>
       </div>
 
-      <!-- Stats Cards -->
-      <div v-if="!loading || tickets.length > 0" class="hidden md:grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 xl:grid-cols-7">
-        <div
-          v-for="item in statusMetricItems"
-          :key="item.value"
-          @click="filters.status = item.value"
-          :class="[
-            'rounded-lg p-3 sm:p-4 border cursor-pointer transition-colors touch-manipulation active:scale-95',
-            filters.status === item.value
-              ? item.theme.active
-              : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700',
-          ]"
-        >
-          <div class="flex items-center justify-between">
-            <div class="flex-1 min-w-0">
-              <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 truncate">{{ item.label }}</p>
-              <p class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mt-1">
-                {{ stats[item.value] ?? 0 }}
-              </p>
-            </div>
-            <div :class="['h-8 w-8 sm:h-10 sm:w-10 rounded-full flex items-center justify-center flex-shrink-0 ml-2', item.theme.badge]">
-              <span :class="['text-xs sm:text-sm font-bold', item.theme.text]">
-                {{ item.badge }}
-              </span>
-            </div>
-          </div>
-        </div>
-        <div
-          @click="filters.status = ''"
-          :class="[
-            'rounded-lg p-3 sm:p-4 border cursor-pointer transition-colors touch-manipulation active:scale-95',
-            filters.status === ''
-              ? 'bg-gray-50 border-gray-200 dark:bg-gray-900/20 dark:border-gray-800'
-              : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700',
-          ]"
-        >
-          <div class="flex items-center justify-between">
-            <div class="flex-1 min-w-0">
-              <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 truncate">{{ t('tickets.list.metrics.all') }}</p>
-              <p class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mt-1">
-                {{ stats.total }}
-              </p>
-            </div>
-            <div class="h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-gray-100 dark:bg-gray-900 flex items-center justify-center flex-shrink-0 ml-2">
-              <span class="text-gray-600 dark:text-gray-400 text-xs sm:text-sm font-bold">
-                {{ t('tickets.list.metrics.badges.all') }}
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-
       <!-- Filters -->
       <div
         class="rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-3 sm:p-4 shadow-sm"
@@ -210,11 +158,23 @@
         class="hidden md:block rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden"
       >
         <div class="overflow-y-auto max-h-[600px] overflow-x-hidden">
-          <table class="w-full" style="table-layout: fixed; width: 100%;">
+          <table class="w-full text-xs" style="table-layout: fixed; width: 100%;">
+            <colgroup>
+              <col v-if="isDev" class="w-10" />
+              <col class="w-[11%]" />
+              <col class="w-[14%]" />
+              <col class="w-[8%]" />
+              <col class="w-[14%]" />
+              <col class="w-[12%]" />
+              <col class="w-[9%]" />
+              <col class="w-[9%]" />
+              <col class="w-[10%]" />
+              <col class="w-[9%]" />
+            </colgroup>
             <thead class="bg-gray-50 dark:bg-gray-700">
               <tr>
                 <!-- Checkbox Header -->
-                <th v-if="isDev" class="w-12 px-4 py-3 text-left">
+                <th v-if="isDev" class="px-2 py-2 text-left">
                   <input
                     type="checkbox"
                     v-model="selectAll"
@@ -222,47 +182,47 @@
                   />
                 </th>
                 <th
-                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                  class="px-2 py-2 text-left text-[11px] font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
                 >
                   {{ t('tickets.list.table.columns.code') }}
                 </th>
                 <th
-                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                  class="px-2 py-2 text-left text-[11px] font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
                 >
                   {{ t('tickets.list.table.columns.title') }}
                 </th>
                 <th
-                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                  class="px-2 py-2 text-left text-[11px] font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
                 >
                   {{ t('tickets.list.table.columns.createdDate') }}
                 </th>
                 <th
-                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                  class="px-2 py-2 text-left text-[11px] font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
                 >
                   {{ t('tickets.list.table.columns.customer') }}
                 </th>
                 <th
-                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                  class="px-2 py-2 text-left text-[11px] font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
                 >
                   {{ t('tickets.list.table.columns.modelSerial') }}
                 </th>
                 <th
-                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                  class="px-2 py-2 text-left text-[11px] font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
                 >
                   {{ t('tickets.list.table.columns.status') }}
                 </th>
                 <th
-                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                  class="px-2 py-2 text-left text-[11px] font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
                 >
                   {{ t('tickets.list.table.columns.priority') }}
                 </th>
                 <th
-                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                  class="px-2 py-2 text-left text-[11px] font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
                 >
                   {{ t('tickets.list.table.columns.technician') }}
                 </th>
                 <th
-                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                  class="px-2 py-2 text-left text-[11px] font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
                 >
                   {{ t('tickets.list.table.columns.sla') }}
                 </th>
@@ -276,7 +236,7 @@
                 @click="$router.push(`/tickets/${ticket.id}`)"
               >
                 <!-- Checkbox Cell -->
-                <td v-if="isDev" class="px-4 py-4" @click.stop>
+                <td v-if="isDev" class="px-2 py-2 align-middle" @click.stop>
                   <input
                     type="checkbox"
                     v-model="selectedTickets"
@@ -284,72 +244,79 @@
                     class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
                   />
                 </td>
-                <td class="px-4 py-4 break-words">
-                  <span class="font-medium text-blue-600 dark:text-blue-400">
+                <td class="px-2 py-2 align-middle min-w-0">
+                  <span
+                    class="block font-medium text-blue-600 dark:text-blue-400 font-mono truncate"
+                    :title="ticket.ticket_number"
+                  >
                     {{ ticket.ticket_number }}
                   </span>
                 </td>
-                <td class="px-4 py-4 break-words">
-                  <p class="text-sm font-medium text-gray-900 dark:text-white" :title="ticket.title">
+                <td class="px-2 py-2 align-middle min-w-0">
+                  <p class="truncate text-gray-900 dark:text-white" :title="ticket.title">
                     {{ ticket.title }}
                   </p>
                 </td>
-                <td class="px-4 py-4 break-words text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">
+                <td class="px-2 py-2 align-middle text-gray-500 dark:text-gray-400 whitespace-nowrap">
                   {{ ticket.created_at ? formatDate(ticket.created_at) : 'N/A' }}
                 </td>
-                <td class="px-4 py-4 break-words">
-                  <div>
-                    <p class="text-sm font-medium text-gray-900 dark:text-white">
-                      {{ ticket.customer_name || t('common.na') }}
-                    </p>
-                    <p class="text-xs text-gray-500 dark:text-gray-400">
-                      {{ ticket.customer_email || '' }}
-                    </p>
-                  </div>
+                <td class="px-2 py-2 align-middle min-w-0">
+                  <p
+                    class="truncate font-medium text-gray-900 dark:text-white"
+                    :title="ticket.customer_name || undefined"
+                  >
+                    {{ ticket.customer_name || t('common.na') }}
+                  </p>
                 </td>
-                <td class="px-4 py-4 break-words">
-                  <div>
-                    <p class="text-sm text-gray-900 dark:text-white">{{ ticket.inverter_model || t('common.na') }}</p>
-                    <p class="text-xs text-gray-500 dark:text-gray-400">
-                      {{ ticket.inverter_serial || '' }}
-                    </p>
-                  </div>
+                <td class="px-2 py-2 align-middle min-w-0">
+                  <p class="truncate text-gray-900 dark:text-white" :title="ticket.inverter_model || undefined">
+                    {{ ticket.inverter_model || t('common.na') }}
+                  </p>
+                  <p
+                    v-if="ticket.inverter_serial"
+                    class="truncate text-[11px] text-gray-500 dark:text-gray-400 font-mono"
+                    :title="ticket.inverter_serial"
+                  >
+                    {{ ticket.inverter_serial }}
+                  </p>
                 </td>
-                <td class="px-4 py-4 break-words">
+                <td class="px-2 py-2 align-middle">
                   <span
                     :class="[
-                      'px-2 py-1 text-xs font-semibold rounded-full',
+                      'inline-block max-w-full truncate px-1.5 py-0.5 text-[10px] font-semibold rounded-full',
                       getStatusClass(ticket.status),
                     ]"
+                    :title="getStatusLabel(ticket.status)"
                   >
                     {{ getStatusLabel(ticket.status) }}
                   </span>
                 </td>
-                <td class="px-4 py-4 break-words">
+                <td class="px-2 py-2 align-middle">
                   <span
                     :class="[
-                      'px-2 py-1 text-xs font-semibold rounded-full',
+                      'inline-block max-w-full truncate px-1.5 py-0.5 text-[10px] font-semibold rounded-full',
                       getPriorityClass(ticket.priority),
                     ]"
+                    :title="getPriorityLabel(ticket.priority)"
                   >
                     {{ getPriorityLabel(ticket.priority) }}
                   </span>
                 </td>
-                <td class="px-4 py-4 break-words text-sm text-gray-500 dark:text-gray-400">
-                  {{ ticket.assigned_to_name || t('tickets.list.unassigned') }}
+                <td class="px-2 py-2 align-middle min-w-0 text-gray-500 dark:text-gray-400">
+                  <span class="block truncate" :title="ticket.assigned_to_name || t('tickets.list.unassigned')">
+                    {{ ticket.assigned_to_name || t('tickets.list.unassigned') }}
+                  </span>
                 </td>
-                <td class="px-4 py-4 break-words">
+                <td class="px-2 py-2 align-middle">
                   <span
                     :class="[
-                      'px-2 py-1 text-xs font-semibold rounded-full',
+                      'inline-block max-w-full truncate px-1.5 py-0.5 text-[10px] font-semibold rounded-full',
                       getSLAStatusClass(ticket),
                     ]"
+                    :title="getSLAStatusLabel(ticket)"
                   >
                     {{ getSLAStatusLabel(ticket) }}
                   </span>
-                </td>
-                <td class="px-4 py-4 break-words text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">
-                  {{ ticket.created_at ? formatDateTime(ticket.created_at) : 'N/A' }}
                 </td>
               </tr>
               <tr v-if="tickets.length === 0 && !loading">
@@ -644,13 +611,9 @@ import { PlusIcon } from '../../../icons'
 import { ticketService } from '@/services/ticketService'
 import { useAuth, UserRole } from '@/composables/useAuth'
 import { useSlaSettings } from '@/composables/useSlaSettings'
-import { formatDate, formatDateTime } from '@/utils/dateTime'
+import { formatDate } from '@/utils/dateTime'
 import { useTicketStatus } from '@/composables/useTicketStatus'
 import {
-  TICKET_STATUS_I18N_KEY,
-  TICKET_STATUS_METRIC_BADGE,
-  TICKET_STATUS_METRIC_THEME,
-  TICKET_STATUS_ORDER,
   isTicketClosed,
   type TicketStatusValue,
 } from '@/constants/ticketStatus'
@@ -679,25 +642,6 @@ const { t } = useI18n()
 const { hasRole } = useAuth()
 
 const { getStatusLabel, getStatusClass, statusFilterOptions } = useTicketStatus()
-
-const stats = ref<Record<string, number>>({
-  total: 0,
-  new: 0,
-  machine_received: 0,
-  in_progress: 0,
-  waiting_delivery: 0,
-  delivered: 0,
-  closed: 0,
-})
-
-const statusMetricItems = computed(() =>
-  TICKET_STATUS_ORDER.map((value) => ({
-    value,
-    label: t(TICKET_STATUS_I18N_KEY[value]),
-    badge: TICKET_STATUS_METRIC_BADGE[value],
-    theme: TICKET_STATUS_METRIC_THEME[value],
-  })),
-)
 
 const tickets = ref<any[]>([])
 const currentPage = ref(1)
@@ -743,7 +687,6 @@ const handleBulkDelete = async () => {
     await ticketService.bulkDeleteTickets(selectedTickets.value)
     selectedTickets.value = []
     await fetchTickets()
-    await fetchStats()
   } catch (err) {
     console.error('Error bulk deleting tickets:', err)
     error.value = err instanceof Error ? err.message : 'Lỗi khi xóa ticket'
@@ -780,33 +723,11 @@ const fetchTickets = async () => {
     
     // Clear selection on page change if needed, or keep it (keeping it is often better UX)
     // But here we uncheck selectAll visually if not all items on new page are selected
-    
-    // Fetch stats separately for accurate counts
-    await fetchStats()
   } catch (err) {
     error.value = err instanceof Error ? err.message : t('tickets.list.messages.fetchError')
     console.error('Error fetching tickets:', err)
   } finally {
     loading.value = false
-  }
-}
-
-// Fetch stats from API
-const fetchStats = async () => {
-  try {
-    const statsData = await ticketService.getTicketStats()
-    // Map API response to expected stats structure
-    stats.value = {
-      total: statsData.total || 0,
-      new: statsData.new || 0,
-      machine_received: statsData.machine_received || 0,
-      in_progress: statsData.in_progress || 0,
-      waiting_delivery: statsData.waiting_delivery || 0,
-      delivered: statsData.delivered || 0,
-      closed: statsData.closed || 0,
-    }
-  } catch (err) {
-    console.error('Error fetching ticket stats:', err)
   }
 }
 
@@ -877,7 +798,6 @@ const deleteTicket = async (ticket: any) => {
   try {
     await ticketService.deleteTicket(ticket.id)
     await fetchTickets()
-    await fetchStats()
   } catch (err) {
     console.error('Error deleting ticket:', err)
     error.value = err instanceof Error ? err.message : t('tickets.list.messages.deleteError')
@@ -1187,7 +1107,7 @@ const processCSV = async () => {
       importedCount.value = result.success
       importSuccess.value = true
       
-      // Refresh tickets list and stats
+      // Refresh tickets list
       await fetchTickets()
       
       // Reset form

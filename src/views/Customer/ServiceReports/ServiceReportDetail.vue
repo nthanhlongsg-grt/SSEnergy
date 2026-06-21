@@ -1,5 +1,5 @@
 <template>
-  <admin-layout>
+  <customer-layout>
     <div class="rounded-lg border border-gray-200 bg-white p-6 text-center dark:border-gray-700 dark:bg-gray-800">
       <h1 class="text-lg font-semibold text-gray-900 dark:text-white">
         Service Report
@@ -8,9 +8,9 @@
         Tinh nang chi tiet bien ban dich vu cho customer dang duoc cap nhat.
       </p>
     </div>
-  </admin-layout>
+  </customer-layout>
 </template>
 
 <script setup lang="ts">
-import AdminLayout from '@/components/layout/AdminLayout.vue'
+import CustomerLayout from '@/components/layout/CustomerLayout.vue'
 </script>

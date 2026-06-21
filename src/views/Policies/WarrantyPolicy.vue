@@ -1,5 +1,5 @@
 <template>
-  <admin-layout>
+  <portal-shell>
     <div class="w-full pb-8">
       <!-- Hero -->
       <div class="rounded-2xl border border-blue-100 bg-gradient-to-br from-blue-50 to-white p-6 sm:p-8 dark:border-blue-900/40 dark:from-blue-950/40 dark:to-gray-900 mb-6">
@@ -108,13 +108,13 @@
           </div>
         </article>
     </div>
-  </admin-layout>
+  </portal-shell>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import AdminLayout from '@/components/layout/AdminLayout.vue'
+import PortalShell from '@/components/layout/PortalShell.vue'
 
 const { t, tm } = useI18n()
 

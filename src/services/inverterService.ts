@@ -23,6 +23,8 @@ export interface Inverter {
   customer_email?: string
   distributor_name?: string
   contract_numbers?: string
+  contract_number?: string
+  contract_id?: number
 }
 
 export interface CreateInverterDto {
@@ -87,8 +89,10 @@ export const inverterService = {
     return response.data
   },
 
-  async getInverterById(id: number): Promise<Inverter> {
-    const response = await apiClient.get<Inverter>(`/inverters/${id}`)
+  async getInverterById(id: number, options?: { contractId?: number }): Promise<Inverter> {
+    const query =
+      options?.contractId != null ? `?contract_id=${options.contractId}` : ''
+    const response = await apiClient.get<Inverter>(`/inverters/${id}${query}`)
     if (response.error) {
       throw new Error(response.error)
     }

@@ -1003,9 +1003,9 @@ const vi = {
       deviceInfo: {
         title: 'Thông tin Thiết bị',
         edit: 'Sửa',
-        editLimited: 'Sửa địa chỉ & ghi chú',
+        editLimited: 'Sửa chữa',
         syncFromContractNote: 'Đồng bộ từ hợp đồng — chỉ sửa địa chỉ lắp đặt và ghi chú',
-        syncFromContractAdminNote: 'Đồng bộ từ hợp đồng — admin có thể sửa ngày bắt đầu bảo hành, địa chỉ và ghi chú',
+        syncFromContractAdminNote: 'Đồng bộ từ hợp đồng — ngày bắt đầu BH theo từng thiết bị trên hợp đồng; admin có thể sửa thêm địa chỉ và ghi chú',
         adminWarrantyStartHint: 'Ngày hết hạn tự tính lại theo số tháng bảo hành của thiết bị (nếu có)',
         cancel: 'Hủy',
         save: 'Lưu',
@@ -1043,6 +1043,7 @@ const vi = {
         saving: 'Đang lưu...',
         fields: {
           customer: 'Khách hàng',
+          contactPerson: 'Người liên hệ',
           email: 'Email',
           phone: 'Số điện thoại',
           address: 'Địa chỉ',
@@ -1516,12 +1517,21 @@ const vi = {
         updateError: 'Không thể cập nhật thông tin khách hàng',
       },
     },
+    nav: {
+      dashboard: 'Dashboard',
+      devices: 'Thiết bị',
+      tickets: 'Ticket',
+      contracts: 'Hợp đồng',
+      profile: 'Thông tin',
+      notifications: 'Thông báo',
+    },
     dashboard: {
       loading: 'Đang tải...',
       error: 'Không thể tải dữ liệu dashboard',
+      welcome: 'Chào mừng bạn đến hệ thống quản lý hậu mãi SSE',
       metrics: {
         totalInverters: 'Tổng Thiết bị',
-        totalTickets: 'Yêu cầu Hỗ trợ',
+        totalTickets: 'Ticket',
         activeTickets: 'đang xử lý',
         pendingTickets: 'Đang chờ xử lý',
         completedTickets: 'Đã hoàn thành',
@@ -1532,14 +1542,14 @@ const vi = {
           description: 'Đăng ký thiết bị inverter mới',
         },
         createTicket: {
-          title: 'Tạo Yêu cầu Hỗ trợ',
-          description: 'Tạo yêu cầu hỗ trợ mới',
+          title: 'Tạo Ticket',
+          description: 'Tạo ticket mới',
         },
       },
       recentTickets: {
-        title: 'Yêu cầu Hỗ trợ gần đây',
+        title: 'Ticket gần đây',
         viewAll: 'Xem tất cả',
-        empty: 'Chưa có yêu cầu hỗ trợ nào',
+        empty: 'Chưa có ticket nào',
         columns: {
           ticketNumber: 'Số Ticket',
           title: 'Tiêu đề',
@@ -1608,6 +1618,28 @@ const vi = {
         },
       },
     },
+    contracts: {
+      list: {
+        title: 'Hợp đồng của tôi',
+        subtitle: 'Theo dõi chi tiết hợp đồng',
+        searchPlaceholder: 'Tìm theo số hợp đồng...',
+        loading: 'Đang tải...',
+        empty: 'Chưa có hợp đồng nào',
+        loadError: 'Không thể tải danh sách hợp đồng',
+        columns: {
+          contractNumber: 'Số HĐ',
+          type: 'Loại',
+          signedDate: 'Ngày ký',
+          value: 'Giá trị',
+          payment: 'Thanh toán',
+        },
+        types: {
+          service: 'Dịch vụ',
+          economic: 'Kinh tế',
+          other: 'Khác',
+        },
+      },
+    },
     tickets: {
       list: {
         header: {
@@ -1622,6 +1654,7 @@ const vi = {
           searchPlaceholder: 'Số ticket, tiêu đề...',
           status: 'Trạng thái',
           priority: 'Độ ưu tiên',
+          period: 'Thời gian',
           all: 'Tất cả',
         },
         status: {
@@ -1809,9 +1842,8 @@ const vi = {
           columns: {
             serialNumber: 'Số Serial',
             model: 'Model',
-            installationDate: 'Ngày lắp đặt',
-            installationAddress: 'Địa chỉ lắp đặt',
-            warrantyEndDate: 'Bảo hành đến',
+            contract: 'Hợp đồng',
+            warrantyEndDate: 'Ngày kết thúc bảo hành',
             status: 'Trạng thái',
             actions: 'Thao tác',
             viewDetails: 'Xem chi tiết',
@@ -1865,27 +1897,42 @@ const vi = {
         },
         sections: {
           deviceInfo: 'Thông tin Thiết bị',
-          warrantyInfo: 'Thông tin Bảo hành',
+          warrantyInfo: 'Bảo hành',
+          contractInfo: 'Hợp đồng',
+          supportInfo: 'Thông tin liên hệ',
         },
         fields: {
           serialNumber: 'Số Serial',
           model: 'Model',
+          manufacturer: 'Nhà sản xuất',
           installationDate: 'Ngày lắp đặt',
-          status: 'Trạng thái',
+          installationAddress: 'Địa chỉ lắp đặt',
+          project: 'Dự án',
+          notes: 'Ghi chú',
+          organization: 'Khách hàng',
+          contract: 'Số hợp đồng',
+          supportPerson: 'Người liên hệ',
           warrantyStartDate: 'Bắt đầu bảo hành',
           warrantyEndDate: 'Kết thúc bảo hành',
-          warrantyType: 'Loại bảo hành',
+          daysRemaining: 'Còn {days} ngày',
         },
-        status: {
-          active: 'Hoạt động',
-          inactive: 'Không hoạt động',
+        warrantyStatus: {
+          active: 'bảo hành',
+          expired: 'Hết bảo hành',
+          pending: 'Chưa có thông tin',
+        },
+        alerts: {
+          warrantyExpiringSoon: 'Bảo hành sắp hết hạn trong {days} ngày. Vui lòng liên hệ SSE nếu cần hỗ trợ.',
         },
         actions: {
-          createTicket: 'Tạo Yêu cầu Hỗ trợ',
+          createTicket: 'Tạo Ticket',
+          viewContract: 'Xem hợp đồng',
         },
         messages: {
           loading: 'Đang tải...',
           loadError: 'Không thể tải thông tin thiết bị',
+          noContract: 'Chưa liên kết hợp đồng',
+          noSupportPerson: 'Chưa có thông tin liên hệ',
         },
       },
     },

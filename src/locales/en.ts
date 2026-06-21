@@ -1001,9 +1001,9 @@ const en = {
       deviceInfo: {
         title: 'Device Information',
         edit: 'Edit',
-        editLimited: 'Edit address & notes',
+        editLimited: 'Edit repair',
         syncFromContractNote: 'Synced from contract — only installation address and notes are editable',
-        syncFromContractAdminNote: 'Synced from contract — admin can edit warranty start date, address and notes',
+        syncFromContractAdminNote: 'Synced from contract — warranty start comes from each device row on the contract; admin can also edit address and notes',
         adminWarrantyStartHint: 'End date is recalculated from the device warranty months (if set)',
         cancel: 'Cancel',
         save: 'Save',
@@ -1041,6 +1041,7 @@ const en = {
         saving: 'Saving...',
         fields: {
           customer: 'Customer',
+          contactPerson: 'Contact Person',
           email: 'Email',
           phone: 'Phone Number',
           address: 'Address',
@@ -1514,12 +1515,21 @@ const en = {
         updateError: 'Unable to update customer information',
       },
     },
+    nav: {
+      dashboard: 'Dashboard',
+      devices: 'Devices',
+      tickets: 'Tickets',
+      contracts: 'Contracts',
+      profile: 'Profile',
+      notifications: 'Notifications',
+    },
     dashboard: {
       loading: 'Loading...',
       error: 'Unable to load dashboard data',
+      welcome: 'Welcome to the SSE after-sales management system',
       metrics: {
         totalInverters: 'Total Devices',
-        totalTickets: 'Support Requests',
+        totalTickets: 'Tickets',
         activeTickets: 'in progress',
         pendingTickets: 'Pending',
         completedTickets: 'Completed',
@@ -1530,14 +1540,14 @@ const en = {
           description: 'Register a new inverter device',
         },
         createTicket: {
-          title: 'Create Support Request',
-          description: 'Create a new support request',
+          title: 'Create Ticket',
+          description: 'Create a new ticket',
         },
       },
       recentTickets: {
-        title: 'Recent Support Requests',
+        title: 'Recent Tickets',
         viewAll: 'View all',
-        empty: 'No support requests yet',
+        empty: 'No tickets yet',
         columns: {
           ticketNumber: 'Ticket Number',
           title: 'Title',
@@ -1606,6 +1616,28 @@ const en = {
         },
       },
     },
+    contracts: {
+      list: {
+        title: 'My Contracts',
+        subtitle: 'Track your contract details',
+        searchPlaceholder: 'Search by contract number...',
+        loading: 'Loading...',
+        empty: 'No contracts yet',
+        loadError: 'Unable to load contracts',
+        columns: {
+          contractNumber: 'Contract No.',
+          type: 'Type',
+          signedDate: 'Signed Date',
+          value: 'Value',
+          payment: 'Payment',
+        },
+        types: {
+          service: 'Service',
+          economic: 'Economic',
+          other: 'Other',
+        },
+      },
+    },
     tickets: {
       list: {
         header: {
@@ -1620,6 +1652,7 @@ const en = {
           searchPlaceholder: 'Ticket number, title...',
           status: 'Status',
           priority: 'Priority',
+          period: 'Time period',
           all: 'All',
         },
         status: {
@@ -1803,9 +1836,8 @@ const en = {
           columns: {
             serialNumber: 'Serial Number',
             model: 'Model',
-            installationDate: 'Installation Date',
-            installationAddress: 'Installation Address',
-            warrantyEndDate: 'Warranty Until',
+            contract: 'Contract',
+            warrantyEndDate: 'Warranty End Date',
             status: 'Status',
             actions: 'Actions',
             viewDetails: 'View details',
@@ -1859,27 +1891,42 @@ const en = {
         },
         sections: {
           deviceInfo: 'Device Information',
-          warrantyInfo: 'Warranty Information',
+          warrantyInfo: 'Warranty',
+          contractInfo: 'Contract',
+          supportInfo: 'Contact Information',
         },
         fields: {
           serialNumber: 'Serial Number',
           model: 'Model',
+          manufacturer: 'Manufacturer',
           installationDate: 'Installation Date',
-          status: 'Status',
-          warrantyStartDate: 'Warranty Start Date',
-          warrantyEndDate: 'Warranty End Date',
-          warrantyType: 'Warranty Type',
+          installationAddress: 'Installation Address',
+          project: 'Project',
+          notes: 'Notes',
+          organization: 'Customer',
+          contract: 'Contract Number',
+          supportPerson: 'Contact Person',
+          warrantyStartDate: 'Warranty Start',
+          warrantyEndDate: 'Warranty End',
+          daysRemaining: '{days} days remaining',
         },
-        status: {
-          active: 'Active',
-          inactive: 'Inactive',
+        warrantyStatus: {
+          active: 'warranty',
+          expired: 'Warranty Expired',
+          pending: 'No Warranty Info',
+        },
+        alerts: {
+          warrantyExpiringSoon: 'Warranty expires in {days} days. Contact SSE if you need support.',
         },
         actions: {
-          createTicket: 'Create Support Request',
+          createTicket: 'Create Ticket',
+          viewContract: 'View Contract',
         },
         messages: {
           loading: 'Loading...',
           loadError: 'Unable to load device information',
+          noContract: 'No linked contract',
+          noSupportPerson: 'No contact information',
         },
       },
     },

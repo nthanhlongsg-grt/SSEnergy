@@ -205,3 +205,30 @@ export const formatDateTimeForInput = (dateString: string | Date | null | undefi
   return `${dateStr}T${hour}:${minute}`
 }
 
+/** yyyy-mm-dd → dd/mm/yyyy (hiển thị nhập tay) */
+export function formatIsoToDdMmYyyy(iso: string | null | undefined): string {
+  if (!iso) return ''
+  const s = String(iso).trim().slice(0, 10)
+  const m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/)
+  if (!m) return s
+  return `${m[3]}/${m[2]}/${m[1]}`
+}
+
+/** dd/mm/yyyy hoặc yyyy-mm-dd → yyyy-mm-dd (lưu API) */
+export function parseDdMmYyyyToIso(input: string | null | undefined): string | null {
+  if (!input?.trim()) return null
+  const s = input.trim()
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s
+  const dmY = s.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/)
+  if (!dmY) return null
+  const day = Number(dmY[1])
+  const month = Number(dmY[2])
+  const year = Number(dmY[3])
+  if (month < 1 || month > 12 || day < 1 || day > 31 || year < 1900) return null
+  const d = new Date(year, month - 1, day)
+  if (d.getFullYear() !== year || d.getMonth() !== month - 1 || d.getDate() !== day) return null
+  const mm = String(month).padStart(2, '0')
+  const dd = String(day).padStart(2, '0')
+  return `${year}-${mm}-${dd}`
+}
+

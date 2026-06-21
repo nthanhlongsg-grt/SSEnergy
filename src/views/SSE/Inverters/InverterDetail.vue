@@ -32,9 +32,6 @@
               <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
                 {{ t('inverters.detail.deviceInfo.title') }}
               </h2>
-              <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                {{ canEditWarrantyStart ? t('inverters.detail.deviceInfo.syncFromContractAdminNote') : t('inverters.detail.deviceInfo.syncFromContractNote') }}
-              </p>
             </div>
             <button
               v-if="!editingDevice"
@@ -203,20 +200,23 @@
                 {{ inverter?.customer_name || t('inverters.detail.customerInfo.notAssigned') }}
               </p>
             </div>
-            <div>
+            <div
+              v-if="inverter?.contact_user_id || inverter?.contact_user_name || inverter?.contact_user_email || inverter?.contact_user_phone"
+              class="pt-3 border-t border-gray-100 dark:border-gray-700"
+            >
               <label class="text-sm font-medium text-gray-500 dark:text-gray-400">
-                {{ t('inverters.detail.customerInfo.fields.email') }}
+                {{ t('inverters.detail.customerInfo.fields.contactPerson') }}
               </label>
-              <p class="mt-1 text-gray-900 dark:text-white">
-                {{ inverter?.customer_email || t('common.na') }}
+              <p class="mt-1 text-gray-900 dark:text-white font-medium">
+                {{ inverter?.contact_user_name || t('common.na') }}
               </p>
-            </div>
-            <div>
-              <label class="text-sm font-medium text-gray-500 dark:text-gray-400">
-                {{ t('inverters.detail.customerInfo.fields.phone') }}
-              </label>
-              <p class="mt-1 text-gray-900 dark:text-white">
-                {{ inverter?.customer_phone || t('common.na') }}
+              <p v-if="inverter?.contact_user_email" class="mt-1 text-sm text-gray-600 dark:text-gray-300">
+                <a :href="`mailto:${inverter.contact_user_email}`" class="hover:text-blue-600 dark:hover:text-blue-400">
+                  {{ inverter.contact_user_email }}
+                </a>
+              </p>
+              <p v-if="inverter?.contact_user_phone" class="mt-0.5 text-sm text-gray-600 dark:text-gray-300">
+                {{ inverter.contact_user_phone }}
               </p>
             </div>
             <div>
@@ -856,6 +856,10 @@ const fetchInverterData = async () => {
       customer_email: data.customer_email,
       customer_phone: data.customer_phone,
       customer_address: data.customer_address,
+      contact_user_id: data.contact_user_id,
+      contact_user_name: data.contact_user_name,
+      contact_user_email: data.contact_user_email,
+      contact_user_phone: data.contact_user_phone,
       contract_id: data.contract_id,
       contract_number: data.contract_number,
       contracts: data.contracts || [],

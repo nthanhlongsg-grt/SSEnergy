@@ -8,35 +8,41 @@ import { canViewContractFinance, canManageContracts, stripContractFinancialField
 const router = Router()
 
 /**
- * Đồng bộ thời hạn bảo hành cho các thiết bị thuộc hợp đồng.
- * Ngày bắt đầu bảo hành = ngày ký nghiệm thu (end_date của hợp đồng).
- * Ngày hết hạn = ngày bắt đầu + số tháng bảo hành (warranty_months) của từng thiết bị.
- * Nếu chưa có ngày nghiệm thu thì để trống (thiết bị xem như chưa trong thời hạn bảo hành).
+ * Đồng bộ ngày kết thúc bảo hành cho thiết bị thuộc hợp đồng.
+ * Ngày bắt đầu = warranty_start_date đã nhập trên từng thiết bị trong hợp đồng (không dùng ngày nghiệm thu / xuất HĐ).
+ * Ngày hết hạn = ngày bắt đầu + warranty_months của thiết bị.
  */
-const syncContractDeviceWarranty = (contractId: number | string, endDate?: string | null): void => {
+function addMonthsToDateString(isoDate: string, months: number): string {
+  const [y, m, d] = isoDate.slice(0, 10).split('-').map(Number)
+  const date = new Date(y, m - 1, d)
+  date.setMonth(date.getMonth() + months)
+  const yy = date.getFullYear()
+  const mm = String(date.getMonth() + 1).padStart(2, '0')
+  const dd = String(date.getDate()).padStart(2, '0')
+  return `${yy}-${mm}-${dd}`
+}
+
+const syncContractDeviceWarranty = (contractId: number | string): void => {
   const rows = db
     .prepare(`
-      SELECT i.id AS id, i.warranty_months AS warranty_months
+      SELECT i.id AS id, i.warranty_months AS warranty_months, i.warranty_start_date AS warranty_start_date
       FROM contract_inverters ci
       JOIN inverters i ON i.id = ci.inverter_id
       WHERE ci.contract_id = ?
     `)
-    .all(contractId) as Array<{ id: number; warranty_months: number | null }>
+    .all(contractId) as Array<{ id: number; warranty_months: number | null; warranty_start_date: string | null }>
 
   const upd = db.prepare(
-    'UPDATE inverters SET warranty_start_date = ?, warranty_end_date = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?'
+    'UPDATE inverters SET warranty_end_date = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?'
   )
 
   for (const r of rows) {
     const months = Number(r.warranty_months) || 0
-    if (endDate && months > 0) {
-      const end = new Date(endDate)
-      end.setMonth(end.getMonth() + months)
-      const endStr = end.toISOString().slice(0, 10)
-      upd.run(endDate, endStr, r.id)
+    const startDate = r.warranty_start_date ? String(r.warranty_start_date).slice(0, 10) : null
+    if (startDate && months > 0) {
+      upd.run(addMonthsToDateString(startDate, months), r.id)
     } else {
-      // Chưa nhập ngày nghiệm thu -> để trống thời hạn bảo hành
-      upd.run(null, null, r.id)
+      upd.run(null, r.id)
     }
   }
 }
@@ -120,6 +126,33 @@ const hasAnyPaperworkDate = (
     const v = paperwork[f]
     return v !== undefined && v !== null && String(v).trim() !== ''
   })
+}
+
+const mergePaperworkFromBody = (
+  existing: ContractPaperwork,
+  body: Record<string, unknown>
+): ContractPaperwork => {
+  const next = { ...existing }
+  const dateKeys: (keyof ContractPaperwork)[] = [
+    'invoice_date',
+    'payment_received_date',
+    'device_delivery_date',
+    'paper_sent_date',
+    'contract_returned_date',
+    'verification_date',
+  ]
+  for (const key of dateKeys) {
+    if (Object.prototype.hasOwnProperty.call(body, key)) {
+      next[key] = normalizeDateField(body[key]) as ContractPaperwork[typeof key]
+    }
+  }
+  if (Object.prototype.hasOwnProperty.call(body, 'shipping_carrier')) {
+    next.shipping_carrier = body.shipping_carrier ? String(body.shipping_carrier).trim() : ''
+  }
+  if (Object.prototype.hasOwnProperty.call(body, 'tracking_number')) {
+    next.tracking_number = body.tracking_number ? String(body.tracking_number).trim() : ''
+  }
+  return next
 }
 
 const PAPERWORK_DATE_FIELDS: (keyof ContractPaperwork)[] = [
@@ -492,7 +525,7 @@ router.put('/:id/inverters', authenticateToken, (req, res) => {
     for (const invId of (inverter_ids || [])) {
       insert.run(req.params.id, invId)
     }
-    syncContractDeviceWarranty(req.params.id, existing.end_date)
+    syncContractDeviceWarranty(req.params.id)
     syncInverterCustomersFromContract(req.params.id)
     res.json({ ok: true })
   } catch (err: any) {
@@ -646,23 +679,30 @@ router.patch('/:id/paperwork', authenticateToken, (req, res) => {
     }
 
     const existing = db
-      .prepare('SELECT id, customer_id, status FROM contracts WHERE id = ?')
-      .get(req.params.id) as { id: number; customer_id: number; status: string } | undefined
+      .prepare('SELECT id, customer_id, status, signed_date, end_date, paperwork FROM contracts WHERE id = ?')
+      .get(req.params.id) as {
+        id: number
+        customer_id: number
+        status: string
+        signed_date: string | null
+        end_date: string | null
+        paperwork: string | null
+      } | undefined
     if (!existing) return res.status(404).json({ error: 'Không tìm thấy hợp đồng' })
 
     const body = req.body as Record<string, unknown>
-    const signed_date = normalizeDateField(body.signed_date)
-    const end_date = normalizeDateField(body.end_date) || ''
-    const paperworkObj: ContractPaperwork = {
-      invoice_date: normalizeDateField(body.invoice_date),
-      payment_received_date: normalizeDateField(body.payment_received_date),
-      device_delivery_date: normalizeDateField(body.device_delivery_date),
-      paper_sent_date: normalizeDateField(body.paper_sent_date),
-      shipping_carrier: body.shipping_carrier ? String(body.shipping_carrier).trim() : '',
-      tracking_number: body.tracking_number ? String(body.tracking_number).trim() : '',
-      contract_returned_date: normalizeDateField(body.contract_returned_date),
-      verification_date: normalizeDateField(body.verification_date),
-    }
+    const existingPaperwork = parsePaperwork(existing.paperwork)
+    const signed_date = Object.prototype.hasOwnProperty.call(body, 'signed_date')
+      ? normalizeDateField(body.signed_date)
+      : existing.signed_date
+        ? String(existing.signed_date).slice(0, 10)
+        : null
+    const end_date = Object.prototype.hasOwnProperty.call(body, 'end_date')
+      ? normalizeDateField(body.end_date) || ''
+      : existing.end_date
+        ? String(existing.end_date).slice(0, 10)
+        : ''
+    const paperworkObj = mergePaperworkFromBody(existingPaperwork, body)
     const paperwork = JSON.stringify(paperworkObj)
 
     const newStatus =
@@ -676,7 +716,7 @@ router.patch('/:id/paperwork', authenticateToken, (req, res) => {
       WHERE id = ?
     `).run(signed_date, end_date, paperwork, newStatus, req.params.id)
 
-    syncContractDeviceWarranty(req.params.id, end_date)
+    syncContractDeviceWarranty(req.params.id)
 
     const updated = db.prepare('SELECT * FROM contracts WHERE id = ?').get(req.params.id) as Record<string, unknown>
     normalizeContractJson(updated)
@@ -734,8 +774,7 @@ router.put('/:id', authenticateToken, (req, res) => {
       syncInverterCustomersFromContract(req.params.id)
     }
 
-    // Cập nhật thời hạn bảo hành thiết bị theo ngày ký nghiệm thu (end_date) mới
-    syncContractDeviceWarranty(req.params.id, end_date || '')
+    syncContractDeviceWarranty(req.params.id)
     syncInverterCustomersFromContract(req.params.id)
 
     const updated = db.prepare('SELECT * FROM contracts WHERE id = ?').get(req.params.id) as any
