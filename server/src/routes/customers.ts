@@ -534,7 +534,7 @@ router.put('/:id', authenticateToken, requireRole(UserRole.ADMIN, UserRole.SERVI
       WHERE id = ?
     `).run(
       name || null,
-      email !== undefined ? email : null,
+      email !== undefined ? (email || null) : null,
       phone || null,
       address || null,
       customer_type || null,

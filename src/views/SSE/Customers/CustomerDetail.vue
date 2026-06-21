@@ -449,13 +449,16 @@
               <!-- Email nhận hóa đơn -->
               <div>
                 <div class="flex items-center justify-between mb-1.5">
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Email <span class="text-red-500">*</span></label>
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Email
+                    <span class="text-xs font-normal text-gray-400 dark:text-gray-500">(tùy chọn)</span>
+                  </label>
                   <span class="text-xs text-amber-600 dark:text-amber-400 font-medium flex items-center gap-1">
                     <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
                     Email nhận hóa đơn
                   </span>
                 </div>
-                <input v-model="editForm.email" type="email" required placeholder="example@company.com" class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white text-sm" />
+                <input v-model="editForm.email" type="email" placeholder="example@company.com" class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white text-sm" />
               </div>
               <!-- Địa chỉ công ty -->
               <div class="md:col-span-2">
@@ -924,7 +927,7 @@ const saveCustomer = async () => {
       // Update user in users table
       const response = await apiClient.put(`/users/${customerId}`, {
         name: editForm.value.name,
-        email: editForm.value.email,
+        email: editForm.value.email.trim(),
         phone: editForm.value.contact_phone || null,
         address: editForm.value.address || null,
       })
@@ -936,7 +939,7 @@ const saveCustomer = async () => {
       // Update customer in customers table
       const response = await apiClient.put(`/customers/${customerId}`, {
         name: editForm.value.name,
-        email: editForm.value.email,
+        email: editForm.value.email.trim() || null,
         address: editForm.value.address || null,
         tax_code: editForm.value.tax_code || null,
         contact_person: editForm.value.contact_person || null,

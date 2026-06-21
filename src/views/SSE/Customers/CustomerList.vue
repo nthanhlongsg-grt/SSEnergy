@@ -540,7 +540,10 @@
                 <!-- Email -->
                 <div>
                   <div class="flex items-center justify-between mb-1.5">
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Email <span class="text-red-500">*</span></label>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Email
+                      <span class="text-xs font-normal text-gray-400 dark:text-gray-500">(tùy chọn)</span>
+                    </label>
                     <span class="text-xs text-amber-600 dark:text-amber-400 font-medium flex items-center gap-1">
                       <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
@@ -548,7 +551,7 @@
                       Email nhận hóa đơn
                     </span>
                   </div>
-                  <input v-model="customerForm.email" type="email" required placeholder="example@company.com" class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white text-sm" />
+                  <input v-model="customerForm.email" type="email" placeholder="example@company.com" class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white text-sm" />
                 </div>
                 <!-- Địa chỉ -->
                 <div class="md:col-span-2">
@@ -967,7 +970,7 @@ const saveCustomer = async () => {
     // contact_user_id = ID người liên hệ từ bảng users
     const response = await apiClient.post('/customers', {
       name: customerForm.value.name,
-      email: customerForm.value.email || undefined,
+      email: customerForm.value.email.trim() || undefined,
       address: customerForm.value.address || undefined,
       tax_code: customerForm.value.tax_code || undefined,
       contact_person: customerForm.value.contact_person || undefined,
