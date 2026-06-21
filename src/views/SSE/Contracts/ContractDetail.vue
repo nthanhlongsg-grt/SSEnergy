@@ -262,6 +262,67 @@
               </div>
             </div>
 
+            <!-- Người quản lý hợp đồng -->
+            <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 sm:p-5">
+              <div class="flex items-start justify-between gap-3 mb-3">
+                <div>
+                  <h2 class="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    {{ t('contractList.managers.title') }}
+                  </h2>
+                  <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                    {{ t('contractList.managers.hint') }}
+                  </p>
+                </div>
+                <button
+                  v-if="canManageContracts"
+                  type="button"
+                  @click="openAddManagerModal"
+                  class="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors flex-shrink-0"
+                >
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                  </svg>
+                  {{ t('contractList.managers.add') }}
+                </button>
+              </div>
+
+              <div v-if="managers.length > 0" class="space-y-2">
+                <div
+                  v-for="manager in managers"
+                  :key="manager.id"
+                  class="flex items-center justify-between gap-2 p-2.5 rounded-lg bg-gray-50 dark:bg-gray-700/50"
+                >
+                  <div class="flex items-center gap-2.5 min-w-0">
+                    <div class="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 flex items-center justify-center text-sm font-semibold flex-shrink-0">
+                      {{ manager.name?.charAt(0).toUpperCase() || '?' }}
+                    </div>
+                    <div class="min-w-0">
+                      <p class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ manager.name }}</p>
+                      <p class="text-xs text-gray-500 dark:text-gray-400 truncate">
+                        {{ getManagerRoleLabel(manager.role) }}
+                        <span v-if="manager.phone"> · {{ manager.phone }}</span>
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    v-if="canManageContracts"
+                    type="button"
+                    :disabled="savingManagers"
+                    @click="removeManager(manager.id)"
+                    class="p-1.5 text-gray-400 hover:text-red-600 dark:hover:text-red-400 rounded transition-colors flex-shrink-0"
+                    :title="t('contractList.managers.remove')"
+                  >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+              <p v-else class="text-sm text-gray-400 dark:text-gray-500 italic">
+                {{ t('contractList.managers.empty') }}
+              </p>
+            </div>
+
           </div>
 
           <!-- RIGHT: Contract content + Device list -->
@@ -280,7 +341,7 @@
                       {{ idx + 1 }}
                     </span>
                     <div class="flex-1 min-w-0">
-                      <p class="text-sm font-medium text-gray-900 dark:text-white">{{ it.description }}</p>
+                      <p class="text-sm font-medium text-gray-900 dark:text-white whitespace-pre-wrap">{{ it.description }}</p>
                       <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
                         {{ it.quantity }} {{ it.unit || '—' }} × {{ fmtCurrency(it.unit_price) }}
                       </p>
@@ -308,7 +369,7 @@
                   <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
                     <tr v-for="(it, idx) in contract.items" :key="idx">
                       <td class="px-3 py-2 text-center text-gray-500">{{ idx + 1 }}</td>
-                      <td class="px-3 py-2 text-gray-900 dark:text-white">{{ it.description }}</td>
+                      <td class="px-3 py-2 text-gray-900 dark:text-white whitespace-pre-wrap align-top">{{ it.description }}</td>
                       <td class="px-3 py-2 text-center text-gray-600 dark:text-gray-400">{{ it.unit || '—' }}</td>
                       <td class="px-3 py-2 text-right text-gray-600 dark:text-gray-400">{{ it.quantity }}</td>
                       <td class="px-3 py-2 text-right text-gray-600 dark:text-gray-400 whitespace-nowrap">{{ fmtCurrency(it.unit_price) }}</td>
@@ -464,6 +525,74 @@
         </div>
       </div>
 
+      <!-- Thêm người quản lý -->
+      <div
+        v-if="showAddManagerModal"
+        class="fixed inset-0 z-[100000] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/50"
+        @click.self="showAddManagerModal = false"
+      >
+        <div class="bg-white dark:bg-gray-800 rounded-t-2xl sm:rounded-2xl shadow-xl w-full sm:max-w-lg max-h-[85vh] flex flex-col">
+          <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+            <h3 class="text-lg font-bold text-gray-900 dark:text-white">{{ t('contractList.managers.add') }}</h3>
+            <button type="button" @click="showAddManagerModal = false" class="p-2 text-gray-400 hover:text-gray-600 rounded-lg">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+            </button>
+          </div>
+          <div class="p-5 space-y-3 overflow-y-auto flex-1">
+            <input
+              v-model="managerSearch"
+              type="search"
+              :placeholder="t('contractList.managers.searchPlaceholder')"
+              class="w-full px-3 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            />
+            <p v-if="loadingManagerUsers" class="text-sm text-gray-400 text-center py-4">{{ t('common.loading') }}</p>
+            <p v-else-if="filteredManagerCandidates.length === 0" class="text-sm text-gray-400 text-center py-4">
+              {{ t('contractList.managers.noUsers') }}
+            </p>
+            <div v-else class="space-y-1 max-h-64 overflow-y-auto">
+              <label
+                v-for="user in filteredManagerCandidates"
+                :key="user.id"
+                class="flex items-center gap-3 p-2.5 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer"
+              >
+                <input
+                  type="checkbox"
+                  :checked="selectedManagerIds.includes(user.id)"
+                  class="rounded border-gray-300 text-blue-600"
+                  @change="toggleManagerSelection(user.id)"
+                />
+                <div class="min-w-0">
+                  <p class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ user.name }}</p>
+                  <p class="text-xs text-gray-500 dark:text-gray-400 truncate">
+                    {{ getManagerRoleLabel(user.role) }}
+                    <span v-if="user.email"> · {{ user.email }}</span>
+                  </p>
+                </div>
+              </label>
+            </div>
+          </div>
+          <div class="px-5 py-4 border-t border-gray-200 dark:border-gray-700 flex gap-3 justify-end">
+            <button
+              type="button"
+              @click="showAddManagerModal = false"
+              class="px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg"
+            >
+              {{ t('common.cancel') }}
+            </button>
+            <button
+              type="button"
+              :disabled="selectedManagerIds.length === 0 || savingManagers"
+              @click="addManagers"
+              class="px-4 py-2.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 rounded-lg"
+            >
+              {{ savingManagers ? t('contractList.managers.saving') : t('common.save') }}
+            </button>
+          </div>
+        </div>
+      </div>
+
       <!-- Xác nhận xóa hợp đồng (dev only) -->
       <div v-if="showDeleteConfirm" class="fixed inset-0 z-[100000] flex items-center justify-center p-4 bg-black/50">
         <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-md p-6">
@@ -502,8 +631,10 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
-import { contractService, type Contract } from '@/services/contractService'
+import { contractService, type Contract, type ContractManager } from '@/services/contractService'
+import { apiClient } from '@/services/api'
 import { amountToVietnameseWords } from '@/utils/numberToWords'
 import { exportQuotation } from '@/utils/quotation'
 import { zaloChatUrl } from '@/utils/zalo'
@@ -517,6 +648,7 @@ import {
 
 const route = useRoute()
 const router = useRouter()
+const { t } = useI18n()
 const { getUserRole, getUser, canViewContractFinance, canManageContracts, hasPermission } = useAuth()
 const canCreateTicket = computed(() => hasPermission(Permission.CREATE_TICKET))
 const isStaff = computed(() => getUserRole.value !== UserRole.END_USER && getUserRole.value !== UserRole.DISTRIBUTOR)
@@ -532,6 +664,95 @@ const exportShowContact = ref(true)
 const markingPayment = ref(false)
 const signedDateInput = ref('')
 const savingContractInfo = ref(false)
+
+const MANAGER_ROLES = [UserRole.END_USER]
+
+const managers = computed<ContractManager[]>(() => contract.value?.managers ?? [])
+const showAddManagerModal = ref(false)
+const managerSearch = ref('')
+const availableManagerUsers = ref<Array<{ id: number; name: string; email?: string; role: string }>>([])
+const selectedManagerIds = ref<number[]>([])
+const loadingManagerUsers = ref(false)
+const savingManagers = ref(false)
+
+const filteredManagerCandidates = computed(() => {
+  const existingIds = new Set(managers.value.map((m) => m.id))
+  const q = managerSearch.value.trim().toLowerCase()
+  return availableManagerUsers.value.filter((u) => {
+    if (existingIds.has(u.id)) return false
+    if (!MANAGER_ROLES.includes(u.role as UserRole)) return false
+    if (!q) return true
+    return (
+      u.name.toLowerCase().includes(q) ||
+      (u.email?.toLowerCase().includes(q) ?? false) ||
+      ((u as { phone?: string }).phone?.toLowerCase().includes(q) ?? false)
+    )
+  })
+})
+
+function getManagerRoleLabel(role?: string | null) {
+  if (!role) return ''
+  if (role === UserRole.END_USER) return t('customers.list.typeOptions.endUser')
+  return role
+}
+
+async function loadManagerCandidates() {
+  loadingManagerUsers.value = true
+  try {
+    const response = await apiClient.get('/users?status=active&limit=1000&role=end_user')
+    const data = response.data
+    availableManagerUsers.value = Array.isArray(data) ? data : []
+  } catch {
+    availableManagerUsers.value = []
+  } finally {
+    loadingManagerUsers.value = false
+  }
+}
+
+async function openAddManagerModal() {
+  showAddManagerModal.value = true
+  managerSearch.value = ''
+  selectedManagerIds.value = []
+  await loadManagerCandidates()
+}
+
+function toggleManagerSelection(userId: number) {
+  const idx = selectedManagerIds.value.indexOf(userId)
+  if (idx >= 0) selectedManagerIds.value.splice(idx, 1)
+  else selectedManagerIds.value.push(userId)
+}
+
+async function persistManagers(userIds: number[]) {
+  if (!contract.value) return
+  savingManagers.value = true
+  try {
+    const { managers: updated } = await contractService.updateManagers(contract.value.id, userIds)
+    contract.value.managers = updated
+  } finally {
+    savingManagers.value = false
+  }
+}
+
+async function addManagers() {
+  if (!contract.value || selectedManagerIds.value.length === 0) return
+  const nextIds = [...managers.value.map((m) => m.id), ...selectedManagerIds.value]
+  try {
+    await persistManagers(nextIds)
+    showAddManagerModal.value = false
+  } catch (e: any) {
+    alert(e.message || 'Không thể thêm người quản lý')
+  }
+}
+
+async function removeManager(userId: number) {
+  if (!contract.value || !confirm(t('contractList.managers.confirmRemove'))) return
+  const nextIds = managers.value.map((m) => m.id).filter((id) => id !== userId)
+  try {
+    await persistManagers(nextIds)
+  } catch (e: any) {
+    alert(e.message || 'Không thể gỡ người quản lý')
+  }
+}
 
 const contractInfoDirty = computed(() => {
   if (!contract.value) return false

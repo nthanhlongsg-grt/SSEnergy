@@ -138,7 +138,7 @@
                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Khách hàng</th>
                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase hidden sm:table-cell">Người liên hệ</th>
                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase hidden md:table-cell whitespace-nowrap w-[5.5rem]">Loại</th>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase hidden lg:table-cell">Ngày ký HĐ / NT</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase hidden lg:table-cell">Ngày ký HĐ</th>
                 <th v-if="canViewContractFinance" class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase hidden lg:table-cell">Giá trị</th>
                 <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Thanh toán</th>
               </tr>
@@ -162,7 +162,7 @@
                   </span>
                 </td>
                 <td class="px-4 py-3 hidden lg:table-cell text-gray-600 dark:text-gray-400 text-xs">
-                  {{ c.signed_date ? formatDate(c.signed_date) : '—' }} / {{ c.end_date ? formatDate(c.end_date) : '—' }}
+                  {{ c.signed_date ? formatDate(c.signed_date) : '—' }}
                 </td>
                 <td v-if="canViewContractFinance" class="px-4 py-3 hidden lg:table-cell text-right font-medium text-gray-900 dark:text-white">
                   {{ formatCurrency(c.value) }}
@@ -316,16 +316,11 @@
                 </div>
               </div>
 
-              <!-- Ngày ký hợp đồng / nghiệm thu — chỉ khi chỉnh sửa -->
+              <!-- Ngày ký hợp đồng — chỉ khi chỉnh sửa -->
               <template v-if="editingContract">
                 <div>
                   <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Ngày ký hợp đồng</label>
                   <flat-pickr v-model="form.signed_date" :config="datePickerConfig" placeholder="dd/mm/yyyy" class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                </div>
-
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Ngày ký nghiệm thu</label>
-                  <flat-pickr v-model="form.end_date" :config="datePickerConfig" placeholder="dd/mm/yyyy" class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500" />
                 </div>
               </template>
 
@@ -373,7 +368,13 @@
                     <tr v-for="(it, idx) in form.items" :key="idx">
                       <td class="px-3 py-2 text-center text-gray-500">{{ idx + 1 }}</td>
                       <td class="px-2 py-1.5">
-                        <input v-model="it.description" type="text" placeholder="VD: Sửa chữa main board SG110CX" class="w-full px-2.5 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                        <textarea
+                          v-model="it.description"
+                          rows="3"
+                          placeholder="VD: Sửa chữa main board SG110CX
+- Dịch vụ giám sát..."
+                          class="w-full min-h-[4.5rem] px-2.5 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y whitespace-pre-wrap"
+                        />
                       </td>
                       <td class="px-2 py-1.5">
                         <input v-model="it.unit" type="text" placeholder="Cái" class="w-full px-2 py-1.5 text-sm text-center border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500" />

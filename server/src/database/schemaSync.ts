@@ -82,6 +82,7 @@ export function applySchemaSync(db: Database.Database): string[] {
   add('tickets', 'inverter_serial', 'inverter_serial TEXT')
   add('tickets', 'inverter_model', 'inverter_model TEXT')
   add('tickets', 'report_html_file', 'report_html_file TEXT')
+  add('tickets', 'contract_id', 'contract_id INTEGER')
 
   // --- ticket attachments / comments ---
   add('ticket_attachments', 'comment_id', 'comment_id INTEGER')
@@ -199,6 +200,18 @@ export function applySchemaSync(db: Database.Database): string[] {
       FOREIGN KEY (user_id) REFERENCES users(id)
     );
     CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id, is_read, created_at);
+
+    CREATE TABLE IF NOT EXISTS contract_managers (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      contract_id INTEGER NOT NULL,
+      user_id INTEGER NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (contract_id) REFERENCES contracts(id) ON DELETE CASCADE,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+      UNIQUE(contract_id, user_id)
+    );
+    CREATE INDEX IF NOT EXISTS idx_contract_managers_contract ON contract_managers(contract_id);
+    CREATE INDEX IF NOT EXISTS idx_contract_managers_user ON contract_managers(user_id);
 
     CREATE TABLE IF NOT EXISTS ticket_watchers (
       id INTEGER PRIMARY KEY AUTOINCREMENT,

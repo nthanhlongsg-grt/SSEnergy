@@ -96,8 +96,13 @@ const canAccessInverterViaContract = (
       JOIN customers cu ON cu.id = ct.customer_id
       WHERE ci.inverter_id = ?
         AND (cu.user_id IN (${placeholders}) OR cu.contact_user_id IN (${placeholders}))
+      UNION
+      SELECT 1
+      FROM contract_managers cm
+      JOIN contract_inverters ci2 ON ci2.contract_id = cm.contract_id
+      WHERE cm.user_id = ? AND ci2.inverter_id = ?
     `)
-    .get(inverterId, ...userIds, ...userIds)
+    .get(inverterId, ...userIds, ...userIds, user.id, inverterId)
   return !!row
 }
 
@@ -109,13 +114,20 @@ const appendContractPortalAccessFilter = (
   if (isStaffRole(user.role)) return baseQuery
   const userIds = getLinkedUserIds(user)
   const placeholders = userIds.map(() => '?').join(', ')
-  params.push(...userIds, ...userIds)
-  return `${baseQuery} AND EXISTS (
-    SELECT 1 FROM contract_inverters ci2
-    JOIN contracts ct ON ct.id = ci2.contract_id
-    JOIN customers cu ON cu.id = ct.customer_id
-    WHERE ci2.inverter_id = i.id
-      AND (cu.user_id IN (${placeholders}) OR cu.contact_user_id IN (${placeholders}))
+  params.push(...userIds, ...userIds, user.id)
+  return `${baseQuery} AND (
+    EXISTS (
+      SELECT 1 FROM contract_inverters ci2
+      JOIN contracts ct ON ct.id = ci2.contract_id
+      JOIN customers cu ON cu.id = ct.customer_id
+      WHERE ci2.inverter_id = i.id
+        AND (cu.user_id IN (${placeholders}) OR cu.contact_user_id IN (${placeholders}))
+    )
+    OR EXISTS (
+      SELECT 1 FROM contract_managers cm
+      JOIN contract_inverters ci3 ON ci3.contract_id = cm.contract_id
+      WHERE cm.user_id = ? AND ci3.inverter_id = i.id
+    )
   )`
 }
 

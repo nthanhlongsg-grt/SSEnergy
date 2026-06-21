@@ -29,6 +29,7 @@ import {
   normalizeTicketStatus,
   type TicketStatusValue,
 } from '../constants/ticketStatus.js'
+import { userCanAccessTicketViaContractManager } from '../utils/contractManagers.js'
 
 const CLOSED_DB_STATUSES = expandStatusFilter(TicketStatus.CLOSED)
 const CLOSED_DB_STATUSES_SQL = CLOSED_DB_STATUSES.map((s) => `'${s}'`).join(', ')
@@ -498,13 +499,14 @@ router.get('/:id', authenticateToken, (req, res) => {
     // Check access permissions based on user role
     // Logic phải khớp với GET /tickets (danh sách) để tránh hiển thị ticket nhưng không xem được chi tiết
     if (user?.role === UserRole.END_USER) {
-      // End users can view tickets they created OR tickets assigned to them OR tickets for their inverters OR tickets they are watching
-      const canAccess = 
-        ticket.created_by === user.id || 
+      const canAccess =
+        ticket.created_by === user.id ||
         ticket.assigned_to === user.id ||
-        (ticket.inverter_id && db.prepare('SELECT 1 FROM inverters WHERE id = ? AND user_id = ?').get(ticket.inverter_id, user.id)) ||
-        db.prepare('SELECT 1 FROM ticket_watchers WHERE ticket_id = ? AND user_id = ?').get(ticketId, user.id)
-      
+        (ticket.inverter_id &&
+          db.prepare('SELECT 1 FROM inverters WHERE id = ? AND user_id = ?').get(ticket.inverter_id, user.id)) ||
+        db.prepare('SELECT 1 FROM ticket_watchers WHERE ticket_id = ? AND user_id = ?').get(ticketId, user.id) ||
+        userCanAccessTicketViaContractManager(user.id, ticket)
+
       if (!canAccess) {
         return res.status(403).json({ error: 'Access denied' })
       }
@@ -553,8 +555,17 @@ router.get('/:id', authenticateToken, (req, res) => {
       if (!canAccess) {
         return res.status(403).json({ error: 'Access denied' })
       }
+    } else if (user?.role === UserRole.TECHNICIAN) {
+      const canAccess =
+        ticket.assigned_to === user.id ||
+        ticket.created_by === user.id ||
+        db.prepare('SELECT 1 FROM ticket_watchers WHERE ticket_id = ? AND user_id = ?').get(ticketId, user.id) ||
+        userCanAccessTicketViaContractManager(user.id, ticket)
+
+      if (!canAccess) {
+        return res.status(403).json({ error: 'Access denied' })
+      }
     }
-    // TECHNICIAN can now see all tickets (no access restriction)
 
     // Get comments - filter internal comments based on user role
     const canViewInternal =

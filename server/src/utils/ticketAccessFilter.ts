@@ -1,5 +1,6 @@
 import db from '../database/db.js'
 import { UserRole } from '../types/index.js'
+import { contractManagerTicketExistsSql } from './contractManagers.js'
 
 export interface TicketAccessFilter {
   whereClause: string
@@ -16,12 +17,12 @@ export function buildTicketAccessFilter(user: {
 
   if (user.role === UserRole.END_USER) {
     whereClause =
-      'WHERE (t.created_by = ? OR t.assigned_to = ? OR EXISTS (SELECT 1 FROM inverters i WHERE i.id = t.inverter_id AND i.user_id = ?) OR EXISTS (SELECT 1 FROM ticket_watchers tw WHERE tw.ticket_id = t.id AND tw.user_id = ?))'
-    params.push(user.id, user.id, user.id, user.id)
+      `WHERE (t.created_by = ? OR t.assigned_to = ? OR EXISTS (SELECT 1 FROM inverters i WHERE i.id = t.inverter_id AND i.user_id = ?) OR EXISTS (SELECT 1 FROM ticket_watchers tw WHERE tw.ticket_id = t.id AND tw.user_id = ?) OR ${contractManagerTicketExistsSql})`
+    params.push(user.id, user.id, user.id, user.id, user.id)
   } else if (user.role === UserRole.TECHNICIAN) {
     whereClause =
-      'WHERE (t.assigned_to = ? OR t.created_by = ? OR EXISTS (SELECT 1 FROM ticket_watchers tw WHERE tw.ticket_id = t.id AND tw.user_id = ?))'
-    params.push(user.id, user.id, user.id)
+      `WHERE (t.assigned_to = ? OR t.created_by = ? OR EXISTS (SELECT 1 FROM ticket_watchers tw WHERE tw.ticket_id = t.id AND tw.user_id = ?) OR ${contractManagerTicketExistsSql})`
+    params.push(user.id, user.id, user.id, user.id)
   } else if (user.role === UserRole.DISTRIBUTOR) {
     const linkedEndUsers = db
       .prepare(`

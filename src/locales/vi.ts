@@ -2617,6 +2617,18 @@ const vi = {
       remove: 'Xóa',
       empty: 'Chưa có thiết bị nào — nhấn {action} để thêm',
     },
+    managers: {
+      title: 'Người quản lý hợp đồng',
+      hint: 'Người dùng cuối được gán có thể quản lý thiết bị và ticket thuộc hợp đồng này trên portal',
+      add: 'Thêm người quản lý',
+      empty: 'Chưa có người quản lý',
+      saving: 'Đang lưu...',
+      remove: 'Gỡ',
+      selectUser: 'Chọn người dùng cuối',
+      searchPlaceholder: 'Tìm theo tên, email, SĐT...',
+      noUsers: 'Không có người dùng cuối phù hợp',
+      confirmRemove: 'Gỡ người quản lý này?',
+    },
   },
 }
 

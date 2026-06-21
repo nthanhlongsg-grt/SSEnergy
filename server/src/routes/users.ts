@@ -5,6 +5,7 @@ import { CreateUserDto, UpdateUserDto, UserRole, isAdminRole } from '../types/in
 import { authenticateToken, requireSystemAdmin, AuthRequest } from '../middleware/auth.js'
 import { syncUserData } from '../database/sync.js'
 import { maskSystemUser, isSystemUser, isSystemUserId, canViewSystemUsers, SYSTEM_USER_CONSTANTS } from '../utils/systemUser.js'
+import { canManageContracts } from '../utils/contractFinance.js'
 
 const router = Router()
 
@@ -12,12 +13,11 @@ const router = Router()
 router.get('/', authenticateToken, (req: AuthRequest, res) => {
   try {
     const user = req.user!
-    const { status, limit } = req.query
+    const { status, limit, role } = req.query
 
-    // Allow ADMIN, DEV, SERVICE_CENTER, TECHNICIAN to view users
-    // For watchers functionality, we need to allow more roles
+    // Staff list users (watchers, contract managers, customer contacts, …)
     const allowedRoles = [UserRole.ADMIN, UserRole.DEV, UserRole.SERVICE_CENTER, UserRole.TECHNICIAN]
-    if (!allowedRoles.includes(user.role as UserRole)) {
+    if (!allowedRoles.includes(user.role as UserRole) && !canManageContracts(user.role)) {
       return res.status(403).json({ error: 'Access denied' })
     }
 
@@ -37,6 +37,11 @@ router.get('/', authenticateToken, (req: AuthRequest, res) => {
     if (status) {
       query += ' AND status = ?'
       params.push(status)
+    }
+
+    if (role) {
+      query += ' AND role = ?'
+      params.push(String(role))
     }
 
     query += ' ORDER BY created_at DESC'

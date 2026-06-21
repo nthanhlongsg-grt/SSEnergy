@@ -27,6 +27,16 @@ export interface ContractPaperwork {
   verification_date?: string | null
 }
 
+export interface ContractManager {
+  id: number
+  name: string
+  email?: string | null
+  phone?: string | null
+  role: string
+  function?: string | null
+  created_at?: string
+}
+
 export interface Contract {
   id: number
   contract_number: string
@@ -54,6 +64,7 @@ export interface Contract {
   updated_at: string
   inverters?: { id: number; serial_number: string; model: string; power_rating?: string; status: string }[]
   inverter_ids?: number[]
+  managers?: ContractManager[]
 }
 
 export interface ContractStats {
@@ -136,6 +147,16 @@ export const contractService = {
     })
     if (!res.ok) throw new Error((await res.json()).error || 'Lỗi cập nhật hồ sơ giấy tờ')
     return res.json() as Promise<Contract>
+  },
+
+  async updateManagers(id: number, userIds: number[]) {
+    const res = await fetch(`${BASE}/${id}/managers`, {
+      method: 'PUT',
+      headers: authHeaders(),
+      body: JSON.stringify({ user_ids: userIds }),
+    })
+    if (!res.ok) throw new Error((await res.json()).error || 'Lỗi cập nhật người quản lý')
+    return res.json() as Promise<{ managers: ContractManager[] }>
   },
 
   async remove(id: number) {

@@ -2613,6 +2613,18 @@ const en = {
       remove: 'Remove',
       empty: 'No devices yet — click {action} to add',
     },
+    managers: {
+      title: 'Contract managers',
+      hint: 'Assigned end users can manage devices and tickets for this contract on the customer portal',
+      add: 'Add manager',
+      empty: 'No managers assigned',
+      saving: 'Saving...',
+      remove: 'Remove',
+      selectUser: 'Select end user',
+      searchPlaceholder: 'Search by name, email, phone...',
+      noUsers: 'No matching end users',
+      confirmRemove: 'Remove this manager?',
+    },
   },
 }
 

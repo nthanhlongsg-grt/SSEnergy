@@ -4,6 +4,12 @@ import { authenticateToken, requireRole, AuthRequest } from '../middleware/auth.
 import { UserRole } from '../types/index.js'
 import { createNotification, notifyUsersByRoles } from '../services/notificationService.js'
 import { canViewContractFinance, canManageContracts, stripContractFinancialFields } from '../utils/contractFinance.js'
+import {
+  canViewContractRestrictedStaff,
+  fetchContractManagers,
+  isContractManager,
+  setContractManagers,
+} from '../utils/contractManagers.js'
 
 const router = Router()
 
@@ -219,12 +225,18 @@ const customerScopeClause = (user: NonNullable<AuthRequest['user']>): { clause: 
   const userIds = getLinkedUserIds(user)
   const placeholders = userIds.map(() => '?').join(', ')
   return {
-    clause: ` AND EXISTS (
-      SELECT 1 FROM customers cu_access
-      WHERE cu_access.id = c.customer_id
-        AND (cu_access.user_id IN (${placeholders}) OR cu_access.contact_user_id IN (${placeholders}))
+    clause: ` AND (
+      EXISTS (
+        SELECT 1 FROM customers cu_access
+        WHERE cu_access.id = c.customer_id
+          AND (cu_access.user_id IN (${placeholders}) OR cu_access.contact_user_id IN (${placeholders}))
+      )
+      OR EXISTS (
+        SELECT 1 FROM contract_managers cm
+        WHERE cm.contract_id = c.id AND cm.user_id = ?
+      )
     )`,
-    params: [...userIds, ...userIds],
+    params: [...userIds, ...userIds, user.id],
   }
 }
 
@@ -271,10 +283,10 @@ router.get('/customer-inverters', authenticateToken, (req, res) => {
 // GET /api/contracts - list all contracts
 router.get('/', authenticateToken, (req, res) => {
   try {
-    const user = (req as AuthRequest).user
-    if (user && (user.role === UserRole.TECHNICIAN || user.role === UserRole.WAREHOUSE)) {
-      return res.status(403).json({ error: 'Insufficient permissions' })
-    }
+    const user = (req as AuthRequest).user!
+    const isRestrictedStaff =
+      user.role === UserRole.TECHNICIAN || user.role === UserRole.WAREHOUSE
+
     const { status, customer_id, search, unpaid, undelivered, contract_type, from, to, page = '1', limit = '20' } = req.query
 
     const pageNum = Math.max(1, parseInt(page as string))
@@ -283,6 +295,11 @@ router.get('/', authenticateToken, (req, res) => {
 
     let where = '1=1'
     const params: any[] = []
+
+    if (isRestrictedStaff) {
+      where += ' AND EXISTS (SELECT 1 FROM contract_managers cm WHERE cm.contract_id = c.id AND cm.user_id = ?)'
+      params.push(user.id)
+    }
 
     if (status) { where += ' AND c.status = ?'; params.push(status) }
     if (customer_id) { where += ' AND c.customer_id = ?'; params.push(customer_id) }
@@ -419,8 +436,8 @@ router.get('/dashboard-metrics', authenticateToken, (req, res) => {
 // GET /api/contracts/:id
 router.get('/:id', authenticateToken, (req, res) => {
   try {
-    const user = (req as AuthRequest).user
-    if (user && (user.role === UserRole.TECHNICIAN || user.role === UserRole.WAREHOUSE)) {
+    const user = (req as AuthRequest).user!
+    if (!canViewContractRestrictedStaff(user, req.params.id)) {
       return res.status(403).json({ error: 'Insufficient permissions' })
     }
     const contract = db
@@ -450,7 +467,10 @@ router.get('/:id', authenticateToken, (req, res) => {
 
     if (!contract) return res.status(404).json({ error: 'Không tìm thấy hợp đồng' })
 
-    if (!canAccessContractCustomer(user!, contract.customer_id)) {
+    if (
+      !canAccessContractCustomer(user!, contract.customer_id) &&
+      !isContractManager(user!.id, contract.id)
+    ) {
       return res.status(403).json({ error: 'Bạn không có quyền xem hợp đồng này' })
     }
 
@@ -488,9 +508,28 @@ router.get('/:id', authenticateToken, (req, res) => {
     })
 
     stripInternalFields(user, contract)
-    res.json({ ...(contract as object), inverters: invertersWithTickets })
+    const managers = fetchContractManagers(req.params.id)
+    res.json({ ...(contract as object), inverters: invertersWithTickets, managers })
   } catch (err: any) {
     res.status(500).json({ error: err.message })
+  }
+})
+
+// PUT /api/contracts/:id/managers — assign staff to manage devices & tickets
+router.put('/:id/managers', authenticateToken, (req, res) => {
+  try {
+    const user = (req as AuthRequest).user!
+    if (!canManageContracts(user.role)) {
+      return res.status(403).json({ error: 'Bạn không có quyền chỉnh sửa hợp đồng' })
+    }
+    const existing = db.prepare('SELECT id FROM contracts WHERE id = ?').get(req.params.id)
+    if (!existing) return res.status(404).json({ error: 'Không tìm thấy hợp đồng' })
+
+    const { user_ids } = req.body as { user_ids?: number[] }
+    const managers = setContractManagers(req.params.id, user_ids ?? [])
+    res.json({ managers })
+  } catch (err: any) {
+    res.status(400).json({ error: err.message || 'Không thể cập nhật người quản lý' })
   }
 })
 

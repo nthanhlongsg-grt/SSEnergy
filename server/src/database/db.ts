@@ -496,6 +496,19 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_contract_inverters_contract ON contract_inverters(contract_id);
   CREATE INDEX IF NOT EXISTS idx_contract_inverters_inverter ON contract_inverters(inverter_id);
 
+  -- Contract managers (staff assigned to manage devices & tickets per contract)
+  CREATE TABLE IF NOT EXISTS contract_managers (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    contract_id INTEGER NOT NULL,
+    user_id INTEGER NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (contract_id) REFERENCES contracts(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE(contract_id, user_id)
+  );
+  CREATE INDEX IF NOT EXISTS idx_contract_managers_contract ON contract_managers(contract_id);
+  CREATE INDEX IF NOT EXISTS idx_contract_managers_user ON contract_managers(user_id);
+
   -- System Settings table
   CREATE TABLE IF NOT EXISTS settings (
     id INTEGER PRIMARY KEY AUTOINCREMENT,

@@ -18,7 +18,6 @@ export interface PaperworkCheckItem {
 
 export const PAPERWORK_CHECKLIST: PaperworkCheckItem[] = [
   { id: 'signed', label: 'Ngày ký hợp đồng', shortLabel: 'Ký hợp đồng', dateField: 'signed_date', source: 'contract' },
-  { id: 'acceptance', label: 'Ngày ký biên bản nghiệm thu', shortLabel: 'Ký biên bản nghiệm thu', dateField: 'end_date', source: 'contract' },
   { id: 'invoice', label: 'Ngày xuất hóa đơn', shortLabel: 'Xuất hóa đơn', dateField: 'invoice_date', source: 'paperwork' },
   { id: 'payment', label: 'Ngày nhận thanh toán', shortLabel: 'Nhận thanh toán', dateField: 'payment_received_date', source: 'paperwork' },
   { id: 'paper_sent', label: 'Ngày gửi hợp đồng giấy đi', shortLabel: 'Gửi hợp đồng giấy đi', dateField: 'paper_sent_date', source: 'paperwork' },

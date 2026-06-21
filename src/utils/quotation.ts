@@ -40,6 +40,10 @@ function esc(s: unknown): string {
     .replace(/"/g, '&quot;')
 }
 
+function escMultiline(s: unknown): string {
+  return esc(s).replace(/\r?\n/g, '<br>')
+}
+
 function fmtNum(n: number): string {
   return (Math.round(n) || 0).toLocaleString('en-US')
 }
@@ -101,7 +105,7 @@ export function buildQuotationHtml(
           (it, i) => `
         <tr>
           <td class="c">${i + 1}</td>
-          <td>${esc(it.description)}</td>
+          <td>${escMultiline(it.description)}</td>
           <td class="c">${esc(it.unit) || 'Cái'}</td>
           <td class="c">${fmtNum(Number(it.quantity) || 0)}</td>
           <td class="r">${fmtNum(Number(it.unit_price) || 0)}</td>

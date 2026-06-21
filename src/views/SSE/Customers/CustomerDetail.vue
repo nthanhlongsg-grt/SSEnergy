@@ -668,7 +668,6 @@ const contractDateLabel = (c: {
   const end = fmtDate(c.end_date)
   if (start && end) return `${start} → ${end}`
   const signed = fmtDate(c.signed_date)
-  if (signed && end) return `Ký ${signed} → NT ${end}`
   if (signed) return `Ngày ký: ${signed}`
   if (start) return `Từ ${start}`
   if (end) return `Đến ${end}`
