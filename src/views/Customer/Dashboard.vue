@@ -1,6 +1,5 @@
 <template>
-  <customer-layout>
-    <div class="overflow-x-hidden">
+  <admin-layout>
     <!-- Error Alert -->
     <div
       v-if="error"
@@ -376,8 +375,7 @@
         </div>
       </div>
     </div>
-    </div>
-  </customer-layout>
+  </admin-layout>
 </template>
 
 <script setup lang="ts">
@@ -385,7 +383,7 @@ import { ref, onMounted } from 'vue'
 import { useChangeDetection } from '@/composables/useChangeDetection'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import CustomerLayout from '@/components/layout/CustomerLayout.vue'
+import AdminLayout from '@/components/layout/AdminLayout.vue'
 import BoxCubeIcon from '@/icons/BoxCubeIcon.vue'
 import ChatIcon from '@/icons/ChatIcon.vue'
 import WarningIcon from '@/icons/WarningIcon.vue'

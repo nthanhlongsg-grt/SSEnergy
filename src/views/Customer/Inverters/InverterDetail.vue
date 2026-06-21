@@ -1,6 +1,6 @@
 <template>
-  <customer-layout>
-    <div class="space-y-4 sm:space-y-6 overflow-x-hidden">
+  <admin-layout>
+    <div class="space-y-4 sm:space-y-6">
       <!-- Header -->
       <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
         <div class="min-w-0">
@@ -252,14 +252,14 @@
         </div>
       </div>
     </div>
-  </customer-layout>
+  </admin-layout>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import CustomerLayout from '@/components/layout/CustomerLayout.vue'
+import AdminLayout from '@/components/layout/AdminLayout.vue'
 import { inverterService } from '@/services/inverterService'
 import { formatDate, getVietnamDateString } from '@/utils/dateTime'
 

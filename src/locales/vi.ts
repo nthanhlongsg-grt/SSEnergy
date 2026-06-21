@@ -1517,14 +1517,6 @@ const vi = {
         updateError: 'Không thể cập nhật thông tin khách hàng',
       },
     },
-    nav: {
-      dashboard: 'Dashboard',
-      devices: 'Thiết bị',
-      tickets: 'Ticket',
-      contracts: 'Hợp đồng',
-      profile: 'Thông tin',
-      notifications: 'Thông báo',
-    },
     dashboard: {
       loading: 'Đang tải...',
       error: 'Không thể tải dữ liệu dashboard',
@@ -1615,28 +1607,6 @@ const vi = {
           payment: 'Thanh toán',
           invoice: 'Xuất hóa đơn',
           verified: 'Xác minh hợp đồng đầy đủ',
-        },
-      },
-    },
-    contracts: {
-      list: {
-        title: 'Hợp đồng của tôi',
-        subtitle: 'Theo dõi chi tiết hợp đồng',
-        searchPlaceholder: 'Tìm theo số hợp đồng...',
-        loading: 'Đang tải...',
-        empty: 'Chưa có hợp đồng nào',
-        loadError: 'Không thể tải danh sách hợp đồng',
-        columns: {
-          contractNumber: 'Số HĐ',
-          type: 'Loại',
-          signedDate: 'Ngày ký',
-          value: 'Giá trị',
-          payment: 'Thanh toán',
-        },
-        types: {
-          service: 'Dịch vụ',
-          economic: 'Kinh tế',
-          other: 'Khác',
         },
       },
     },

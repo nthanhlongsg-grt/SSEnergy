@@ -1,6 +1,6 @@
 <template>
-  <customer-layout>
-    <div class="space-y-4 sm:space-y-6 overflow-x-hidden">
+  <admin-layout>
+    <div class="space-y-4 sm:space-y-6">
     <!-- Header -->
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0">
       <div class="flex-1 min-w-0">
@@ -24,7 +24,7 @@
             v-model="filters.search"
             type="text"
             :placeholder="t('customers.inverters.list.filters.searchPlaceholder')"
-            class="w-full min-h-[44px] px-3 sm:px-4 py-2 text-base sm:text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white touch-manipulation"
+            class="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
           />
         </div>
         <div>
@@ -35,7 +35,7 @@
             v-model="filters.model"
             type="text"
             :placeholder="t('customers.inverters.list.filters.modelPlaceholder')"
-            class="w-full min-h-[44px] px-3 sm:px-4 py-2 text-base sm:text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white touch-manipulation"
+            class="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
           />
         </div>
         <div>
@@ -44,7 +44,7 @@
           </label>
           <select
             v-model="filters.status"
-            class="w-full min-h-[44px] px-3 sm:px-4 py-2 text-base sm:text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white touch-manipulation"
+            class="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
           >
             <option value="">{{ t('customers.inverters.list.filters.all') }}</option>
             <option value="active">{{ t('customers.inverters.list.status.active') }}</option>
@@ -132,22 +132,21 @@
       </div>
 
       <!-- Mobile Card View -->
-      <div class="md:hidden space-y-3 p-3 sm:p-0">
-        <div v-if="loading" class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-6 text-center text-gray-500 dark:text-gray-400 text-sm">
+      <div class="md:hidden">
+        <div v-if="loading" class="p-6 text-center text-gray-500 dark:text-gray-400 text-sm">
           {{ t('customers.inverters.list.table.loading') }}
         </div>
-        <div v-else-if="error" class="rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 p-6 text-center text-red-500 dark:text-red-400 text-sm">
+        <div v-else-if="error" class="p-6 text-center text-red-500 dark:text-red-400 text-sm">
           {{ error }}
         </div>
-        <div v-else-if="inverters.length === 0" class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-6 text-center text-gray-500 dark:text-gray-400 text-sm">
+        <div v-else-if="inverters.length === 0" class="p-6 text-center text-gray-500 dark:text-gray-400 text-sm">
           Chưa có thiết bị nào trong hợp đồng
         </div>
-        <button
+        <div
           v-for="inverter in inverters"
           :key="inverter.id"
-          type="button"
+          class="p-4 border-b border-gray-200 dark:border-gray-700 last:border-b-0 active:bg-gray-50 dark:active:bg-gray-700 cursor-pointer"
           @click="goToDetail(inverter)"
-          class="w-full text-left rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 shadow-sm active:bg-gray-50 dark:active:bg-gray-700/50 transition-colors touch-manipulation"
         >
           <div class="flex items-start justify-between gap-2 mb-2">
             <div class="flex-1 min-w-0">
@@ -177,18 +176,18 @@
               <span class="text-gray-900 dark:text-white">{{ formatDate(inverter.warranty_end_date) }}</span>
             </div>
           </div>
-        </button>
+        </div>
       </div>
     </div>
     </div>
-  </customer-layout>
+  </admin-layout>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import CustomerLayout from '@/components/layout/CustomerLayout.vue'
+import AdminLayout from '@/components/layout/AdminLayout.vue'
 import { inverterService, type Inverter } from '@/services/inverterService'
 import { formatDate as formatDateUtil } from '@/utils/dateTime'
 

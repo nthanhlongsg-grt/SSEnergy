@@ -1,6 +1,6 @@
 <template>
   <customer-layout>
-    <div class="px-0 space-y-4 sm:space-y-6">
+    <div class="px-4 sm:px-0 space-y-4 sm:space-y-6">
       <!-- Header -->
       <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div>

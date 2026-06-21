@@ -1515,14 +1515,6 @@ const en = {
         updateError: 'Unable to update customer information',
       },
     },
-    nav: {
-      dashboard: 'Dashboard',
-      devices: 'Devices',
-      tickets: 'Tickets',
-      contracts: 'Contracts',
-      profile: 'Profile',
-      notifications: 'Notifications',
-    },
     dashboard: {
       loading: 'Loading...',
       error: 'Unable to load dashboard data',
@@ -1613,28 +1605,6 @@ const en = {
           payment: 'Payment',
           invoice: 'Invoice issued',
           verified: 'Full contract verification',
-        },
-      },
-    },
-    contracts: {
-      list: {
-        title: 'My Contracts',
-        subtitle: 'Track your contract details',
-        searchPlaceholder: 'Search by contract number...',
-        loading: 'Loading...',
-        empty: 'No contracts yet',
-        loadError: 'Unable to load contracts',
-        columns: {
-          contractNumber: 'Contract No.',
-          type: 'Type',
-          signedDate: 'Signed Date',
-          value: 'Value',
-          payment: 'Payment',
-        },
-        types: {
-          service: 'Service',
-          economic: 'Economic',
-          other: 'Other',
         },
       },
     },

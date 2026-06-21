@@ -1,6 +1,6 @@
 <template>
-  <customer-layout>
-    <div class="space-y-4 sm:space-y-6 overflow-x-hidden">
+  <admin-layout>
+    <div class="space-y-4 sm:space-y-6">
       <!-- Header -->
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0">
       <div class="flex-1 min-w-0">
@@ -13,7 +13,7 @@
       </div>
       <router-link
         to="/customer/tickets/new"
-        class="flex items-center gap-2 px-3 sm:px-4 py-2.5 min-h-[44px] bg-blue-600 text-white rounded-lg hover:bg-blue-700 active:bg-blue-800 transition-colors text-sm sm:text-base whitespace-nowrap w-full sm:w-auto justify-center touch-manipulation"
+        class="flex items-center gap-2 px-3 sm:px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm sm:text-base whitespace-nowrap w-full sm:w-auto justify-center"
       >
         <PlusIcon class="h-4 w-4 sm:h-5 sm:w-5" />
         <span>{{ t('customers.tickets.list.actions.createNew') }}</span>
@@ -219,7 +219,7 @@
       </div>
 
       <!-- Mobile Card View -->
-      <div class="md:hidden space-y-3 p-3 sm:p-0">
+      <div class="md:hidden">
         <div v-if="loading" class="p-6 text-center text-gray-500 dark:text-gray-400 text-sm">
           {{ t('customers.tickets.list.table.loading') }}
         </div>
@@ -235,7 +235,7 @@
         <div
           v-for="ticket in tickets"
           :key="ticket.id"
-          class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 shadow-sm active:bg-gray-50 dark:active:bg-gray-700/50 cursor-pointer touch-manipulation"
+          class="p-3 border-b border-gray-200 dark:border-gray-700 last:border-b-0 active:bg-gray-50 dark:active:bg-gray-700 cursor-pointer"
           @click="router.push(`/customer/tickets/${ticket.id}`)"
         >
           <div class="flex items-start justify-between gap-2 mb-1.5">
@@ -285,7 +285,7 @@
       </div>
     </div>
     </div>
-  </customer-layout>
+  </admin-layout>
 </template>
 
 <script setup lang="ts">
@@ -299,7 +299,7 @@ import flatPickr from 'vue-flatpickr-component'
 import 'flatpickr/dist/flatpickr.css'
 import { useFlatpickrConfig } from '@/composables/useFlatpickr'
 import { getVietnamFullMonthRange, getVietnamYearRange } from '@/utils/dateTime'
-import CustomerLayout from '@/components/layout/CustomerLayout.vue'
+import AdminLayout from '@/components/layout/AdminLayout.vue'
 import PlusIcon from '@/icons/PlusIcon.vue'
 import { ticketService } from '@/services/ticketService'
 

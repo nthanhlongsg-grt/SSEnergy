@@ -1,5 +1,5 @@
 <template>
-  <portal-shell>
+  <admin-layout>
     <div class="space-y-4 sm:space-y-6 px-4 sm:px-0 pb-6">
 
       <!-- Back + Header -->
@@ -496,13 +496,13 @@
         </div>
       </div>
     </div>
-  </portal-shell>
+  </admin-layout>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import PortalShell from '@/components/layout/PortalShell.vue'
+import AdminLayout from '@/components/layout/AdminLayout.vue'
 import { contractService, type Contract } from '@/services/contractService'
 import { amountToVietnameseWords } from '@/utils/numberToWords'
 import { exportQuotation } from '@/utils/quotation'
