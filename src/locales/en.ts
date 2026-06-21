@@ -910,8 +910,11 @@ const en = {
         expiringSoon: 'Expiring Soon (45 days)',
       },
       table: {
+        index: 'No.',
         serialNumber: 'Serial Number',
         model: 'Model',
+        manufacturer: 'Brand',
+        contract: 'Contract',
         type: 'Type',
         customer: 'Customer',
         activationDate: 'Activation date',
@@ -921,6 +924,7 @@ const en = {
         view: 'View',
         delete: 'Delete',
         noDevices: 'No devices found',
+        emptyHint: 'add devices via a contract',
         loading: 'Loading data...',
       },
       types: {
@@ -2598,6 +2602,24 @@ const en = {
     },
   },
   contractList: {
+    table: {
+      columns: {
+        index: 'No.',
+        contractNumber: 'Contract no.',
+        customer: 'Customer',
+        contact: 'Contact',
+        type: 'Type',
+        signedDate: 'Signed date',
+        value: 'Value',
+        payment: 'Payment',
+      },
+      empty: 'No contracts found',
+    },
+    pagination: {
+      showing: 'Showing {from}–{to} of {total} contracts',
+      prev: 'Previous',
+      next: 'Next',
+    },
     linkedDevices: {
       title: 'Linked devices',
       addDevice: 'Add device',

@@ -77,11 +77,16 @@
         class="hidden md:block rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden"
       >
         <div class="overflow-x-auto overflow-y-auto max-h-[600px] w-full">
-          <table class="w-full min-w-[960px] table-fixed">
+          <table class="w-full min-w-[1000px] table-fixed">
             <thead class="bg-gray-50 dark:bg-gray-700 sticky top-0 z-10">
               <tr>
                 <th
-                  class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider w-[13%]"
+                  class="px-3 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider w-[4%]"
+                >
+                  {{ t('inverters.list.table.index') }}
+                </th>
+                <th
+                  class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider w-[12%]"
                 >
                   {{ t('inverters.list.table.serialNumber') }}
                 </th>
@@ -93,12 +98,12 @@
                 <th
                   class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider w-[8%]"
                 >
-                  Hãng
+                  {{ t('inverters.list.table.manufacturer') }}
                 </th>
                 <th
                   class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider w-[11%]"
                 >
-                  Hợp đồng
+                  {{ t('inverters.list.table.contract') }}
                 </th>
                 <th
                   class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider w-[22%]"
@@ -125,29 +130,32 @@
             <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
               <!-- Loading State -->
               <tr v-if="loading">
-                <td colspan="8" class="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
+                <td colspan="9" class="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
                   {{ t('inverters.list.table.loading') }}
                 </td>
               </tr>
               <!-- Error State -->
               <tr v-else-if="error">
-                <td colspan="8" class="px-6 py-8 text-center text-red-500 dark:text-red-400">
+                <td colspan="9" class="px-6 py-8 text-center text-red-500 dark:text-red-400">
                   {{ error }}
                 </td>
               </tr>
               <!-- Empty State -->
               <tr v-else-if="inverters.length === 0">
-                <td colspan="8" class="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
-                  {{ t('inverters.list.table.noDevices') }} — thêm thiết bị trong hợp đồng
+                <td colspan="9" class="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
+                  {{ t('inverters.list.table.noDevices') }} — {{ t('inverters.list.table.emptyHint') }}
                 </td>
               </tr>
               <!-- Data Rows -->
               <tr
-                v-for="inverter in paginatedInverters"
+                v-for="(inverter, index) in paginatedInverters"
                 :key="inverter.id || inverter.serial_number"
                 class="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
                 @click="inverter.id && $router.push(`/inverters/${inverter.id}`)"
               >
+                <td class="px-3 py-4 text-center text-xs text-gray-500 dark:text-gray-400 tabular-nums">
+                  {{ (currentPage - 1) * itemsPerPage + index + 1 }}
+                </td>
                 <td class="px-4 py-4">
                   <span
                     class="block font-medium text-gray-900 dark:text-white font-mono text-sm truncate"
@@ -270,7 +278,7 @@
 
         <!-- Inverter Cards -->
         <div
-          v-for="inverter in paginatedInverters"
+          v-for="(inverter, index) in paginatedInverters"
           :key="inverter.id || inverter.serial_number"
           class="rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-4 shadow-sm active:bg-gray-50 dark:active:bg-gray-700 touch-manipulation cursor-pointer"
           @click="inverter.id && $router.push(`/inverters/${inverter.id}`)"
@@ -280,7 +288,7 @@
               class="font-semibold text-gray-900 dark:text-white text-base truncate font-mono"
               :title="inverter.serial_number"
             >
-              {{ inverter.serial_number || '—' }}
+              <span class="text-gray-400 font-sans mr-1.5">#{{ (currentPage - 1) * itemsPerPage + index + 1 }}</span>{{ inverter.serial_number || '—' }}
             </h3>
             <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 truncate">
               {{ inverter.model || t('common.na') }}

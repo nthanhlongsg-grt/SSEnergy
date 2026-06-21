@@ -161,7 +161,8 @@
           <table class="w-full text-xs" style="table-layout: fixed; width: 100%;">
             <colgroup>
               <col v-if="isDev" class="w-10" />
-              <col class="w-[11%]" />
+              <col class="w-10" />
+              <col class="w-[10%]" />
               <col class="w-[14%]" />
               <col class="w-[8%]" />
               <col class="w-[14%]" />
@@ -180,6 +181,11 @@
                     v-model="selectAll"
                     class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
                   />
+                </th>
+                <th
+                  class="px-2 py-2 text-center text-[11px] font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                >
+                  STT
                 </th>
                 <th
                   class="px-2 py-2 text-left text-[11px] font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
@@ -230,7 +236,7 @@
             </thead>
             <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
               <tr
-                v-for="ticket in tickets"
+                v-for="(ticket, index) in tickets"
                 :key="ticket.id"
                 class="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
                 @click="$router.push(`/tickets/${ticket.id}`)"
@@ -243,6 +249,9 @@
                     :value="ticket.id"
                     class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
                   />
+                </td>
+                <td class="px-2 py-2 align-middle text-center text-gray-500 dark:text-gray-400 tabular-nums">
+                  {{ (currentPage - 1) * itemsPerPage + index + 1 }}
                 </td>
                 <td class="px-2 py-2 align-middle min-w-0">
                   <span
@@ -320,7 +329,7 @@
                 </td>
               </tr>
               <tr v-if="tickets.length === 0 && !loading">
-                <td :colspan="isDev ? 10 : 9" class="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
+                <td :colspan="isDev ? 11 : 10" class="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
                   {{ t('tickets.list.table.empty') }}
                 </td>
               </tr>
@@ -389,7 +398,7 @@
 
         <!-- Ticket Cards -->
         <div
-          v-for="ticket in tickets"
+          v-for="(ticket, index) in tickets"
           :key="ticket.id"
           @click="$router.push(`/tickets/${ticket.id}`)"
           :class="[
@@ -403,7 +412,7 @@
             <div class="flex-1 min-w-0">
               <div class="flex items-center gap-2 mb-1">
                 <h3 class="font-semibold text-blue-600 dark:text-blue-400 text-base truncate">
-                  {{ ticket.ticket_number }}
+                  <span class="text-gray-400 font-normal mr-1">#{{ (currentPage - 1) * itemsPerPage + index + 1 }}</span>{{ ticket.ticket_number }}
                 </h3>
                 <span
                   :class="[

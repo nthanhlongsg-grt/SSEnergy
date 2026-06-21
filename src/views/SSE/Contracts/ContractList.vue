@@ -134,22 +134,26 @@
           <table class="w-full text-sm">
             <thead>
               <tr class="bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-600">
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Số HĐ</th>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Khách hàng</th>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase hidden sm:table-cell">Người liên hệ</th>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase hidden md:table-cell whitespace-nowrap w-[5.5rem]">Loại</th>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase hidden lg:table-cell">Ngày ký HĐ</th>
-                <th v-if="canViewContractFinance" class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase hidden lg:table-cell">Giá trị</th>
-                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Thanh toán</th>
+                <th class="px-3 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase w-12">{{ t('contractList.table.columns.index') }}</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">{{ t('contractList.table.columns.contractNumber') }}</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">{{ t('contractList.table.columns.customer') }}</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase hidden sm:table-cell">{{ t('contractList.table.columns.contact') }}</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase hidden md:table-cell whitespace-nowrap w-[5.5rem]">{{ t('contractList.table.columns.type') }}</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase hidden lg:table-cell">{{ t('contractList.table.columns.signedDate') }}</th>
+                <th v-if="canViewContractFinance" class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase hidden lg:table-cell">{{ t('contractList.table.columns.value') }}</th>
+                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">{{ t('contractList.table.columns.payment') }}</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
               <tr
-                v-for="c in contracts"
+                v-for="(c, index) in contracts"
                 :key="c.id"
                 @click="router.push(`/contracts/${c.id}`)"
                 class="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors cursor-pointer"
               >
+                <td class="px-3 py-3 text-center text-gray-500 dark:text-gray-400 text-xs tabular-nums">
+                  {{ (filters.page - 1) * filters.limit + index + 1 }}
+                </td>
                 <td class="px-4 py-3 font-mono text-blue-600 dark:text-blue-400 font-medium">{{ c.contract_number }}</td>
                 <td class="px-4 py-3">
                   <p class="font-medium text-gray-900 dark:text-white line-clamp-1">{{ c.customer_name }}</p>
@@ -175,7 +179,7 @@
               </tr>
               <tr v-if="!loading && contracts.length === 0">
                 <td :colspan="tableColSpan" class="px-4 py-12 text-center text-gray-500 dark:text-gray-400">
-                  Không có hợp đồng nào
+                  {{ t('contractList.table.empty') }}
                 </td>
               </tr>
             </tbody>
@@ -185,19 +189,23 @@
         <!-- Pagination -->
         <div v-if="total > filters.limit" class="flex items-center justify-between px-4 py-3 border-t border-gray-200 dark:border-gray-600">
           <p class="text-xs text-gray-500 dark:text-gray-400">
-            Hiển thị {{ (filters.page - 1) * filters.limit + 1 }}–{{ Math.min(filters.page * filters.limit, total) }} / {{ total }} hợp đồng
+            {{ t('contractList.pagination.showing', {
+              from: (filters.page - 1) * filters.limit + 1,
+              to: Math.min(filters.page * filters.limit, total),
+              total,
+            }) }}
           </p>
           <div class="flex gap-2">
             <button
               @click="filters.page--; loadContracts()"
               :disabled="filters.page <= 1"
               class="px-3 py-1 text-sm rounded-lg border border-gray-300 dark:border-gray-600 disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-gray-700"
-            >Trước</button>
+            >{{ t('contractList.pagination.prev') }}</button>
             <button
               @click="filters.page++; loadContracts()"
               :disabled="filters.page * filters.limit >= total"
               class="px-3 py-1 text-sm rounded-lg border border-gray-300 dark:border-gray-600 disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-gray-700"
-            >Sau</button>
+            >{{ t('contractList.pagination.next') }}</button>
           </div>
         </div>
       </div>
@@ -352,7 +360,7 @@
                 <table class="w-full text-sm min-w-[680px]">
                   <thead>
                     <tr class="bg-gray-50 dark:bg-gray-700/30 border-b border-gray-100 dark:border-gray-700 text-xs text-gray-500 dark:text-gray-400">
-                      <th class="px-3 py-2 text-center w-10">STT</th>
+                      <th class="px-3 py-2 text-center w-10">{{ t('contractList.table.columns.index') }}</th>
                       <th class="px-3 py-2 text-left">Hạng mục</th>
                       <th class="px-3 py-2 text-center w-20">ĐVT</th>
                       <th class="px-3 py-2 text-right w-20">Số lượng</th>
@@ -708,7 +716,7 @@ const { getUserRole, canViewContractFinance, canManageContracts } = useAuth()
 const { t } = useI18n()
 const { showSuccess } = useToast()
 const isStaff = computed(() => getUserRole.value !== UserRole.END_USER)
-const tableColSpan = computed(() => (canViewContractFinance.value ? 7 : 6))
+const tableColSpan = computed(() => (canViewContractFinance.value ? 8 : 7))
 
 const { dateConfig } = useFlatpickrConfig()
 const datePickerConfig = dateConfig

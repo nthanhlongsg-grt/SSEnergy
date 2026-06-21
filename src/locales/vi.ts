@@ -912,8 +912,11 @@ const vi = {
         expiringSoon: 'Sắp hết BH (45 ngày)',
       },
       table: {
-        serialNumber: 'Serial Number',
+        index: 'STT',
+        serialNumber: 'Số Serial',
         model: 'Model',
+        manufacturer: 'Hãng',
+        contract: 'Hợp đồng',
         type: 'Loại',
         customer: 'Khách hàng',
         activationDate: 'Ngày kích hoạt',
@@ -923,6 +926,7 @@ const vi = {
         view: 'Xem',
         delete: 'Xóa',
         noDevices: 'Không có thiết bị nào',
+        emptyHint: 'thêm thiết bị trong hợp đồng',
         loading: 'Đang tải dữ liệu...',
       },
       types: {
@@ -2602,6 +2606,24 @@ const vi = {
     },
   },
   contractList: {
+    table: {
+      columns: {
+        index: 'STT',
+        contractNumber: 'Số HĐ',
+        customer: 'Khách hàng',
+        contact: 'Người liên hệ',
+        type: 'Loại',
+        signedDate: 'Ngày ký HĐ',
+        value: 'Giá trị',
+        payment: 'Thanh toán',
+      },
+      empty: 'Không có hợp đồng nào',
+    },
+    pagination: {
+      showing: 'Hiển thị {from}–{to} / {total} hợp đồng',
+      prev: 'Trước',
+      next: 'Sau',
+    },
     linkedDevices: {
       title: 'Thiết bị liên kết',
       addDevice: 'Thêm thiết bị',

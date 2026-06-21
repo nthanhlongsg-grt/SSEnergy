@@ -161,6 +161,11 @@
             <thead class="bg-gray-50 dark:bg-gray-700">
               <tr>
                 <th
+                  class="px-3 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider w-12"
+                >
+                  STT
+                </th>
+                <th
                   class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
                 >
                   {{ t('users.management.table.user') }}
@@ -199,10 +204,13 @@
             </thead>
             <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
               <tr
-                v-for="user in filteredUsers"
+                v-for="(user, index) in filteredUsers"
                 :key="user.id"
                 class="hover:bg-gray-50 dark:hover:bg-gray-700"
               >
+                <td class="px-3 py-4 text-center text-xs text-gray-500 dark:text-gray-400 tabular-nums">
+                  {{ index + 1 }}
+                </td>
                 <td class="px-6 py-4 whitespace-nowrap">
                   <div class="flex items-center">
                     <div
@@ -268,7 +276,7 @@
                 </td>
               </tr>
               <tr v-if="filteredUsers.length === 0">
-                <td colspan="7" class="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
+                <td colspan="8" class="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
                   {{ t('users.management.table.noUsers') }}
                 </td>
               </tr>
@@ -291,7 +299,7 @@
 
         <!-- User Cards -->
         <div
-          v-for="user in filteredUsers"
+          v-for="(user, index) in filteredUsers"
           :key="user.id"
           class="rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-4 shadow-sm active:bg-gray-50 dark:active:bg-gray-700 touch-manipulation"
         >
@@ -306,7 +314,7 @@
             </div>
             <div class="min-w-0 flex-1">
               <h3 class="font-semibold text-gray-900 dark:text-white text-base truncate">
-                {{ user.name }}
+                <span class="text-gray-400 font-normal mr-1.5">#{{ index + 1 }}</span>{{ user.name }}
               </h3>
               <p class="text-xs text-gray-500 dark:text-gray-400 truncate">
                 {{ user.code || t('common.na') }}
