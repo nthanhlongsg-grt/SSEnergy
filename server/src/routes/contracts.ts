@@ -428,7 +428,7 @@ router.get('/:id', authenticateToken, (req, res) => {
         SELECT
           i.id, i.serial_number, i.model, i.type, i.power_rating, i.status,
           i.installation_address, i.warranty_start_date, i.warranty_end_date,
-          i.warranty_months, i.notes,
+          i.warranty_months, i.notes, i.project_name,
           i.installation_date,
           COALESCE(i.manufacturer, m.manufacturer, '') AS manufacturer,
           (SELECT COUNT(*) FROM tickets t WHERE t.inverter_id = i.id) AS ticket_count,

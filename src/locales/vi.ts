@@ -1562,6 +1562,22 @@ const vi = {
           urgent: 'Khẩn cấp',
         },
       },
+      expiringWarranty: {
+        title: 'Thiết bị sắp hết bảo hành',
+        hint: 'Cảnh báo khi thời hạn bảo hành còn {days} ngày trở xuống',
+        viewAll: 'Xem tất cả thiết bị',
+        empty: 'Không có thiết bị nào sắp hết bảo hành',
+        columns: {
+          serialNumber: 'Số SN',
+          model: 'Model',
+          warrantyEndDate: 'Ngày hết BH',
+          daysRemaining: 'Còn lại',
+          warning: 'Cảnh báo',
+        },
+        daysRemaining: 'Còn {count} ngày',
+        warningCritical: 'Sắp hết hạn',
+        warningSoon: 'Cần lưu ý',
+      },
       incompletePaperwork: {
         title: 'Hợp đồng chưa hoàn tất giấy tờ',
         viewAll: 'Xem tất cả hợp đồng',
@@ -2552,6 +2568,23 @@ const vi = {
   sidebar: {
     footer: {
       description: 'Hệ thống quản lý hậu mãi SSE',
+    },
+  },
+  contractList: {
+    linkedDevices: {
+      title: 'Thiết bị liên kết',
+      addDevice: 'Thêm thiết bị',
+      manufacturer: 'Hãng',
+      model: 'Model',
+      serialNumber: 'Số SN',
+      project: 'Dự án',
+      warrantyStart: 'BH bắt đầu',
+      warrantyMonths: 'BH (tháng)',
+      notes: 'Ghi chú',
+      duplicate: 'Nhân bản hàng',
+      unlink: 'Gỡ liên kết thiết bị',
+      remove: 'Xóa',
+      empty: 'Chưa có thiết bị nào — nhấn {action} để thêm',
     },
   },
 }

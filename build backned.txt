@@ -1,31 +1,25 @@
-# Backend — build qua SSH trên Mắt Bão (giống SGE baohanh.sgesolartech.vn)
-# App chạy tại: ~/baohanh.ssenergy.vn/sse-api/
-# KHÔNG dùng Application root = document root. Startup = dist/index.js (hoặc dist/start.cjs)
-
 cd ~
 export PATH="$HOME/.nodenv/versions/18/bin:$PATH"
 
-# Xóa thư mục clone tạm, clone mới
-rm -rf ~/SSEnergy-build
-git clone https://github.com/nthanhlongsg-grt/SSEnergy.git SSEnergy-build
+# Xóa thư mục cũ, clone mới
+rm -rf ~/SSEnergy
+git clone https://github.com/nthanhlongsg-grt/SSEnergy.git SSEnergy
 
 # Build
-cd ~/SSEnergy-build/server
+cd ~/SSEnergy/server
 npm install
 npm run build
 
-# Tạo thư mục dist nếu chưa có (lần deploy đầu)
+# Copy dist mới vào app đang chạy
 mkdir -p ~/baohanh.ssenergy.vn/sse-api/dist
-
-# Copy dist mới vào app đang chạy (giữ nguyên .env và database trong sse-api/)
-cp -r ~/SSEnergy-build/server/dist/* ~/baohanh.ssenergy.vn/sse-api/dist/
+cp -r ~/SSEnergy/server/dist/* ~/baohanh.ssenergy.vn/sse-api/dist/
 
 # Dọn dẹp
-rm -rf ~/SSEnergy-build
+rm -rf ~/SSEnergy
 
-# Restart Node (tìm process cũ)
+# Restart Node
 ps aux | grep node
-# kill -9 <PID>   hoặc Restart trong cPanel Node.js App
+# kill -9 <PID>   hoặc Restart trên Plesk
 
 # Kiểm tra
 curl -s http://127.0.0.1:3000/api/health

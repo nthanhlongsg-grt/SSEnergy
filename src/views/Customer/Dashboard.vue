@@ -97,106 +97,6 @@
       </div>
     </div>
 
-    <!-- Incomplete Paperwork Contracts -->
-    <div v-if="!loading" class="rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden mt-4 sm:mt-6 md:mt-8">
-      <div class="p-3 sm:p-4 border-b border-gray-200 dark:border-gray-700">
-        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-0">
-          <h3 class="text-sm sm:text-base font-semibold text-gray-900 dark:text-white">
-            {{ t('customers.dashboard.incompletePaperwork.title') }}
-          </h3>
-          <router-link
-            to="/customer/contracts"
-            class="text-xs sm:text-sm text-blue-600 dark:text-blue-400 hover:underline"
-          >
-            {{ t('customers.dashboard.incompletePaperwork.viewAll') }}
-          </router-link>
-        </div>
-      </div>
-
-      <!-- Desktop Table -->
-      <div class="hidden md:block overflow-x-auto">
-        <table class="w-full">
-          <thead class="bg-gray-50 dark:bg-gray-700">
-            <tr>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
-                {{ t('customers.dashboard.incompletePaperwork.columns.contractNumber') }}
-              </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
-                {{ t('customers.dashboard.incompletePaperwork.columns.title') }}
-              </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
-                {{ t('customers.dashboard.incompletePaperwork.columns.contractType') }}
-              </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
-                {{ t('customers.dashboard.incompletePaperwork.columns.missingItems') }}
-              </th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-            <tr v-if="incompletePaperworkContracts.length === 0">
-              <td colspan="4" class="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
-                {{ t('customers.dashboard.incompletePaperwork.empty') }}
-              </td>
-            </tr>
-            <tr
-              v-for="contract in incompletePaperworkContracts"
-              :key="contract.id"
-              class="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
-              @click="router.push(`/customer/contracts/${contract.id}`)"
-            >
-              <td class="px-6 py-4 whitespace-nowrap">
-                <span class="font-mono font-medium text-blue-600 dark:text-blue-400">
-                  {{ contract.contract_number }}
-                </span>
-              </td>
-              <td class="px-6 py-4">
-                <span class="text-gray-900 dark:text-white">{{ contract.title || '—' }}</span>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap">
-                <span :class="contractTypeClass(contract.contract_type)" class="px-2 py-0.5 rounded-full text-xs font-medium">
-                  {{ contractTypeLabel(contract.contract_type) }}
-                </span>
-              </td>
-              <td class="px-6 py-4">
-                <span class="text-sm text-amber-700 dark:text-amber-300">
-                  {{ customerMissingPaperworkText(contract) }}
-                </span>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <!-- Mobile Cards -->
-      <div class="md:hidden">
-        <div v-if="incompletePaperworkContracts.length === 0" class="p-6 text-center text-gray-500 dark:text-gray-400 text-sm">
-          {{ t('customers.dashboard.incompletePaperwork.empty') }}
-        </div>
-        <div
-          v-for="contract in incompletePaperworkContracts"
-          :key="contract.id"
-          class="p-4 border-b border-gray-200 dark:border-gray-700 last:border-b-0 active:bg-gray-50 dark:active:bg-gray-700 cursor-pointer"
-          @click="router.push(`/customer/contracts/${contract.id}`)"
-        >
-          <div class="flex items-start justify-between gap-2 mb-2">
-            <div class="min-w-0 flex-1">
-              <p class="font-mono text-sm font-semibold text-blue-600 dark:text-blue-400">{{ contract.contract_number }}</p>
-              <p class="text-sm text-gray-900 dark:text-white mt-0.5 truncate">{{ contract.title || '—' }}</p>
-            </div>
-          </div>
-          <div class="flex flex-wrap items-center gap-2 mb-2">
-            <span :class="contractTypeClass(contract.contract_type)" class="px-2 py-0.5 rounded-full text-xs font-medium">
-              {{ contractTypeLabel(contract.contract_type) }}
-            </span>
-          </div>
-          <p class="text-xs text-amber-700 dark:text-amber-300 leading-relaxed">
-            <span class="font-medium text-gray-500 dark:text-gray-400">{{ t('customers.dashboard.incompletePaperwork.columns.missingItems') }}:</span>
-            {{ customerMissingPaperworkText(contract) }}
-          </p>
-        </div>
-      </div>
-    </div>
-
     <!-- Recent Tickets -->
     <div v-if="!loading" class="rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden mt-4 sm:mt-6 md:mt-8">
       <div class="p-3 sm:p-4 border-b border-gray-200 dark:border-gray-700">
@@ -363,6 +263,125 @@
         </div>
       </div>
     </div>
+
+    <!-- Expiring Warranty Devices -->
+    <div v-if="!loading" class="rounded-lg bg-white dark:bg-gray-800 border border-amber-200 dark:border-amber-800/50 shadow-sm overflow-hidden mt-4 sm:mt-6 md:mt-8">
+      <div class="p-3 sm:p-4 border-b border-amber-100 dark:border-amber-900/40 bg-amber-50/60 dark:bg-amber-900/10">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-0">
+          <div>
+            <h3 class="text-sm sm:text-base font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+              <WarningIcon class="h-4 w-4 sm:h-5 sm:w-5 text-amber-600 dark:text-amber-400 flex-shrink-0" />
+              {{ t('customers.dashboard.expiringWarranty.title') }}
+              <span
+                v-if="expiringWarrantyDevices.length"
+                class="px-2 py-0.5 text-xs bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200 rounded-full"
+              >
+                {{ expiringWarrantyDevices.length }}
+              </span>
+            </h3>
+            <p class="text-xs text-amber-700 dark:text-amber-300 mt-1">
+              {{ t('customers.dashboard.expiringWarranty.hint', { days: WARRANTY_WARNING_DAYS }) }}
+            </p>
+          </div>
+          <router-link
+            to="/customer/inverters"
+            class="text-xs sm:text-sm text-blue-600 dark:text-blue-400 hover:underline"
+          >
+            {{ t('customers.dashboard.expiringWarranty.viewAll') }}
+          </router-link>
+        </div>
+      </div>
+
+      <!-- Desktop Table -->
+      <div class="hidden md:block overflow-x-auto">
+        <table class="w-full">
+          <thead class="bg-gray-50 dark:bg-gray-700">
+            <tr>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
+                {{ t('customers.dashboard.expiringWarranty.columns.serialNumber') }}
+              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
+                {{ t('customers.dashboard.expiringWarranty.columns.model') }}
+              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
+                {{ t('customers.dashboard.expiringWarranty.columns.warrantyEndDate') }}
+              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
+                {{ t('customers.dashboard.expiringWarranty.columns.daysRemaining') }}
+              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
+                {{ t('customers.dashboard.expiringWarranty.columns.warning') }}
+              </th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+            <tr v-if="expiringWarrantyDevices.length === 0">
+              <td colspan="5" class="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
+                {{ t('customers.dashboard.expiringWarranty.empty') }}
+              </td>
+            </tr>
+            <tr
+              v-for="device in expiringWarrantyDevices"
+              :key="device.id"
+              class="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
+              @click="router.push(`/customer/inverters/${device.id}`)"
+            >
+              <td class="px-6 py-4 whitespace-nowrap">
+                <span class="font-mono font-medium text-gray-900 dark:text-white">{{ device.serial_number }}</span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
+                {{ device.model }}
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
+                {{ formatDisplayDate(device.warranty_end_date) }}
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <span :class="warrantyDaysClass(device.daysRemaining)" class="text-sm font-semibold">
+                  {{ t('customers.dashboard.expiringWarranty.daysRemaining', { count: device.daysRemaining }) }}
+                </span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <span :class="warrantyBadgeClass(device.daysRemaining)" class="px-2 py-1 text-xs rounded-full font-medium">
+                  {{ warrantyBadgeLabel(device.daysRemaining) }}
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Mobile Cards -->
+      <div class="md:hidden">
+        <div v-if="expiringWarrantyDevices.length === 0" class="p-6 text-center text-gray-500 dark:text-gray-400 text-sm">
+          {{ t('customers.dashboard.expiringWarranty.empty') }}
+        </div>
+        <div
+          v-for="device in expiringWarrantyDevices"
+          :key="device.id"
+          class="p-4 border-b border-gray-200 dark:border-gray-700 last:border-b-0 active:bg-gray-50 dark:active:bg-gray-700 cursor-pointer"
+          @click="router.push(`/customer/inverters/${device.id}`)"
+        >
+          <div class="flex items-start justify-between gap-2 mb-2">
+            <div class="min-w-0 flex-1">
+              <p class="font-mono text-sm font-semibold text-gray-900 dark:text-white">{{ device.serial_number }}</p>
+              <p class="text-sm text-gray-600 dark:text-gray-400 mt-0.5">{{ device.model }}</p>
+            </div>
+            <span :class="warrantyBadgeClass(device.daysRemaining)" class="px-2 py-0.5 text-xs rounded-full font-medium flex-shrink-0">
+              {{ warrantyBadgeLabel(device.daysRemaining) }}
+            </span>
+          </div>
+          <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
+            <span class="text-gray-500 dark:text-gray-400">
+              {{ t('customers.dashboard.expiringWarranty.columns.warrantyEndDate') }}:
+              <span class="text-gray-900 dark:text-white font-medium">{{ formatDisplayDate(device.warranty_end_date) }}</span>
+            </span>
+            <span :class="warrantyDaysClass(device.daysRemaining)" class="font-semibold">
+              {{ t('customers.dashboard.expiringWarranty.daysRemaining', { count: device.daysRemaining }) }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
   </admin-layout>
 </template>
 
@@ -378,11 +397,17 @@ import WarningIcon from '@/icons/WarningIcon.vue'
 import CheckIcon from '@/icons/CheckIcon.vue'
 import PlusIcon from '@/icons/PlusIcon.vue'
 import { ticketService } from '@/services/ticketService'
-import { inverterService } from '@/services/inverterService'
-import { contractService, type Contract } from '@/services/contractService'
+import { inverterService, type Inverter } from '@/services/inverterService'
 import { isTicketActive, isTicketClosed } from '@/constants/ticketStatus'
 import { useTicketStatus } from '@/composables/useTicketStatus'
-import { isCustomerPaperworkComplete, getCustomerMissingPaperworkItemIds } from '@/utils/contractPaperwork'
+import { formatDate as formatDisplayDate, getVietnamDateString } from '@/utils/dateTime'
+
+const WARRANTY_WARNING_DAYS = 45
+const WARRANTY_CRITICAL_DAYS = 14
+
+interface ExpiringWarrantyDevice extends Inverter {
+  daysRemaining: number
+}
 
 const { t } = useI18n()
 
@@ -398,16 +423,58 @@ const metrics = ref({
   completedTickets: 0,
 })
 const recentTickets = ref<any[]>([])
-const incompletePaperworkContracts = ref<Contract[]>([])
+const expiringWarrantyDevices = ref<ExpiringWarrantyDevice[]>([])
+
+function getDaysUntilWarrantyEnd(endDate?: string | null): number | null {
+  if (!endDate) return null
+  const endStr = endDate.slice(0, 10)
+  const todayStr = getVietnamDateString()
+  const end = new Date(`${endStr}T00:00:00`)
+  const today = new Date(`${todayStr}T00:00:00`)
+  if (Number.isNaN(end.getTime()) || Number.isNaN(today.getTime())) return null
+  return Math.ceil((end.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+}
+
+function buildExpiringWarrantyList(inverters: Inverter[]): ExpiringWarrantyDevice[] {
+  return inverters
+    .map((inv) => ({
+      ...inv,
+      daysRemaining: getDaysUntilWarrantyEnd(inv.warranty_end_date),
+    }))
+    .filter(
+      (inv): inv is ExpiringWarrantyDevice =>
+        inv.daysRemaining !== null &&
+        inv.daysRemaining >= 0 &&
+        inv.daysRemaining <= WARRANTY_WARNING_DAYS,
+    )
+    .sort((a, b) => a.daysRemaining - b.daysRemaining)
+}
+
+const warrantyDaysClass = (days: number) =>
+  days <= WARRANTY_CRITICAL_DAYS
+    ? 'text-red-600 dark:text-red-400'
+    : 'text-amber-700 dark:text-amber-300'
+
+const warrantyBadgeClass = (days: number) =>
+  days <= WARRANTY_CRITICAL_DAYS
+    ? 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-200'
+    : 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200'
+
+const warrantyBadgeLabel = (days: number) =>
+  days <= WARRANTY_CRITICAL_DAYS
+    ? t('customers.dashboard.expiringWarranty.warningCritical')
+    : t('customers.dashboard.expiringWarranty.warningSoon')
 
 const loadDashboardData = async () => {
   try {
     loading.value = true
     error.value = null
 
-    // Load inverters count
-    const invertersResponse = await inverterService.getAllInverters({ limit: 1, page: 1 })
-    metrics.value.totalInverters = (invertersResponse.pagination as { total?: number })?.total || 0
+    // Load inverters
+    const invertersResponse = await inverterService.getAllInverters({ limit: 500, page: 1 })
+    const inverters = invertersResponse.data || []
+    metrics.value.totalInverters = (invertersResponse.pagination as { total?: number })?.total ?? inverters.length
+    expiringWarrantyDevices.value = buildExpiringWarrantyList(inverters)
 
     // Load tickets stats
     const ticketsResponse = await ticketService.getAllTickets({ limit: 100, page: 1 })
@@ -422,12 +489,6 @@ const loadDashboardData = async () => {
 
     const openTickets = tickets.filter((t: any) => !isTicketClosed(t.status))
     recentTickets.value = openTickets.slice(0, 5)
-
-    // Contracts chưa hoàn tất giấy tờ
-    const contractsResponse = await contractService.list({ limit: 100, page: 1 })
-    incompletePaperworkContracts.value = (contractsResponse.contracts || []).filter(
-      (c) => c.status !== 'cancelled' && !isCustomerPaperworkComplete(c)
-    )
   } catch (err: any) {
     console.error('Error loading dashboard:', err)
     error.value = err.message || t('customers.dashboard.error')
@@ -459,28 +520,7 @@ const getPriorityLabel = (priority: string) => {
   return labels[priority] || priority
 }
 
-const formatDate = (dateString: string) => {
-  if (!dateString) return '-'
-  const date = new Date(dateString)
-  return date.toLocaleDateString('vi-VN')
-}
-
-const customerMissingPaperworkText = (contract: Contract) =>
-  getCustomerMissingPaperworkItemIds(contract)
-    .map((id) => t(`customers.dashboard.incompletePaperwork.items.${id}`))
-    .join(', ')
-
-const contractTypeLabel = (type: string) =>
-  t(`customers.dashboard.incompletePaperwork.contractType.${type}`) || type
-
-const contractTypeClass = (type: string) => {
-  const map: Record<string, string> = {
-    service: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
-    economic: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300',
-    other: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300',
-  }
-  return map[type] ?? 'bg-gray-100 text-gray-600'
-}
+const formatDate = (dateString: string) => formatDisplayDate(dateString) === 'N/A' ? '-' : formatDisplayDate(dateString)
 
 onMounted(() => {
   loadDashboardData()

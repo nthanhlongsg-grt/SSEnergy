@@ -69,6 +69,7 @@ export function applySchemaSync(db: Database.Database): string[] {
   add('inverters', 'type', 'type TEXT')
   add('inverters', 'manufacturer', 'manufacturer TEXT')
   add('inverters', 'warranty_months', 'warranty_months INTEGER')
+  add('inverters', 'project_name', 'project_name TEXT')
 
   // --- tickets ---
   add('tickets', 'notes', 'notes TEXT')

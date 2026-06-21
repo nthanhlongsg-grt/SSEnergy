@@ -1,11 +1,5 @@
-# Frontend — build local (Windows), upload vào sse-api/httpdocs
-# Cấu trúc server:
-#   baohanh.ssenergy.vn/sse-api/httpdocs/  ← frontend (document root Plesk)
-#   baohanh.ssenergy.vn/sse-api/dist/      ← backend Node.js
-
 cd "E:\AI\SSE 1"
 npm install
 npm run build-only
 
-# Upload toàn bộ dist/* → baohanh.ssenergy.vn/sse-api/httpdocs/
-# Hoặc dùng: frontend-baohanh.zip (giải nén trong httpdocs)
+# Upload dist/* → baohanh.ssenergy.vn/sse-api/httpdocs/

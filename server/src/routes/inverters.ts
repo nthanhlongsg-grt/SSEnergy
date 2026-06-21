@@ -362,6 +362,7 @@ router.post('/', authenticateToken, requireRole(UserRole.ADMIN, UserRole.SERVICE
       location_lng,
       status,
       notes,
+      project_name,
     } = req.body
 
     console.log('📝 [POST /inverters] Request body:', { serial_number, model, customer_id, role: req.user?.role })
@@ -534,9 +535,9 @@ router.post('/', authenticateToken, requireRole(UserRole.ADMIN, UserRole.SERVICE
         serial_number, model, manufacturer, type, power_rating, installation_date,
         warranty_start_date, warranty_end_date, warranty_months, warranty_type,
         customer_id, distributor_id, installation_address,
-        location_lat, location_lng, status, notes, user_id
+        location_lat, location_lng, status, notes, project_name, user_id
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       serial_number,
       model,
@@ -555,6 +556,7 @@ router.post('/', authenticateToken, requireRole(UserRole.ADMIN, UserRole.SERVICE
       location_lng || null,
       status || 'active',
       notes || null,
+      project_name || null,
       userId
     )
 
@@ -609,6 +611,7 @@ router.put('/:id', authenticateToken, requireRole(UserRole.ADMIN, UserRole.SERVI
       location_lng,
       status,
       notes,
+      project_name,
     } = req.body
 
     // Check if serial number is being changed and if it's already taken
@@ -688,10 +691,12 @@ router.put('/:id', authenticateToken, requireRole(UserRole.ADMIN, UserRole.SERVI
         ? Number(warranty_months)
         : null
 
-    const adminUser = isAdminRole((req as AuthRequest).user?.role)
+    const authRole = (req as AuthRequest).user?.role
+    const canEditWarrantyDates =
+      isAdminRole(authRole) || authRole === UserRole.SERVICE_CENTER
     if (
       (warranty_start_date !== undefined || warranty_end_date !== undefined) &&
-      !adminUser
+      !canEditWarrantyDates
     ) {
       return res.status(403).json({ error: 'Only admin can update warranty dates' })
     }
@@ -699,7 +704,7 @@ router.put('/:id', authenticateToken, requireRole(UserRole.ADMIN, UserRole.SERVI
     let warrantyStartForUpdate: string | null | undefined = warranty_start_date
     let warrantyEndForUpdate: string | null | undefined = warranty_end_date
 
-    if (adminUser && warranty_start_date !== undefined && warranty_end_date === undefined) {
+    if (canEditWarrantyDates && warranty_start_date !== undefined && warranty_end_date === undefined) {
       const startStr = warranty_start_date ? String(warranty_start_date).slice(0, 10) : null
       warrantyStartForUpdate = startStr
       if (startStr) {
@@ -732,6 +737,7 @@ router.put('/:id', authenticateToken, requireRole(UserRole.ADMIN, UserRole.SERVI
           location_lng = COALESCE(?, location_lng),
           status = COALESCE(?, status),
           notes = COALESCE(?, notes),
+          project_name = COALESCE(?, project_name),
           user_id = ?,
           updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
@@ -753,6 +759,7 @@ router.put('/:id', authenticateToken, requireRole(UserRole.ADMIN, UserRole.SERVI
       location_lng || null,
       status || null,
       notes || null,
+      project_name !== undefined ? (project_name || null) : null,
       portalUserId,
       inverterId
     )

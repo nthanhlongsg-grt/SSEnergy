@@ -472,131 +472,171 @@
                   <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
                   </svg>
-                  Thêm thiết bị
+                  {{ t('contractList.linkedDevices.addDevice') }}
                 </button>
               </div>
 
               <!-- Header cột -->
-              <div v-if="form.existing_devices.length || form.new_devices.length" class="grid grid-cols-[1fr_1fr_1fr_6rem_1fr_2rem] gap-2 px-4 py-2 bg-gray-50 dark:bg-gray-700/30 border-b border-gray-100 dark:border-gray-700">
-                <span class="text-xs font-medium text-gray-500 dark:text-gray-400">Hãng</span>
-                <span class="text-xs font-medium text-gray-500 dark:text-gray-400">Model <span class="text-red-400">*</span></span>
-                <span class="text-xs font-medium text-gray-500 dark:text-gray-400">Số SN <span class="text-red-400">*</span></span>
-                <span class="text-xs font-medium text-gray-500 dark:text-gray-400">BH (tháng)</span>
-                <span class="text-xs font-medium text-gray-500 dark:text-gray-400">Ghi chú</span>
+              <div v-if="form.existing_devices.length || form.new_devices.length" :class="['grid gap-2 px-4 py-2 bg-gray-50 dark:bg-gray-700/30 border-b border-gray-100 dark:border-gray-700', DEVICE_GRID]">
+                <span class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ t('contractList.linkedDevices.manufacturer') }}</span>
+                <span class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ t('contractList.linkedDevices.model') }} <span class="text-red-400">*</span></span>
+                <span class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ t('contractList.linkedDevices.serialNumber') }} <span class="text-red-400">*</span></span>
+                <span class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ t('contractList.linkedDevices.project') }}</span>
+                <span class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ t('contractList.linkedDevices.warrantyStart') }}</span>
+                <span class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ t('contractList.linkedDevices.warrantyMonths') }}</span>
+                <span class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ t('contractList.linkedDevices.notes') }}</span>
                 <span></span>
               </div>
 
               <!-- Rows -->
-              <div class="divide-y divide-gray-100 dark:divide-gray-700 max-h-56 overflow-y-auto">
+              <div class="divide-y divide-gray-100 dark:divide-gray-700 max-h-72 overflow-y-auto">
                 <!-- Thiết bị đã liên kết (chỉnh sửa được) -->
                 <div
                   v-for="(dev, idx) in form.existing_devices"
                   :key="'ex-' + dev.id"
-                  class="grid grid-cols-[1fr_1fr_1fr_6rem_1fr_2rem] gap-2 px-4 py-2.5 items-center"
+                  :class="['grid gap-2 px-4 py-2.5 items-center', DEVICE_GRID]"
                 >
                   <input
                     v-model="dev.manufacturer"
                     type="text"
                     list="manufacturer-options"
-                    placeholder="Chọn hoặc nhập hãng"
-                    class="px-2.5 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 w-full"
+                    :placeholder="t('contractList.linkedDevices.manufacturer')"
+                    class="px-2.5 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 w-full min-w-0"
                   />
                   <input
                     v-model="dev.model"
                     type="text"
                     placeholder="VD: MAX-10K"
                     required
-                    class="px-2.5 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 w-full"
+                    class="px-2.5 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 w-full min-w-0"
                   />
                   <input
                     v-model="dev.serial_number"
                     type="text"
                     placeholder="VD: SN20250001"
                     required
-                    class="px-2.5 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 w-full font-mono"
+                    class="px-2.5 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 w-full min-w-0 font-mono"
                   />
+                  <input
+                    v-model="dev.project_name"
+                    type="text"
+                    placeholder="VD: NMT 500kWp"
+                    class="px-2.5 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 w-full min-w-0"
+                  />
+                  <AppDatePicker v-model="dev.warranty_start_date" input-class="w-full min-w-0 px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500" />
                   <input
                     v-model.number="dev.warranty_months"
                     type="number"
                     min="0"
                     step="1"
                     placeholder="12"
-                    class="px-2.5 py-1.5 text-sm text-center border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 w-full"
+                    class="px-2.5 py-1.5 text-sm text-center border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 w-full min-w-0"
                   />
                   <input
                     v-model="dev.notes"
                     type="text"
-                    placeholder="Ghi chú..."
-                    class="px-2.5 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 w-full"
+                    :placeholder="t('contractList.linkedDevices.notes')"
+                    class="px-2.5 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 w-full min-w-0"
                   />
-                  <button
-                    type="button"
-                    @click="removeExistingDevice(idx)"
-                    class="p-1 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded transition-colors"
-                    title="Gỡ liên kết thiết bị"
-                  >
-                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                    </svg>
-                  </button>
+                  <div class="flex items-center justify-end gap-0.5">
+                    <button
+                      type="button"
+                      @click="duplicateExistingDevice(idx)"
+                      class="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded transition-colors"
+                      :title="t('contractList.linkedDevices.duplicate')"
+                    >
+                      <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                      </svg>
+                    </button>
+                    <button
+                      type="button"
+                      @click="removeExistingDevice(idx)"
+                      class="p-1 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded transition-colors"
+                      :title="t('contractList.linkedDevices.unlink')"
+                    >
+                      <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                      </svg>
+                    </button>
+                  </div>
                 </div>
 
                 <!-- Thiết bị mới thêm -->
                 <div
                   v-for="(dev, idx) in form.new_devices"
-                  :key="idx"
-                  class="grid grid-cols-[1fr_1fr_1fr_6rem_1fr_2rem] gap-2 px-4 py-2.5 items-center"
+                  :key="'new-' + idx"
+                  :class="['grid gap-2 px-4 py-2.5 items-center', DEVICE_GRID]"
                 >
                   <input
                     v-model="dev.manufacturer"
                     type="text"
                     list="manufacturer-options"
-                    placeholder="Chọn hoặc nhập hãng"
-                    class="px-2.5 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 w-full"
+                    :placeholder="t('contractList.linkedDevices.manufacturer')"
+                    class="px-2.5 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 w-full min-w-0"
                   />
                   <input
                     v-model="dev.model"
                     type="text"
                     placeholder="VD: MAX-10K"
                     required
-                    class="px-2.5 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 w-full"
+                    class="px-2.5 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 w-full min-w-0"
                   />
                   <input
                     v-model="dev.serial_number"
                     type="text"
                     placeholder="VD: SN20250001"
                     required
-                    class="px-2.5 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 w-full font-mono"
+                    class="px-2.5 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 w-full min-w-0 font-mono"
                   />
+                  <input
+                    v-model="dev.project_name"
+                    type="text"
+                    placeholder="VD: NMT 500kWp"
+                    class="px-2.5 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 w-full min-w-0"
+                  />
+                  <AppDatePicker v-model="dev.warranty_start_date" input-class="w-full min-w-0 px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500" />
                   <input
                     v-model.number="dev.warranty_months"
                     type="number"
                     min="0"
                     step="1"
                     placeholder="12"
-                    class="px-2.5 py-1.5 text-sm text-center border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 w-full"
+                    class="px-2.5 py-1.5 text-sm text-center border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 w-full min-w-0"
                   />
                   <input
                     v-model="dev.notes"
                     type="text"
-                    placeholder="Ghi chú..."
-                    class="px-2.5 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 w-full"
+                    :placeholder="t('contractList.linkedDevices.notes')"
+                    class="px-2.5 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 w-full min-w-0"
                   />
-                  <button
-                    type="button"
-                    @click="removeDeviceRow(idx)"
-                    class="p-1 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded transition-colors"
-                    title="Xóa"
-                  >
-                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                    </svg>
-                  </button>
+                  <div class="flex items-center justify-end gap-0.5">
+                    <button
+                      type="button"
+                      @click="duplicateNewDeviceRow(idx)"
+                      class="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded transition-colors"
+                      :title="t('contractList.linkedDevices.duplicate')"
+                    >
+                      <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                      </svg>
+                    </button>
+                    <button
+                      type="button"
+                      @click="removeDeviceRow(idx)"
+                      class="p-1 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded transition-colors"
+                      :title="t('contractList.linkedDevices.remove')"
+                    >
+                      <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                      </svg>
+                    </button>
+                  </div>
                 </div>
 
                 <!-- Empty state -->
                 <div v-if="!form.existing_devices.length && !form.new_devices.length" class="px-4 py-6 text-center text-sm text-gray-400 dark:text-gray-500">
-                  Chưa có thiết bị nào — nhấn <strong>Thêm thiết bị</strong> để thêm
+                  {{ t('contractList.linkedDevices.empty', { action: t('contractList.linkedDevices.addDevice') }) }}
                 </div>
               </div>
             </div>
@@ -645,7 +685,10 @@ import { useAuth, UserRole } from '@/composables/useAuth'
 import { isContractPaid, getPaymentStatusLabel, paymentStatusClass } from '@/utils/contractPaperwork'
 import { getVietnamWeekRange, getVietnamFullMonthRange, getVietnamYearRange } from '@/utils/dateTime'
 import { useToast } from '@/composables/useToast'
+import AppDatePicker from '@/components/forms/AppDatePicker.vue'
 import { useI18n } from 'vue-i18n'
+
+const DEVICE_GRID = 'grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_9rem_5rem_minmax(0,1fr)_4.5rem]'
 
 const router = useRouter()
 const route = useRoute()
@@ -763,6 +806,8 @@ interface NewDevice {
   manufacturer: string
   model: string
   serial_number: string
+  project_name: string
+  warranty_start_date: string
   warranty_months: number
   notes: string
 }
@@ -772,6 +817,8 @@ interface ExistingDevice {
   manufacturer: string
   model: string
   serial_number: string
+  project_name: string
+  warranty_start_date: string
   warranty_months: number
   notes: string
 }
@@ -947,18 +994,55 @@ function toggleInverter(id: number) {
   else form.inverter_ids.splice(idx, 1)
 }
 
-function addDeviceRow() {
-  form.new_devices.push({
+function computeWarrantyEnd(startDate: string, months: number): string | undefined {
+  if (!startDate?.trim() || months <= 0) return undefined
+  const end = new Date(startDate)
+  if (Number.isNaN(end.getTime())) return undefined
+  end.setMonth(end.getMonth() + months)
+  return end.toISOString().slice(0, 10)
+}
+
+function createEmptyDevice(): NewDevice {
+  return {
     manufacturer: '',
     model: '',
     serial_number: '',
+    project_name: '',
+    warranty_start_date: form.end_date || '',
     warranty_months: Number(form.warranty_months) || DEFAULT_WARRANTY_MONTHS,
     notes: '',
-  })
+  }
+}
+
+function addDeviceRow() {
+  form.new_devices.push(createEmptyDevice())
 }
 
 function removeDeviceRow(idx: number) {
   form.new_devices.splice(idx, 1)
+}
+
+function duplicateNewDeviceRow(idx: number) {
+  const src = form.new_devices[idx]
+  if (!src) return
+  form.new_devices.splice(idx + 1, 0, {
+    ...src,
+    serial_number: '',
+  })
+}
+
+function duplicateExistingDevice(idx: number) {
+  const src = form.existing_devices[idx]
+  if (!src) return
+  form.new_devices.push({
+    manufacturer: src.manufacturer,
+    model: src.model,
+    serial_number: '',
+    project_name: src.project_name,
+    warranty_start_date: src.warranty_start_date || form.end_date || '',
+    warranty_months: src.warranty_months,
+    notes: src.notes,
+  })
 }
 
 function openCreate() {
@@ -1015,6 +1099,8 @@ async function openEdit(c: Contract) {
       manufacturer: i.manufacturer ?? '',
       model: i.model ?? '',
       serial_number: i.serial_number ?? '',
+      project_name: i.project_name ?? '',
+      warranty_start_date: i.warranty_start_date ? String(i.warranty_start_date).slice(0, 10) : '',
       warranty_months: Number(i.warranty_months) || 0,
       notes: i.notes ?? '',
     }))
@@ -1065,6 +1151,9 @@ async function saveContract() {
       // Lưu chỉnh sửa các thiết bị đã liên kết trước (để hợp đồng đồng bộ BH theo số tháng mới)
       const token = localStorage.getItem('token')
       for (const d of form.existing_devices) {
+        const months = Number(d.warranty_months) || 0
+        const startDate = d.warranty_start_date?.trim() || form.end_date || ''
+        const warrantyEnd = computeWarrantyEnd(startDate, months)
         try {
           await fetch(`${getApiBaseUrl()}/api/inverters/${d.id}`, {
             method: 'PUT',
@@ -1073,8 +1162,11 @@ async function saveContract() {
               serial_number: d.serial_number.trim(),
               model: d.model.trim(),
               manufacturer: d.manufacturer.trim() || undefined,
+              project_name: d.project_name.trim() || undefined,
               notes: d.notes.trim() || undefined,
-              warranty_months: Number(d.warranty_months) || 0,
+              warranty_months: months || undefined,
+              warranty_start_date: startDate || undefined,
+              warranty_end_date: warrantyEnd,
             }),
           })
         } catch {}
@@ -1096,13 +1188,12 @@ async function saveContract() {
       const acceptanceDate = form.end_date || ''
       for (const d of form.new_devices) {
         const months = Number(d.warranty_months) || 0
+        const startDate = d.warranty_start_date?.trim() || acceptanceDate
         let warrantyStart: string | undefined
         let warrantyEnd: string | undefined
-        if (acceptanceDate && months > 0) {
-          warrantyStart = acceptanceDate
-          const end = new Date(acceptanceDate)
-          end.setMonth(end.getMonth() + months)
-          warrantyEnd = end.toISOString().slice(0, 10)
+        if (startDate && months > 0) {
+          warrantyStart = startDate
+          warrantyEnd = computeWarrantyEnd(startDate, months)
         }
         try {
           const res = await fetch(`${getApiBaseUrl()}/api/inverters`, {
@@ -1112,6 +1203,7 @@ async function saveContract() {
               serial_number: d.serial_number.trim(),
               model: d.model.trim(),
               manufacturer: d.manufacturer.trim() || undefined,
+              project_name: d.project_name.trim() || undefined,
               notes: d.notes.trim() || undefined,
               customer_id: form.customer_id,
               warranty_months: months || undefined,

@@ -144,6 +144,7 @@ db.exec(`
     location_lng REAL,
     status TEXT NOT NULL DEFAULT 'active',
     notes TEXT,
+    project_name TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE SET NULL,

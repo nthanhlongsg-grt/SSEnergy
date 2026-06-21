@@ -1560,6 +1560,22 @@ const en = {
           urgent: 'Urgent',
         },
       },
+      expiringWarranty: {
+        title: 'Devices nearing warranty expiry',
+        hint: 'Warning when warranty expires within {days} days',
+        viewAll: 'View all devices',
+        empty: 'No devices nearing warranty expiry',
+        columns: {
+          serialNumber: 'Serial no.',
+          model: 'Model',
+          warrantyEndDate: 'Warranty end',
+          daysRemaining: 'Remaining',
+          warning: 'Alert',
+        },
+        daysRemaining: '{count} days left',
+        warningCritical: 'Expiring soon',
+        warningSoon: 'Attention needed',
+      },
       incompletePaperwork: {
         title: 'Contracts with incomplete paperwork',
         viewAll: 'View all contracts',
@@ -2548,6 +2564,23 @@ const en = {
   sidebar: {
     footer: {
       description: 'SSE After-Sales Management System',
+    },
+  },
+  contractList: {
+    linkedDevices: {
+      title: 'Linked devices',
+      addDevice: 'Add device',
+      manufacturer: 'Brand',
+      model: 'Model',
+      serialNumber: 'Serial no.',
+      project: 'Project',
+      warrantyStart: 'Warranty start',
+      warrantyMonths: 'Warranty (mo.)',
+      notes: 'Notes',
+      duplicate: 'Duplicate row',
+      unlink: 'Unlink device',
+      remove: 'Remove',
+      empty: 'No devices yet — click {action} to add',
     },
   },
 }
