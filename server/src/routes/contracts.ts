@@ -421,12 +421,27 @@ router.get('/dashboard-metrics', authenticateToken, (req, res) => {
 
     const showFinance = canViewContractFinance(user.role)
 
+    const signedOverview = db
+      .prepare(
+        `SELECT COUNT(*) as signed_count, COALESCE(SUM(c.value), 0) as total_signed_value
+         FROM contracts c
+         WHERE c.status != 'draft' AND c.status != 'cancelled'`,
+      )
+      .get() as { signed_count: number; total_signed_value: number }
+
+    const customerOverview = db
+      .prepare(`SELECT COUNT(*) as total_customers FROM customers`)
+      .get() as { total_customers: number }
+
     res.json({
       total_unpaid_debt: showFinance ? allUnpaid.total_unpaid_debt : 0,
       unpaid_count: allUnpaid.unpaid_count,
       draft_count: draftStats.draft_count,
       undelivered_contract_count: undeliveredContracts.undelivered_contract_count,
       undelivered_device_count: undeliveredDevices.undelivered_device_count,
+      signed_contract_count: signedOverview.signed_count,
+      total_signed_value: showFinance ? signedOverview.total_signed_value : 0,
+      total_customer_count: customerOverview.total_customers,
     })
   } catch (err: any) {
     res.status(500).json({ error: err.message })

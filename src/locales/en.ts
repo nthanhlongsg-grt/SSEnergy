@@ -312,6 +312,11 @@ const en = {
       emptyUnpaid: 'No unpaid contracts',
       emptyUndelivered: 'No undelivered contracts',
       emptyDraft: 'No draft contracts',
+      overview: {
+        signedTotal: 'Total signed contracts',
+        totalValue: 'Total contract value',
+        totalCustomers: 'Total customers (companies)',
+      },
       columns: {
         number: 'Contract No.',
         customer: 'Customer',

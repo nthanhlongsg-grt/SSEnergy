@@ -302,6 +302,11 @@ const vi = {
       emptyUnpaid: 'Không có hợp đồng chưa thanh toán',
       emptyUndelivered: 'Không có hợp đồng chưa giao máy',
       emptyDraft: 'Không có hợp đồng nháp',
+      overview: {
+        signedTotal: 'Tổng hợp đồng đã ký',
+        totalValue: 'Tổng giá trị HĐ',
+        totalCustomers: 'Tổng khách hàng (công ty)',
+      },
       columns: {
         number: 'Số HĐ',
         customer: 'Khách hàng',

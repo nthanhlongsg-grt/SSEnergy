@@ -54,6 +54,47 @@
           </div>
 
           <template v-else>
+            <div
+              v-if="showContractOverviewStats"
+              class="grid grid-cols-1 sm:grid-cols-3 gap-3 p-4 sm:p-5 border-b border-gray-200 dark:border-gray-700"
+            >
+              <div class="rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 p-3 sm:p-4">
+                <div class="flex items-center justify-between gap-2">
+                  <div class="min-w-0">
+                    <p class="text-xs text-blue-600 dark:text-blue-400">{{ t('dashboard.contracts.overview.signedTotal') }}</p>
+                    <p class="mt-1 text-xl sm:text-2xl font-bold text-blue-700 dark:text-blue-300">
+                      {{ contractMetrics.signedCount }}
+                    </p>
+                  </div>
+                  <DocsIcon class="h-8 w-8 text-blue-500 shrink-0 opacity-80" />
+                </div>
+              </div>
+              <div
+                v-if="canViewContractFinance"
+                class="rounded-lg bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800 p-3 sm:p-4"
+              >
+                <div class="flex items-center justify-between gap-2">
+                  <div class="min-w-0">
+                    <p class="text-xs text-emerald-600 dark:text-emerald-400">{{ t('dashboard.contracts.overview.totalValue') }}</p>
+                    <p class="mt-1 text-lg sm:text-xl font-bold text-emerald-700 dark:text-emerald-300 truncate">
+                      {{ formatContractCurrency(contractMetrics.totalSignedValue) }}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div class="rounded-lg bg-violet-50 dark:bg-violet-900/20 border border-violet-100 dark:border-violet-800 p-3 sm:p-4">
+                <div class="flex items-center justify-between gap-2">
+                  <div class="min-w-0">
+                    <p class="text-xs text-violet-600 dark:text-violet-400">{{ t('dashboard.contracts.overview.totalCustomers') }}</p>
+                    <p class="mt-1 text-xl sm:text-2xl font-bold text-violet-700 dark:text-violet-300">
+                      {{ contractMetrics.totalCustomers }}
+                    </p>
+                  </div>
+                  <UserCircleIcon class="h-8 w-8 text-violet-500 shrink-0 opacity-80" />
+                </div>
+              </div>
+            </div>
+
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 sm:p-5 border-b border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/20">
               <button
                 type="button"
@@ -572,11 +613,18 @@ const isLimitedStaff = computed(() => {
 
 const canViewContractFinance = computed(() => hasPermission(Permission.VIEW_CONTRACT_FINANCE))
 
+const showContractOverviewStats = computed(() =>
+  hasAnyRole([UserRole.ADMIN, UserRole.DEV, UserRole.ACCOUNTING]),
+)
+
 const contractLoading = ref(false)
 const contractMetrics = ref({
   totalDebt: 0,
   unpaidCount: 0,
   draftCount: 0,
+  signedCount: 0,
+  totalSignedValue: 0,
+  totalCustomers: 0,
 })
 const unpaidContracts = ref<Contract[]>([])
 const unpaidContractsTotal = ref(0)
@@ -640,11 +688,17 @@ const loadContractDashboard = async () => {
         total_unpaid_debt?: number
         unpaid_count?: number
         draft_count?: number
+        signed_contract_count?: number
+        total_signed_value?: number
+        total_customer_count?: number
       }
       contractMetrics.value = {
         totalDebt: data.total_unpaid_debt || 0,
         unpaidCount: data.unpaid_count || 0,
         draftCount: data.draft_count || 0,
+        signedCount: data.signed_contract_count || 0,
+        totalSignedValue: data.total_signed_value || 0,
+        totalCustomers: data.total_customer_count || 0,
       }
     }
 
@@ -658,6 +712,9 @@ const loadContractDashboard = async () => {
       totalDebt: 0,
       unpaidCount: 0,
       draftCount: 0,
+      signedCount: 0,
+      totalSignedValue: 0,
+      totalCustomers: 0,
     }
     unpaidContracts.value = []
     unpaidContractsTotal.value = 0
