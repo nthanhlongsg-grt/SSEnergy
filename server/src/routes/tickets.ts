@@ -30,6 +30,11 @@ import {
   type TicketStatusValue,
 } from '../constants/ticketStatus.js'
 import { userCanAccessTicketViaContractManager } from '../utils/contractManagers.js'
+import {
+  canEndUserAccessTicket,
+  endUserTicketAccessParams,
+  endUserTicketAccessSqlFor,
+} from '../utils/ticketAccessFilter.js'
 
 const CLOSED_DB_STATUSES = expandStatusFilter(TicketStatus.CLOSED)
 const CLOSED_DB_STATUSES_SQL = CLOSED_DB_STATUSES.map((s) => `'${s}'`).join(', ')
@@ -105,9 +110,8 @@ router.get('/stats', authenticateToken, (req, res) => {
     // Filter by user role
     // ADMIN, DEV, SERVICE_CENTER, and TECHNICIAN can see all tickets (no filter needed)
     if (user?.role === UserRole.END_USER) {
-      // End users can see tickets they created, assigned to them, for their inverters, or tickets they are watching
-      query += ' AND (created_by = ? OR assigned_to = ? OR EXISTS (SELECT 1 FROM inverters i WHERE i.id = tickets.inverter_id AND i.user_id = ?) OR EXISTS (SELECT 1 FROM ticket_watchers tw WHERE tw.ticket_id = tickets.id AND tw.user_id = ?))'
-      params.push(user.id, user.id, user.id, user.id)
+      query += ` AND ${endUserTicketAccessSqlFor('tickets')}`
+      params.push(...endUserTicketAccessParams(user.id))
     } else if (user?.role === UserRole.DISTRIBUTOR) {
       // Distributors can see tickets of end users linked to them, assigned to them, for their inverters, or tickets they are watching
       const linkedEndUsers = db.prepare(`
@@ -268,9 +272,8 @@ router.get('/', authenticateToken, (req, res) => {
     
     if (!canSeeAllTickets) {
       if (user.role === UserRole.END_USER) {
-      // End users can see tickets they created OR tickets assigned to them OR tickets for their inverters OR tickets they are watching
-      query += ' AND (t.created_by = ? OR t.assigned_to = ? OR EXISTS (SELECT 1 FROM inverters i WHERE i.id = t.inverter_id AND i.user_id = ?) OR EXISTS (SELECT 1 FROM ticket_watchers tw WHERE tw.ticket_id = t.id AND tw.user_id = ?))'
-      params.push(user.id, user.id, user.id, user.id)
+      query += ` AND ${endUserTicketAccessSqlFor('t')}`
+      params.push(...endUserTicketAccessParams(user.id))
       } else if (user.role === UserRole.DISTRIBUTOR) {
       // Distributors can see tickets they created AND tickets of end users linked to them AND tickets for their inverters AND tickets they are watching
       // Get all end users that have this distributor as parent_distributor_id
@@ -369,9 +372,8 @@ router.get('/', authenticateToken, (req, res) => {
     
     if (!canSeeAllTicketsCount) {
       if (user?.role === UserRole.END_USER) {
-      // End users can see tickets they created OR tickets assigned to them OR tickets for their inverters OR tickets they are watching
-      countQuery += ' AND (t.created_by = ? OR t.assigned_to = ? OR EXISTS (SELECT 1 FROM inverters i WHERE i.id = t.inverter_id AND i.user_id = ?) OR EXISTS (SELECT 1 FROM ticket_watchers tw WHERE tw.ticket_id = t.id AND tw.user_id = ?))'
-      countParams.push(user.id, user.id, user.id, user.id)
+      countQuery += ` AND ${endUserTicketAccessSqlFor('t')}`
+      countParams.push(...endUserTicketAccessParams(user.id))
     } else if (user?.role === UserRole.DISTRIBUTOR) {
       // Distributors can see tickets they created AND tickets of end users linked to them AND tickets for their inverters AND tickets they are watching
       const linkedEndUsers = db.prepare(`
@@ -499,15 +501,7 @@ router.get('/:id', authenticateToken, (req, res) => {
     // Check access permissions based on user role
     // Logic phải khớp với GET /tickets (danh sách) để tránh hiển thị ticket nhưng không xem được chi tiết
     if (user?.role === UserRole.END_USER) {
-      const canAccess =
-        ticket.created_by === user.id ||
-        ticket.assigned_to === user.id ||
-        (ticket.inverter_id &&
-          db.prepare('SELECT 1 FROM inverters WHERE id = ? AND user_id = ?').get(ticket.inverter_id, user.id)) ||
-        db.prepare('SELECT 1 FROM ticket_watchers WHERE ticket_id = ? AND user_id = ?').get(ticketId, user.id) ||
-        userCanAccessTicketViaContractManager(user.id, ticket)
-
-      if (!canAccess) {
+      if (!canEndUserAccessTicket(user.id, { ...ticket, id: ticketId })) {
         return res.status(403).json({ error: 'Access denied' })
       }
     } else if (user?.role === UserRole.DISTRIBUTOR) {
@@ -1565,34 +1559,25 @@ router.get('/:id/watchers', authenticateToken, (req: AuthRequest, res) => {
     const user = req.user!
 
     // Check if user has access to this ticket
-    const ticket = db.prepare('SELECT created_by, assigned_to FROM tickets WHERE id = ?').get(ticketId) as {
+    const ticket = db.prepare(`
+      SELECT id, created_by, assigned_to, inverter_id, customer_id, contract_id
+      FROM tickets WHERE id = ?
+    `).get(ticketId) as {
+      id: number
       created_by: number
       assigned_to: number | null
+      inverter_id: number | null
+      customer_id: number | null
+      contract_id: number | null
     } | undefined
 
     if (!ticket) {
       return res.status(404).json({ error: 'Ticket not found' })
     }
 
-    // Check access based on role - logic phải khớp với GET /tickets/:id
     if (user.role === UserRole.END_USER) {
-      // End users can view tickets they created OR tickets assigned to them OR tickets for their inverters OR tickets they are watching
-      const canAccess = 
-        ticket.created_by === user.id || 
-        ticket.assigned_to === user.id ||
-        db.prepare('SELECT 1 FROM ticket_watchers WHERE ticket_id = ? AND user_id = ?').get(ticketId, user.id)
-      
-      if (!canAccess) {
-        // Check if ticket is for their inverter
-        const ticketInfo = db.prepare('SELECT inverter_id FROM tickets WHERE id = ?').get(ticketId) as { inverter_id: number | null } | undefined
-        if (ticketInfo?.inverter_id) {
-          const inverter = db.prepare('SELECT 1 FROM inverters WHERE id = ? AND user_id = ?').get(ticketInfo.inverter_id, user.id)
-          if (!inverter) {
-            return res.status(403).json({ error: 'Access denied' })
-          }
-        } else {
-          return res.status(403).json({ error: 'Access denied' })
-        }
+      if (!canEndUserAccessTicket(user.id, ticket)) {
+        return res.status(403).json({ error: 'Access denied' })
       }
     } else if (user.role === UserRole.DISTRIBUTOR) {
       // Distributors can view tickets they created, assigned to them, for their inverters, or tickets they are watching
@@ -1672,9 +1657,16 @@ router.post('/:id/watchers', authenticateToken, (req: AuthRequest, res) => {
     }
 
     // Check if user has access to this ticket
-    const ticket = db.prepare('SELECT created_by, assigned_to, ticket_number FROM tickets WHERE id = ?').get(ticketId) as {
+    const ticket = db.prepare(`
+      SELECT id, created_by, assigned_to, inverter_id, customer_id, contract_id, ticket_number
+      FROM tickets WHERE id = ?
+    `).get(ticketId) as {
+      id: number
       created_by: number
       assigned_to: number | null
+      inverter_id: number | null
+      customer_id: number | null
+      contract_id: number | null
       ticket_number?: string
     } | undefined
 
@@ -1683,8 +1675,10 @@ router.post('/:id/watchers', authenticateToken, (req: AuthRequest, res) => {
     }
 
     // Check access based on role
-    if (currentUser.role === UserRole.END_USER && ticket.created_by !== currentUser.id) {
-      return res.status(403).json({ error: 'Access denied' })
+    if (currentUser.role === UserRole.END_USER) {
+      if (!canEndUserAccessTicket(currentUser.id, ticket)) {
+        return res.status(403).json({ error: 'Access denied' })
+      }
     } else if (currentUser.role === UserRole.DISTRIBUTOR) {
       const linkedEndUser = db.prepare(`
         SELECT id FROM users 

@@ -1,5 +1,5 @@
 <template>
-  <customer-layout>
+  <admin-layout>
     <div class="max-w-4xl mx-auto space-y-4 sm:space-y-6">
       <!-- Header -->
       <div>
@@ -314,14 +314,14 @@
       </div>
     </div>
     </div>
-  </customer-layout>
+  </admin-layout>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import CustomerLayout from '@/components/layout/CustomerLayout.vue'
+import AdminLayout from '@/components/layout/AdminLayout.vue'
 import { ticketService } from '@/services/ticketService'
 import { inverterService } from '@/services/inverterService'
 import { useAuth } from '@/composables/useAuth'

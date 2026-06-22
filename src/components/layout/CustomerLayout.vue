@@ -2,7 +2,7 @@
   <div class="customer-layout">
     <CustomerHeader />
     <div class="customer-layout-content">
-      <RouterView />
+      <slot />
     </div>
     <AppToast />
   </div>

@@ -180,12 +180,12 @@ router.get('/:id', authenticateToken, (req, res) => {
 
         const linkedCustomer = db.prepare(`
           SELECT id FROM customers
-          WHERE user_id = ?
+          WHERE user_id = ? OR contact_user_id = ?
              OR (email IS NOT NULL AND email != '' AND email = ?)
              OR (phone IS NOT NULL AND phone != '' AND phone = ?)
-          ORDER BY CASE WHEN user_id = ? THEN 0 ELSE 1 END
+          ORDER BY CASE WHEN user_id = ? OR contact_user_id = ? THEN 0 ELSE 1 END
           LIMIT 1
-        `).get(numericId, portalUser.email || '', portalUser.phone || '', numericId) as { id: number } | undefined
+        `).get(numericId, numericId, portalUser.email || '', portalUser.phone || '', numericId, numericId) as { id: number } | undefined
 
         if (linkedCustomer) {
           inverters = dedupeInverters(fetchInvertersByCustomerId(linkedCustomer.id))

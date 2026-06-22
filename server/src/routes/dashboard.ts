@@ -8,6 +8,10 @@ import {
   expandStatusFilter,
   isTicketClosed,
 } from '../constants/ticketStatus.js'
+import {
+  endUserTicketAccessParams,
+  endUserTicketAccessSqlFor,
+} from '../utils/ticketAccessFilter.js'
 
 const CLOSED_DB_STATUSES_SQL = expandStatusFilter(TicketStatus.CLOSED)
   .map((s) => `'${s}'`)
@@ -28,9 +32,8 @@ const buildTicketFilter = (user: any): { whereClause: string; params: any[] } =>
   const params: any[] = []
 
   if (user.role === UserRole.END_USER) {
-    // End users can see tickets they created OR tickets assigned to them OR tickets for their inverters OR tickets they are watching
-    whereClause = 'WHERE (t.created_by = ? OR t.assigned_to = ? OR EXISTS (SELECT 1 FROM inverters i WHERE i.id = t.inverter_id AND i.user_id = ?) OR EXISTS (SELECT 1 FROM ticket_watchers tw WHERE tw.ticket_id = t.id AND tw.user_id = ?))'
-    params.push(user.id, user.id, user.id, user.id)
+    whereClause = `WHERE ${endUserTicketAccessSqlFor('t')}`
+    params.push(...endUserTicketAccessParams(user.id))
   } else if (user.role === UserRole.TECHNICIAN) {
     // Technicians can see tickets assigned to them OR tickets they created OR tickets they are watching
     whereClause = 'WHERE (t.assigned_to = ? OR t.created_by = ? OR EXISTS (SELECT 1 FROM ticket_watchers tw WHERE tw.ticket_id = t.id AND tw.user_id = ?))'

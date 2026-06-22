@@ -71,20 +71,22 @@ export function canViewContractRestrictedStaff(
   return isContractManager(user.id, contractId)
 }
 
-/** SQL fragment: ticket visible because user manages its contract (alias `t`) */
-export const contractManagerTicketExistsSql = `
+/** SQL fragment: ticket visible because user manages its contract (alias param) */
+export const contractManagerTicketExistsSqlFor = (alias: string): string => `
   EXISTS (
     SELECT 1 FROM contract_managers cm
     WHERE cm.user_id = ?
     AND (
-      (t.contract_id IS NOT NULL AND cm.contract_id = t.contract_id)
+      (${alias}.contract_id IS NOT NULL AND cm.contract_id = ${alias}.contract_id)
       OR EXISTS (
         SELECT 1 FROM contract_inverters ci
-        WHERE ci.contract_id = cm.contract_id AND ci.inverter_id = t.inverter_id
+        WHERE ci.contract_id = cm.contract_id AND ci.inverter_id = ${alias}.inverter_id
       )
     )
   )
 `
+
+export const contractManagerTicketExistsSql = contractManagerTicketExistsSqlFor('t')
 
 export function userCanAccessTicketViaContractManager(
   userId: number,

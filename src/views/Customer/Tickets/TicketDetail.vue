@@ -1,5 +1,5 @@
 <template>
-  <customer-layout>
+  <admin-layout>
     <div class="space-y-6">
       <!-- Header -->
     <div>
@@ -361,7 +361,7 @@
         </div>
       </div>
     </div>
-  </customer-layout>
+  </admin-layout>
 </template>
 
 <script setup lang="ts">
@@ -370,7 +370,7 @@ import { useAutoRefresh } from '@/composables/useAutoRefresh'
 import { useChangeDetection } from '@/composables/useChangeDetection'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import CustomerLayout from '@/components/layout/CustomerLayout.vue'
+import AdminLayout from '@/components/layout/AdminLayout.vue'
 import { ticketService } from '@/services/ticketService'
 import { getApiBaseUrlWithoutApi } from '@/utils/apiUrl'
 import { resolveAttachmentUrl, resolveCommentImageSrc } from '@/utils/attachmentUrl'
